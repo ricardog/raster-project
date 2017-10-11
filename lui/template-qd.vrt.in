@@ -1,0 +1,39 @@
+<VRTDataset rasterXSize="1440" rasterYSize="720">
+  <SRS>GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9108"]],AUTHORITY["EPSG","4326"]]</SRS>
+  <GeoTransform> -1.8000000000000000e+02,  2.5000000000000000e-01,  0.0000000000000000e+00,  9.0000000000000000e+01,  0.0000000000000000e+00, -2.5000000000000000e-01</GeoTransform>
+  <VRTRasterBand dataType="Float32" band="1">
+    <NoDataValue>-9999</NoDataValue>
+    <ComplexSource>
+      <SourceFilename relativeToVRT="1">%lutype%.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="720" RasterYSize="360" DataType="Float32" BlockXSize="720" BlockYSize="1" />
+      <SrcRect xOff="0" yOff="0" xSize="720" ySize="360" />
+      <DstRect xOff="0" yOff="0" xSize="1440" ySize="720" />
+      <NODATA>-9999</NODATA>
+    </ComplexSource>
+  </VRTRasterBand>
+
+  <VRTRasterBand dataType="Float32" band="2">
+    <NoDataValue>-9999</NoDataValue>
+    <ComplexSource>
+      <SourceFilename relativeToVRT="1">%lutype%.tif</SourceFilename>
+      <SourceBand>2</SourceBand>
+      <SourceProperties RasterXSize="720" RasterYSize="360" DataType="Float32" BlockXSize="720" BlockYSize="1" />
+      <SrcRect xOff="0" yOff="0" xSize="720" ySize="360" />
+      <DstRect xOff="0" yOff="0" xSize="1440" ySize="720" />
+      <NODATA>-9999</NODATA>
+    </ComplexSource>
+  </VRTRasterBand>
+
+  <VRTRasterBand dataType="Float32" band="3">
+    <NoDataValue>-9999</NoDataValue>
+    <ComplexSource>
+      <SourceFilename relativeToVRT="1">%lutype%.tif</SourceFilename>
+      <SourceBand>3</SourceBand>
+      <SourceProperties RasterXSize="720" RasterYSize="360" DataType="Float32" BlockXSize="720" BlockYSize="1" />
+      <SrcRect xOff="0" yOff="0" xSize="720" ySize="360" />
+      <DstRect xOff="0" yOff="0" xSize="1440" ySize="720" />
+      <NODATA>-9999</NODATA>
+    </ComplexSource>
+  </VRTRasterBand>
+</VRTDataset>

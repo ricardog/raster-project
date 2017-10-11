@@ -1,0 +1,2 @@
+GDAL==1.11.2 --global-option "build_ext" --global-option="--include-dirs=/usr/local/include"
+-e .

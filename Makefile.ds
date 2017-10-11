@@ -1,0 +1,183 @@
+# -*- mode: Makefile; -*-
+
+ifndef DATA_ROOT
+  ifeq ($(shell hostname),vagrant)
+    $(warn Setting DATA_ROOT to /data)
+    DATA_ROOT := /data
+  else
+    $(error Please set DATA_ROOT)
+  endif
+endif 
+
+define rasterize
+# $call rasterize attribute type resolution src dst)
+	@echo gdal_rasterize ${4} ${5}
+	gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a ${1} -ot ${2} \
+		-tr ${3} ${3} -co "COMPRESS=lzw" -co "PREDICTOR=2" ${4} ${5}
+	@echo done
+endef
+
+define proximity
+# $(call proximity roads-db resolution dst)
+	@project roads proximity --roads-db ${1} --resolution ${2} \
+		--dst-raster ${3}
+endef
+
+define regularize
+# $(call regularize src dst)
+	@project roads regularize --src-raster ${1} --dst-raster ${2}
+endef
+
+define resize
+# $(call resize resolution src dst)
+	gdalwarp -overwrite -tr ${1} ${1} -dstnodata -9999 -of GTiff \
+		-co COMPRESS=lzw -co PREDICTOR=2 ${2} ${3}
+endef
+
+WORLD_BORDERS := ${DATA_ROOT}/from-sam/world-countries/TM_WORLD_BORDERS-0.3.shp
+GROADS := ${DATA_ROOT}/groads1.0/groads-v1-global-gdb/gROADS_v1.gdb
+GRUMPS := ${DATA_ROOT}/grump1.0/gluds00ag
+GRUMPS4 := ${DATA_ROOT}/grump4.0/gpw-v4-population-density-adjusted-to-2015-unwpp-country-totals_2015.tif
+NPP := ${DATA_ROOT}/npp/npp/hdr.adf
+AG_SUIT := ${DATA_ROOT}/ag_suitability/overall_cropsuit_i_2011-2040.tif
+
+OneKm := 0.008333333333300
+ED := 0.125
+QD := 0.25
+HD := 0.5
+
+RASTERS := un_codes un_codes-full un_subregions un_subregions-full \
+	roads roads-final gluds00ag grumps4 npp ag_suitability
+RESOLUTIONS := 1km luh2 rcp
+VECTORS := ssp-regions.shp
+ALL := $(addsuffix .tif, $(foreach res, ${RESOLUTIONS}, $(addprefix ${res}/, ${RASTERS}))) $(addprefix vector/, ${VECTORS})
+
+.PHONY: all luh2 secd-dist
+all: ${ALL}
+	@echo "Done."
+
+luh: $(addsuffix .tif, $(addprefix luh2/, ${RASTERS} un_codes-full un_subregions-full gluds00ag-full)) $(addprefix vector/, ${VECTORS})
+
+### un_codes
+1km/un_codes.tif: ${WORLD_BORDERS}
+	$(call rasterize, UN, Int16, ${OneKm}, $<, $@)
+
+luh2/un_codes.tif: ${WORLD_BORDERS}
+	$(call rasterize, UN, Int16, ${QD}, $<, $@)
+
+luh2/un_codes-full.tif: ${WORLD_BORDERS}
+	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN -ot Int16 \
+		-tr ${QD} ${QD} -te -180 -90 180 90 \
+		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
+
+rcp/un_codes.tif: ${WORLD_BORDERS}
+	$(call rasterize, UN, Int16, ${HD}, $<, $@)
+
+### un_subregions
+1km/un_subregions.tif: ${WORLD_BORDERS}
+	$(call rasterize, SUBREGION, Int16, ${OneKm}, $<, $@)
+
+luh2/un_subregions.tif: ${WORLD_BORDERS}
+	$(call rasterize, SUBREGION, Int16, ${QD}, $<, $@)
+
+luh2/un_subregions-full.tif: ${WORLD_BORDERS}
+	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a SUBREGION -ot Int16 \
+		-tr ${QD} ${QD} -te -180 -90 180 90 \
+		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
+
+rcp/un_subregions.tif: ${WORLD_BORDERS}
+	$(call rasterize, SUBREGION, Int16, ${HD}, $<, $@)
+
+### Net Primary Productivity (NPP)
+1km/npp.tif: ${NPP}
+	$(call resize, ${OneKm}, $<, $@)
+
+luh2/npp.tif: ${NPP}
+	$(call resize, ${QD}, $<, $@)
+
+rcp/npp.tif: ${NPP}
+	$(call resize, ${HD}, $<, $@)
+
+### Crop / agricultural suitability (ag_suit)
+1km/ag_suitability.tif: ${AG_SUIT}
+	$(call resize, ${OneKm}, $<, $@)
+
+luh2/ag_suitability.tif: ${AG_SUIT}
+	$(call resize, ${QD}, $<, $@)
+
+rcp/ag_suitability.tif: ${AG_SUIT}
+	$(call resize, ${HD}, $<, $@)
+
+### roads.tif
+1km/roads.tif: ${GROADS}
+	$(call proximity, $<, ${OneKm}, $@)
+
+luh2/roads.tif: ${GROADS}
+	$(call proximity, $<, ${QD}, $@)
+
+rcp/roads.tif: ${GROADS}
+	$(call proximity, $<, ${HD}, $@)
+
+### roads-final.tif
+1km/roads-final.tif: 1km/roads.tif
+	$(call regularize, $<, $@)
+
+luh2/roads-final.tif: luh2/roads.tif
+	$(call regularize, $<, $@)
+
+rcp/roads-final.tif: rcp/roads.tif
+	$(call regularize, $<, $@)
+
+### Resize grumps raster
+1km/gluds00ag.tif: ${GRUMPS}
+	$(call resize, ${OneKm}, $< $@)
+
+luh2/gluds00ag.tif: ${GRUMPS}
+	$(call resize, ${QD}, $<, $@)
+
+luh2/gluds00ag-full.tif: ${GRUMPS}
+	gdalwarp -overwrite -tr ${QD} ${QD} -dstnodata -9999 -of GTiff \
+		-te -180 -90 180 90 -r bilinear -co COMPRESS=lzw \
+		-co PREDICTOR=2 $< $@
+
+rcp/gluds00ag.tif: ${GRUMPS}
+	$(call resize, ${HD}, $<, $@)
+
+### Resize grumps v4.0 raster
+1km/grumps4.tif: ${GRUMPS4}
+	cp $< $@
+
+luh2/grumps4.tif: ${GRUMPS4}
+	$(call resize, ${QD}, $<, $@)
+
+rcp/grumps4.tif: ${GRUMPS4}
+	$(call resize, ${HD}, $<, $@)
+
+### SSP Regions vector file
+#  Dependencies must match the argument order in merge-countries.py
+vector/ssp-regions.shp: ${WORLD_BORDERS} ${DATA_ROOT}/ssp-data/regions.json \
+	${DATA_ROOT}/ssp-data/country-names.csv
+	@../merge-countries.py $^ $@
+
+###
+### Secondary age breakdown
+###
+define secd_target
+luh2/secd-${1}.nc: luh2/secd-historical.nc
+	@../secd-dist.py --scenario ${1} --outdir luh2
+endef
+
+LUH2_SCENARIOS := $(shell echo $(subst LUH2_v2f_beta_, , $(notdir $(wildcard ${DATA_ROOT}/luh2_v2/LUH2_v2f_beta_SSP*))) | tr '[:upper:]' '[:lower:]')
+SECD_FILES := $(addsuffix .nc, $(addprefix luh2/secd-, ${LUH2_SCENARIOS}))
+
+$(foreach scenario, ${LUH2_SCENARIOS}, $(eval $(call secd_target,${scenario})))
+
+luh2/secd-historical.nc: ${DATA_ROOT}/luh2_v2/historical/states.nc \
+	${DATA_ROOT}/luh2_v2/historical/transitions.nc
+	@../secd-dist.py --scenario historical --start-index 1050 --outdir luh2
+
+secd-dist: ${SECD_FILES}
+
+sps: ../projections/scripts/gen_sps.py
+	@$<
+

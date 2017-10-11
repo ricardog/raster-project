@@ -1,0 +1,55 @@
+* Human population density response curves
+  - Pasture ratio 1950 ::
+
+           cropland     pasture     primary   secondary       urban
+0.252632  77.640442   96.588425  104.980316   91.132133  114.923370
+0.315789  78.676010  103.617531  108.113106   92.523216  112.155396
+0.378947  79.096298  109.672676  111.390205   94.293922  109.115517
+
+  - Pasture ratio 2010 ::
+
+           cropland     pasture     primary   secondary       urban
+0.252632  76.990593   95.599014  105.401649   92.116676  112.856560
+0.315789  78.017494  102.556122  108.547012   93.522789  110.138359
+0.378947  78.434258  108.549294  111.837265   95.312622  107.153160
+
+  - Primary ratio 1050 ::
+
+           cropland     pasture     primary   secondary       urban
+0.252632  94.618080   99.961060  105.351852  106.102570  112.191338
+0.315789  95.880096  107.235603  108.495781  107.722168  109.489166
+0.378947  96.392281  113.502174  111.784431  109.783752  106.521553
+
+
+  - Primary ratio :: 2010
+
+            cropland     pasture     primary   secondary       urban
+0.252632   98.179573  101.496826  105.353310  105.981873  112.524261
+0.315789   99.489098  108.883141  108.497231  107.599678  109.814064
+0.378947  100.020561  115.246048  111.785973  109.658920  106.837654
+
+* Human population density
+
+  - Mean ::
+                 File                        Mean    Scaled
+                 historical-hpd-1950.tif:    16.60   0.2862
+                 historical-hpd-1960.tif:    19.76   0.3027
+                 historical-hpd-1970.tif:    23.79   0.3204
+                 historical-hpd-1980.tif:    28.33   0.3372
+                 historical-hpd-1990.tif:    33.41   0.3531
+                 historical-hpd-2000.tif:    38.16   0.3660
+                 historical-hpd-2010.tif:    42.59   0.3767
+
+  - Median ::
+
+                 File                        Mean    Scaled
+                 historical-hpd-1950.tif:     0.43   0.0358
+                 historical-hpd-1960.tif:     0.54   0.0433
+                 historical-hpd-1970.tif:     0.67   0.0514
+                 historical-hpd-1980.tif:     0.84   0.0606
+                 historical-hpd-1990.tif:     0.98   0.0683
+                 historical-hpd-2000.tif:     1.11   0.0744
+                 historical-hpd-2010.tif:     1.26   0.0812		 
+
+
+AModel<-lmer(LA ~ LUI + poly(HPD,2) + poly(DR,2) + poly(TSC,1) + LU:poly(DR,2) + LU:poly(TSC,1) + poly(HPD,2):poly(TSC,1) + (1+LU+UI|SS) + (1|SSB))

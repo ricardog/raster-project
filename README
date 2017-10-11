@@ -1,0 +1,203 @@
+-*- mode: org -*-
+
+* Overview
+  This directory provides a fast implementation of the PREDICTS
+  projection code.  There are three main components:
+
+  1. r2py
+  2. rasterset
+  3. predicts-specific code
+
+  All three components are in the directory projections and get
+  installed as a single python module (it's easier to only install one
+  python module for now).
+
+  The directory also contains a number of driver scripts (luh2-test.py,
+  luh5-test.py), utility scripts, and throw-away scripts I used while
+  writing my masters' dissertation.  Over time I will try to clean up
+  this stuff and only leave here code related to projections.
+
+* Data acquisition, cleanup, and normalization
+  The code requires the following data-sets:
+
+  - Global roads database :: 
+       [[http://sedac.ciesin.columbia.edu/data/set/groads-global-roads-open-access-v1][gRoads v1]]
+  - Global rural-urban population density :: 
+       [[http://sedac.ciesin.columbia.edu/data/set/grump-v1-population-density/data-download][GRUMP v1]]
+  - Global rural-urban population density (v4) ::
+       The latest version of the [[http://sedac.ciesin.columbia.edu/data/collection/gpw-v4][GRUMP (v4)]] database is available.
+       Perhaps I should switch to this new version?
+
+       - Citation ::
+       Center for International Earth Science Information Network -
+       CIESIN - Columbia University. 2016. Gridded Population of the
+       World, Version 4 (GPWv4): Population Density Adjusted to Match
+       2015 Revision UN WPP Country Totals. Palisades, NY: NASA
+       Socioeconomic Data and Applications Center
+       (SEDAC). http://dx.doi.org/10.7927/H4HX19NJ.
+
+
+     * When authors make use of data they should cite both the data set
+       and the scientific publication, if available. Such a practice
+       gives credit to data set producers and advances principles of
+       transparency and reproducibility. Please visit the data citations
+       page for details. Users who would like to choose to format the
+       citation(s) for this dataset using a myriad of alternate styles
+       can copy the DOI number and paste it into Crosscite's website.
+
+  - Historical land-use maps (optional) :: The code grovels over the
+       historical land-use maps to calculate the age of secondary
+       vegetation.  Not all projections use this information, e.g. the
+       fine resolution projections don't take into account secondary
+       vegetation age.
+       [[http://themasites.pbl.nl/tridion/en/themasites/hyde/download/index-2.html][HYDE 3.1 Land-use data]]
+
+  - Spatial Population Scenarios :: These are human population
+       projections that match the SSPs and include urbanization.  The
+       data is available only for each decade (2010, 2020, etc.) and is
+       available on a 1/8 grid.  For use with the LUG2 data is needs to
+       be scaled and interpolated (see the gen_sps script). 
+        [[https://www2.cgd.ucar.edu/sections/tss/iam/spatial-population-scenarios][SPS]]
+
+       The methodology used to generate the data is described [[ http://iopscience.iop.org/article/10.1088/1748-9326/11/8/084003][here]].
+
+  - Land-use intensity calculation :: this data is required to generate
+       a predictive model for land-use intensity.  There are two sources
+       of information: 1km grid maps (used in the fine resolution
+       projection code) and .csv files for each land-use type.  This
+       correspond to Table 2 in the Nature supplementary information
+       section 
+   - UN countries database :: Rasters are generated from a shape file
+        called [[http://thematicmapping.org/downloads/TM_WORLD_BORDERS-0.3.zip][TM_WORLD_BORDERS]]. 
+   - UN subregion database :: Also generated using TM_WORLD_BORDERS.
+	
+   - UP world population prospects database :: 
+	[[https://esa.un.org/unpd/wpp/][WPP 2010]]
+   - RCP land-use projection database ::
+	[[https://tntcat.iiasa.ac.at/RcpDb/dsd?Action=htmlpage&page=welcome][RCP 1.1]]
+   - Global high-resolution (30") land-use data :: This is the
+        data set used in the 2016 Science paper.
+	[[https://data.csiro.au/dap/landingpage?pid=csiro:15276][Fine resolution land-use data (2005)]]
+   - Terrestrial ecoregions of the world :: WWF dataset
+	[[http://www.worldwildlife.org/publications/terrestrial-ecoregions-of-the-world][Terrestrial ecoregions of the world (2012)]]
+   - PREDCITS database :: can't do without!
+
+  All map / grid based data needs to be cleaned up and normalized,
+  that is make sure they all have the same projection, dimensions,
+  and cell size.
+
+* Drivers
+
+  There are a number of scripts to can be used to generate projections
+  using PREDICTS models.
+
+  - luh2-test.py :: Generates projections using LUH2 data and Sam's
+                    forested/non-forested models.
+  - luh5-test.py :: Generates projections using LUH2 data and Tim's
+                    models (from Science manuscript).  Or any model that
+                    has similar structure.
+  - adrid-test.py :: Generates projections using RCP data and Adriana's
+                     model for tropical abundance.  I wrote this mainly
+                     to test the code using the low resolution data
+                     before moving on to the high-resolution data.
+  - adrid-1km.py :: Generates projections using 30" rasters and
+                    Adriana's tropical abundance model.  Uses streaming
+                    to reduce memory and CPU requirements during the
+                    computation.  I haven't tried running it in some
+                    time so likely broken.
+
+  Drivers expect source data to be under $DATA_ROOT and generated data
+  under ds/<name>/...
+
+  The script *setup.sh* will attempt to generate all the derived data
+  for all land-use data sources (luh2, luh5, rcp, 1km) but will likely
+  not work under windows :(.  But it at does have the recipes required
+  to generate the data.
+
+* Code structure
+
+  - projections :: all the library code and most likely place to start
+                   if you want to understand how the code works.
+    - r2py
+    - rasterset
+    - predicts.py
+  - lu :: Land use stuff.  One python module per source of data.  The
+          rcp module has code for extracting data from the distribution
+          tar files into individual files that are easier to work with
+  - lui :: Code corresponding to the UI variable in models.  The python
+           modules define classes used when evaluating projectiosn to
+           compute land use intensity.
+  - ui :: Code corresponding to UseIntensity UseIntensity variable in
+          models.
+  - hpd :: Code for projecting human population density.  I implemented
+           three algorithms.  
+    - scale GRUMPS based on WPP (scaling by country)
+    - Interpolate SPS
+    - Scale GRUMPS by interpolated SPS (scaling by pixel)
+  - roads :: Code for computing and rasterizing distance to a road using
+             GDAL. 
+  - scripts :: top-level scripts that are installed as executable
+               tools.
+  - attic :: miscellaneous scripts that I found useful and didn't want
+             to delete but didn't expect to keep using.
+
+
+* Installation
+
+  #+BEGIN_SRC: bash
+  pip install -e .
+  #+END_SRC:  
+
+  In the directory you are in should take care of things.  But, I've
+  found this often fails.  On linux the following seems to do the trick
+
+  #+BEGIN_SRC: bash
+  sudo apt-get install virtualenv libgdal-dev libnetcdf-dev libnetcdf11
+  virtualenv venv
+  . ./venv/bin/activate
+  pip install numpy
+  pip install gdal==1.11.2 --no-binary GDAL
+  pip install -e .
+  #+END_SRC:  
+  
+  This will install all the required libraries in a virtual environment
+  (so you can keep python packages for different project separate).
+
+  For windows [[https://sandbox.idre.ucla.edu/sandbox/tutorials/installing-gdal-for-windows][these]] instructions may be useful.
+
+* Model building
+
+  I wrote these notes early on as I started looking through Tim's code.
+  They are not relevant to using the code.
+
+   - Build a species richness model :: depends on
+     - Human population density (log)
+     - Distance to a road (log)
+     - Land-use type
+     - SS, SSB, SSBS
+
+   - Build a (log of) total abundance model :: depends on
+     - Land-use intensity
+     - Human population density (log)
+     - Land-use type
+     - SS, SSB
+
+   - Build a land-use intensity model :: This model is required because
+        we assume land-use intensity data is not directly available or
+        it is not consistent with that used for building the total
+        abundance model.  So the pipeline calculates the land-use
+        intensity using other factors and then uses the intensity for
+        predicting abundance.
+
+	The model depends on:
+
+     - Land-use type (log + 1)
+     - Human population density (log + 1)
+     - UN subregion
+
+   - Build compositional similarity model :: This model predicts
+        compositional similarity and is used to compute the Biota
+        Intactness Index (BII). 
+**** TODO  Understand the compositional similarity model and its dependencies. 
+
+

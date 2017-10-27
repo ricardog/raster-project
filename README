@@ -152,11 +152,15 @@
   found this often fails.  On linux the following seems to do the trick
 
   #+BEGIN_SRC: bash
-  sudo apt-get install virtualenv libgdal-dev libnetcdf-dev libnetcdf11
+  sudo apt-get -y install software-properties-common
+  sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+  sudo add-apt-repository 'deb [arch=amd64,i386] https://cran.rstudio.com/bin/linux/ubuntu xenial/'
+  sudo apt-get update
+  sudo apt-get install virtualenv libgdal-dev libnetcdf-dev libnetcdf11 libproj-dev python-dev libgdal1-dev gdal-bin virtualenv python-pip python-gdal libnetcdf-dev libudunits2-dev libcairo2-dev libxt-dev mosh r-base
   virtualenv venv
   . ./venv/bin/activate
   pip install numpy
-  pip install gdal==1.11.2 --no-binary GDAL
+  CPLUS_INCLUDE_PATH=/usr/include/gdal C_INCLUDE_PATH=/usr/include/gdal pip install GDAL==1.11.2 --no-binary GDAL
   pip install -e .
   #+END_SRC:  
   

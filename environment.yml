@@ -1,0 +1,17 @@
+
+dependencies:
+  - click
+  - fiona
+  - gdal
+  - geopy
+  - matplotlib
+  - netCDF4
+  - numba
+  - pyparsing
+  - rasterio
+  - rpy2
+  - shapely
+  - xlrd
+  - pip:
+    - pylru
+    

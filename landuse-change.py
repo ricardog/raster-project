@@ -44,7 +44,7 @@ YEAR_RANGE = YearRangeParamType()
 @lrudecorator(10)
 def carea(bounds=None, height=None):
   ice_ds = rasterio.open('netcdf:%s:icwtr' % utils.luh2_static())
-  print 'reading area'
+  print('reading area')
   
   ds = rasterio.open('netcdf:%s:carea' % utils.luh2_static())
   if bounds is None:
@@ -147,7 +147,7 @@ def read_data(dirname, lu_name, scenario, year):
   else:
     raise RuntimeError('Error: unknown land use class %s' % lu)
 
-  print "reading %s %d" % (scenario, year)
+  print("reading %s %d" % (scenario, year))
   types = filter(lambda x: x != 'plantation_sec', types)
   rasters = []
   for name in types:
@@ -220,7 +220,7 @@ def eval(what, rsf, rsn):
   return float(valf + valn), meta
 
 def project_hpd(scenario, year):
-  print "projecting hpd for %d using %s" % (year, scenario)
+  print("projecting hpd for %d using %s" % (year, scenario))
   rasters = predicts.rasterset('luh2', scenario, year, 'f')
   rs = RasterSet(rasters)
   values, meta = rs.eval('hpd', quiet=True)
@@ -229,7 +229,7 @@ def project_hpd(scenario, year):
   return out
 
 def project_year(model_dir, scenario, year):
-  print "projecting land use for %d using %s" % (year, scenario)
+  print("projecting land use for %d using %s" % (year, scenario))
 
   # Open forested/non-forested mask layer
   fstnf = rasterio.open('netcdf:%s:fstnf' % utils.luh2_static())
@@ -250,7 +250,7 @@ def project_year(model_dir, scenario, year):
   out = dict((lu, float(ma.sum(values[idx][0])))# / area * 100))
              for idx, lu in enumerate(lus))
   etime = time.time()
-  print "executed in %6.2fs" % (etime - stime)
+  print("executed in %6.2fs" % (etime - stime))
   return out
 
 def unpack(args):

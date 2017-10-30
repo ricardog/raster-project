@@ -12,7 +12,7 @@ in_dir = '/data/version3.3/tif'
 out_dir = '/home/vagrant/trop'
 lus = ['crp', 'pas', 'pri', 'sec', 'urb']
 for year in xrange(2001, 2013):
-  print year
+  print(year)
   inputs = {}
   outputs = {}
   for lu in lus:
@@ -31,12 +31,12 @@ for year in xrange(2001, 2013):
   wins = len(tuple(inputs[lus[0]].block_windows()))
   for ij, win in inputs[lus[0]].block_windows():
     if win[0][0] % 100 == 0:
-      print win
+      print(win)
     for idx, lu in enumerate(lus):
       data[idx] = inputs[lu].read(1, masked=True, window=win)
     data.sum(axis=0, out=total)
     assert ma.allclose(total, 1.0)
-    #print "stats: %6.4f, %6.4f" % (total.min(), total.max())
+    #print("stats: %6.4f, %6.4f" % (total.min(), total.max()))
     #for idx, lu in enumerate(lus):
     #  data[idx] /= total
     #  outputs[lu].write(data[idx], window=win, indexes=1)

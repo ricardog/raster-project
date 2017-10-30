@@ -24,10 +24,10 @@ data1 = rs.eval('logHPD_rs')
 data2 = rs.eval('logHPD_rs2')
 data3 = np.where(np.isclose(data1, data2, equal_nan=True), 1, 0)
 diff = np.fabs(data1 - data2)
-print "max diff %f" % diff.max()
+print("max diff %f" % diff.max())
 
-print "max in hpd_ref: %f" % rs['hpd_ref'].data.values.max()
-print "max in hpd: %f" % rs['hpd'].data.dropna().values.max()
+print("max in hpd_ref: %f" % rs['hpd_ref'].data.values.max())
+print("max in hpd: %f" % rs['hpd'].data.dropna().values.max())
 
 fig, ((ax1, ax2, ax3), (hx1, hx2, hx3)) = plt.subplots(2, 3, figsize=(21,7))
 show(data1, ax=ax1, cmap='Greens', title='Global max/min')

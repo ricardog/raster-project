@@ -46,7 +46,7 @@ def select_models(model, model_dir):
   return map(lambda x: os.path.join(model_dir, x), mods)
 
 def project_year(model, model_dir, what, scenario, year):
-  print "projecting %s for %d using %s" % (what, year, scenario)
+  print("projecting %s for %d using %s" % (what, year, scenario))
 
   models = select_models(model, model_dir)
   # Read Sam's abundance model (forested and non-forested)
@@ -83,8 +83,8 @@ def project_year(model, model_dir, what, scenario, year):
     rsn[vname] = modn
 
   if what not in rsf:
-    print '%s not in rasterset' % what
-    print ', '.join(sorted(rsf.keys()))
+    print('%s not in rasterset' % what)
+    print(', '.join(sorted(rsf.keys())))
     sys.exit(1)
     
   stime = time.time()
@@ -95,7 +95,7 @@ def project_year(model, model_dir, what, scenario, year):
   data.mask = np.logical_and(dataf.mask, datan.mask)
   #data = datan
   etime = time.time()
-  print "executed in %6.2fs" % (etime - stime)
+  print("executed in %6.2fs" % (etime - stime))
   oname = 'ds/luh2/%s-%s-%d.tif' % (scenario, what, year)
   with rasterio.open(oname, 'w', **meta) as dst:
     dst.write(data.filled(meta['nodata']), indexes = 1)

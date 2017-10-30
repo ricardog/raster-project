@@ -14,7 +14,7 @@ def fraction(ds, idx):
   return (rndwd + combf) / (rndwd + fulwd + combf)
   
 if len(sys.argv) != 2:
-  print "Usage: %s <file.nc>" % os.path.basename(sys.argv[0])
+  print("Usage: %s <file.nc>" % os.path.basename(sys.argv[0]))
   sys.exit(1)
 fname = sys.argv[1]
 title = 'Fraction of commercial wood harvest'

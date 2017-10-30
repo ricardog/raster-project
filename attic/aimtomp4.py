@@ -16,7 +16,7 @@ import matplotlib.colors as colors
 
 def main():
   if len(sys.argv) != 3:
-    print "Usage: %s <scenario> <directory>" % os.path.basename(sys.argv[0])
+    print("Usage: %s <scenario> <directory>" % os.path.basename(sys.argv[0]))
     sys.exit(1)
   title = 'Biodiversity Projection'
   oname = "%s.mp4" % sys.argv[1]

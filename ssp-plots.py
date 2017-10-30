@@ -82,7 +82,7 @@ def do_plots(infiles, band, reference, npp, log):
   with rasterio.open(reference) as ref_ds:
     for arg in infiles:
       with rasterio.open(arg) as src:
-        print arg
+        print(arg)
         scenario, what, year = parse_fname(arg)
         win = ref_ds.window(*src.bounds)
         if win[1][1] - win[0][1] > src.height:

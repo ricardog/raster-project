@@ -35,7 +35,7 @@ file_list = [os.path.join('../../data/luh2_v2', x, 'states.nc')
              for x in scenarios]
 
 for fname in file_list:
-  print fname
+  print(fname)
   with Dataset(fname) as ds:
     for idx, year in enumerate(ds.variables['time']):
       np.copyto(a, icwtr)
@@ -44,9 +44,9 @@ for fname in file_list:
       xx = ma.masked_where(a.mask, ~np.isclose(a, 2, atol=atol))
       over = np.count_nonzero(ma.where(xx, 1, 0))
       if idx == int(year):
-        print "  year %d" % (850 + idx)
+        print("  year %d" % (850 + idx))
       else:
-        print "  year %d" % int(year)
+        print("  year %d" % int(year))
       if over > 0:
-        print "    non-zero: %d" % over
-        print "    max     : %6.4f" % a.max()
+        print("    non-zero: %d" % over)
+        print("    max     : %6.4f" % a.max())

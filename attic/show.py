@@ -41,7 +41,7 @@ def check_hpd(df):
   hpd = ma.masked_invalid(df['hpd'].values.reshape(shape))
   total = (hpd * scale).sum()
   #pdb.set_trace()
-  print "hpd: %10.2e" % total
+  print("hpd: %10.2e" % total)
   
 def check(lu, df):
   if lu == 'timber':
@@ -60,7 +60,7 @@ def check(lu, df):
   #  intense = 0
   data = ma.masked_invalid(df[lu].values.reshape(shape))
   total = (minimal + light + intense)
-  print 'checking: %s [%6.4f | %8.3f]' % (lu, total.max(), (data - total).sum())
+  print('checking: %s [%6.4f | %8.3f]' % (lu, total.max(), (data - total).sum()))
   assert np.all(data - total > -0.01)
   if (data - total).sum() > 2:
     #pdb.set_trace()
@@ -73,8 +73,10 @@ def check_sum(lus, df):
   total = ma.masked_invalid(df[lus[0]].values.reshape(shape))
   for lu in lus[1:]:
     total += ma.masked_invalid(df[lu].values.reshape(shape))
-  print "%6.4f" % total.max()
-  print map(lambda x: "%s, %6.4f" % (x, df[x].values.reshape(shape)[444, 1208]), LU.keys())
+  print("%6.4f" % total.max())
+  print(map(lambda x: "%s, %6.4f" % (x,
+                                     df[x].values.reshape(shape)[444, 1208]),
+            LU.keys()))
   pdb.set_trace()
   #assert np.allclose(total, 1, equal_nan=True)
   pass

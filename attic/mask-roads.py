@@ -29,7 +29,7 @@ def maskit(raster, mask, band=1):
   
   for ij, win in rds.block_windows():
     if rds.height > 10000 and win[0][1] % 100 == 0:
-      print win
+      print(win)
     rr = rds.read(band, masked=True, window=win)
     ii = ice.read(1, masked=True, window=window_inset(win, ice_view))
     rr.mask = np.logical_or(rr.mask,

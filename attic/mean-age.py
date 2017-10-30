@@ -40,7 +40,7 @@ text = plt.text(0.5, 0.1, '', ha = 'center', va = 'center',
                 color='y', fontsize=24, transform = ax1.transAxes)
 with writer.saving(fig, "writer_test.mp4", 180):
   for i in xrange(len(years)):
-    print years[i]
+    print(years[i]0
     data = nc_ds.variables[vname][i]
     img.set_array(data)
     text.set_text(str(int(years[i])))

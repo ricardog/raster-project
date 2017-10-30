@@ -12,7 +12,7 @@ import projections.predicts as predicts
 import projections.modelr as modelr
 
 def project(year):
-  print "projecting %d" % year
+  print("projecting %d" % year)
   # Open the mask shape file
   shp_file = '../../data/from-adriana/tropicalforests.shp'
   shapes = fiona.open(shp_file)
@@ -38,7 +38,7 @@ def project(year):
   stime = time.time()
   data = rs.write(what, 'adrid-%d.tif' % year)
   etime = time.time()
-  print "executed in %6.2fs" % (etime - stime)
+  print("executed in %6.2fs" % (etime - stime))
 
 if __name__ == '__main__':
   pool = multiprocessing.Pool(processes=4)

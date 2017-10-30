@@ -41,11 +41,11 @@ str4 = "out = urban.intense(c, h, u)"
 n = 10
 
 prelude = "from __main__ import c, h, u, cropland_py, cropland, urban_py, urban"
-print "c1: ", timeit.timeit(str1, setup=prelude, number=n)
-print "c2: ", timeit.timeit(str2, setup=prelude, number=n)
+print("c1: ", timeit.timeit(str1, setup=prelude, number=n))
+print("c2: ", timeit.timeit(str2, setup=prelude, number=n))
 
-print "u1: ", timeit.timeit(str3, setup=prelude, number=n)
-print "u2: ", timeit.timeit(str4, setup=prelude, number=n)
+print("u1: ", timeit.timeit(str3, setup=prelude, number=n))
+print("u2: ", timeit.timeit(str4, setup=prelude, number=n))
 
 mod = modelr.load(os.path.join(outdir, 'ab-model.rds'))
 predicts.predictify(mod)
@@ -75,10 +75,10 @@ mod.eval(df)
 
 str3 = "out = mod.eval(df)"
 prelude = "from __main__ import df, mod"
-print "a: ", timeit.timeit(str3, setup=prelude, number=n)
+print("a: ", timeit.timeit(str3, setup=prelude, number=n))
 
-#print cland.flags
+#print(cland.flags)
 
 #ds = gdal.Open('cropland-recal.tif')
 #data = ds.GetRasterBand(1).ReadAsArray()
-#print data.flags
+#print(data.flags)

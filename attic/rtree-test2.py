@@ -26,7 +26,7 @@ def bbox(f):
 def generator(layer):
   for idx, feat in enumerate(layer):
     if idx % 1000 == 0:
-      print idx
+      print(idx)
     fid = int(feat['id'])
     #geom = shape(feat['geometry'])
     #yield(fid, geom.bounds, fid)
@@ -37,7 +37,7 @@ def main():
   start = time.time()
   index = rtree.index.Index(generator(roads))
   end = time.time()
-  print "Created index in %5.2s" % (end - start)
+  print("Created index in %5.2s" % (end - start))
 
 
 if __name__ == '__main__':

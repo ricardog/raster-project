@@ -25,4 +25,4 @@ what = mod.output
 stime = time.time()
 data = rs.write(what, 'hires.tif')
 etime = time.time()
-print "executed in %6.2fs" % (etime - stime)
+print("executed in %6.2fs" % (etime - stime))

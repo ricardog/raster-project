@@ -22,12 +22,12 @@ def plot(infile, outfile, band):
   #ds = gdal.Open(infile)
   #band = ds.GetRasterBand(band)
   #raw = band.ReadAsArray()
-  #print raw.shape
+  #print(raw.shape)
   #ndv = band.GetNoDataValue()
   #data = ma.masked_equal(raw, ndv)
-  #print data.shape
+  #print(data.shape)
   #vmin, vmax = tu.get_min_max(ds)
-  #print vmin, vmax
+  #print(vmin, vmax)
   #vmin, vmax = (4.2, 4.69)
   ds = rasterio.open(infile)
   data = ds.read(band, masked=True)

@@ -29,8 +29,8 @@ file_list = zip(states, transitions)
 
 sidx = 0
 for sname, tname in file_list:
-  print sname
-  print tname
+  print(sname)
+  print(tname)
   with Dataset(tname) as trans:
     with Dataset(sname) as state:
       shp = state.variables['secdf'].shape
@@ -47,25 +47,25 @@ for sname, tname in file_list:
                     trans.variables.keys())
       negn = filter(lambda x: re.match(r'secdn_to_(?!secdn)', x),
                     trans.variables.keys())
-      print "posf: ", posf, "\n"
-      print "posn: ", posn, "\n"
-      print "negf: ", negf, "\n"
-      print "negn: ", negn, "\n"
+      print("posf: ", posf, "\n")
+      print("posn: ", posn, "\n")
+      print("negf: ", negf, "\n")
+      print("negn: ", negn, "\n")
       currf = state.variables['secdf'][sidx]
       currn = state.variables['secdn'][sidx]
       for idx, yy in enumerate(trans.variables['time']):
         year = int(yy)
         if idx == int(yy):
           year += 850
-        print "  year %d" % year
+        print9"  year %d" % year)
         if yy < sidx:
           continue
         secdf = state.variables['secdf'][idx]
         secdn = state.variables['secdn'][idx]
         difff = np.fabs(currf - secdf)
         diffn = np.fabs(currn - secdn)
-        #print "    f : %7f" % difff.max()
-        #print "    nf: %7f" % diffn.max()
+        #print("    f : %7f" % difff.max())
+        #print("    nf: %7f" % diffn.max())
         assert np.allclose(difff, 0, atol=atol)
         assert np.allclose(diffn, 0, atol=atol)
 
@@ -79,5 +79,5 @@ for sname, tname in file_list:
         for l in posn:
           currn += trans.variables[l][idx]
         pass
-print 'done'
+print('done')
 

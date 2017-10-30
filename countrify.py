@@ -125,7 +125,7 @@ def gen_mp4(oname, stack, ccode, title='', captions=None):
   if captions is None:
     captions = tuple(itertools.repeat('', stack.shape[2]))
   elif len(captions) != stack.shape[2]:
-    print "Error: not enough captions for all frames"
+    print("Error: not enough captions for all frames")
     return
   for idx, img, text in to_mp4(title, oname, stack.shape[2],
                                data, text='LogAbund', fps=10, cnorm=cnorm):
@@ -146,14 +146,14 @@ def parse_fname2(fname):
   return os.path.splitext(os.path.basename(fname))[0].rsplit('-', 2)
 
 def printit(stacked):
-  print "%4s %8s %8s %6s" % ('fips', 'start', 'end', '%')
+  print("%4s %8s %8s %6s" % ('fips', 'start', 'end', '%'))
   for idx in xrange(stacked.shape[0]):
-    print "%4s %8.2f %8.2f %6.2f%%" % (cid_to_fips(stacked[idx, 0, 0]),
+    print("%4s %8.2f %8.2f %6.2f%%" % (cid_to_fips(stacked[idx, 0, 0]),
                                        stacked[idx, 2, 0],
                                        stacked[idx, 2, -1],
                                        (100.0 *
                                         stacked[idx, 2, -1] /
-                                        stacked[idx, 2, 0]))
+                                        stacked[idx, 2, 0])))
 
 def to_df(stacked, names):
   hs = {'fips': map(cid_to_fips, stacked[:, 0, 0]),
@@ -232,12 +232,12 @@ def countrify(infiles, band, country_file, npp, mp4, log):
         #res = weighted_mean_by_country(ccode, data, 1)
         stack.append(res)
         maps.append(data)
-        print '%40s: %8.2f / %8.2f' % (os.path.basename(arg),
-                                       res[2, :].max(), res[2, :].min())
+        print('%40s: %8.2f / %8.2f' % (os.path.basename(arg),
+                                       res[2, :].max(), res[2, :].min()))
     stacked = np.dstack(stack)
     names = map(parse_fname, infiles)
     df = to_df(stacked, names)
-    print df
+    print(df)
 
     ratio = maps[-1] / maps[0]
     a = ma.where(ratio > 1.05)
@@ -250,28 +250,30 @@ def countrify(infiles, band, country_file, npp, mp4, log):
     within = ma.sum(area[w])
     total = ma.sum(area)
     unaccounted = ma.sum(area[ratio.mask != area.mask])
-    print "Area: %6.4f / %6.4f / %6.4f" % (above / total, below / total, within / total)
+    print("Area: %6.4f / %6.4f / %6.4f" % (above / total, below / total, within / total))
 
     q = ma.masked_invalid(maps[0] * area)
     above = ma.sum(q[a])
     below = ma.sum(q[b])
     within = ma.sum(q[w])
     total = ma.sum(q)
-    print "0: %6.4f / %6.4f / %6.4f" % (above / total, below / total, within / total)
+    print("0: %6.4f / %6.4f / %6.4f" % (above / total, below / total,
+                                        within / total))
 
     q = ma.masked_invalid(maps[-1] * area)
     above = ma.sum(q[a])
     below = ma.sum(q[b])
     within = ma.sum(q[w])
     total = ma.sum(q)
-    print "1: %6.4f / %6.4f / %6.4f" % (above / total, below / total, within / total)
+    print("1: %6.4f / %6.4f / %6.4f" % (above / total, below / total,
+                                        within / total))
     total1950 = ma.sum(ma.masked_invalid(maps[0] * area))
     
     # newbold-a intercept is 4.63955498
     pristine = ma.sum(intercept)
     
-    print "loss w.r.t. primary: %6.4f" % (total / pristine)
-    print "loss w.r.t. 1950   : %6.4f" % (total / total1950)
+    print("loss w.r.t. primary: %6.4f" % (total / pristine))
+    print("loss w.r.t. 1950   : %6.4f" % (total / total1950))
     #pdb.set_trace()    
     gdp_1950 = gdp([1950, 1951])
     gdp_1950.columns = ('gdp', 'gdp_1951')
@@ -343,7 +345,7 @@ def countrify(infiles, band, country_file, npp, mp4, log):
     
     #printit(stacked)
     #diff = np.column_stack((stacked[:, 0, 0], mmax, mmin))
-    #print diff
+    #print(diff)
     if mp4:
       gen_mp4(mp4, stacked, ccode)
 
@@ -365,7 +367,7 @@ def timeline(infiles, npp, band):
   out = dict((key, [0.0] * len(yy)) for key in keys)
   out = [{'name': xx, 'data': [0.0] * len(yy)} for xx in keys]
   for scenario, year, arg in zip(scenarios, years, infiles):
-    print scenario, year
+    print(scenario, year)
     with rasterio.open(arg) as src:
       data = src.read(band, masked=True)
       if npp:
@@ -382,8 +384,8 @@ def timeline(infiles, npp, band):
     for jj, k in enumerate(out):
       for ii, v in enumerate(k['data']):
         out[jj]['data'][ii] /= ref
-  print json.dumps({'years': yy, 'data': out})
-  print
+  print(json.dumps({'years': yy, 'data': out}))
+  print('')
   
 if __name__ == '__main__':
   cli()

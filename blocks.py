@@ -37,7 +37,7 @@ with rasterio.Env(GDAL_TIFF_INTERNAL_MASK=True):
           cropped = list(shp.items(bbox=(minx, miny, maxx, maxy)))
           if len(cropped) == 0:
             pass
-            #print "%d, %d : skip" % (ji[0], ji[1])
+            #print("%d, %d : skip" % (ji[0], ji[1]))
             dst.write(nans, window = window, indexes = 1)
             continue
           shapes = [feature[1]["geometry"] for feature in cropped]
@@ -51,8 +51,8 @@ with rasterio.Env(GDAL_TIFF_INTERNAL_MASK=True):
           out_shape = data.shape[1:]
           df = pd.Series(data.reshape(-1))
           df = df.dropna()
-          #print "%d, %d : %d rows" % (ji[0], ji[1], len(df.index))
+          #print("%d, %d : %d rows" % (ji[0], ji[1], len(df.index)))
           out = df.reindex(xrange(out_shape[0] * out_shape[1])).values
           out = ma.masked_invalid(out.reshape(out_shape))
           dst.write(out, window = window, indexes = 1)
-print        
+print("")        

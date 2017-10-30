@@ -29,10 +29,10 @@ def one(name, fname, scale=True, band=1):
   data = ds.read(band, masked=True).filled(0)
   data[np.where(np.isnan(data))] = 0
   adj = data * area if scale else data
-  print "%-10s: %e" % (name, adj.sum())
-  print "%10s: %e" % ('max', data.max())
+  print("%-10s: %e" % (name, adj.sum()))
+  print("%10s: %e" % ('max', data.max()))
   if not scale:
-    print "%10s: %e" % ('max', (data / area).max())
+    print("%10s: %e" % ('max', (data / area).max()))
 
 for year in (2010, 2099):
   scenario = 'ssp3'

@@ -29,7 +29,7 @@ rs[mod.output] = mod
 stime = time.time()
 data1, meta_data1 = rs.eval(what)
 etime = time.time()
-print "executed in %6.2fs" % (etime - stime)
+print("executed in %6.2fs" % (etime - stime))
 
 ##
 ## Compare with good raster
@@ -37,7 +37,7 @@ print "executed in %6.2fs" % (etime - stime)
 out = rasterio.open('adrid-good.tif')
 good = out.read(1, masked=True)
 diff = np.fabs(data1 - good)
-print "max diff: %f" % diff.max()
+print("max diff: %f" % diff.max())
 assert np.allclose(data1, good, atol=1e-05, equal_nan=True)
 del out
 
@@ -55,12 +55,12 @@ rs2[mod.output] = mod
 stime = time.time()
 rs2.write(what, 'adrid.tif')
 etime = time.time()
-print "executed in %6.2fs" % (etime - stime)
+print("executed in %6.2fs" % (etime - stime))
 
 out = rasterio.open('adrid.tif')
 data2 = out.read(1, masked=True)
 diff = np.fabs(data1 - data2)
-print "max diff: %f" % diff.max()
+print("max diff: %f" % diff.max())
 
 plot = None
 if plot:

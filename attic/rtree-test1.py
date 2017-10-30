@@ -16,7 +16,7 @@ def main():
   start = time.time()
   index = rtree.index.Index(generator(roads))
   end = time.time()
-  print "Created index in %5.2s" % (end - start)
+  print("Created index in %5.2s" % (end - start))
 
 
 if __name__ == '__main__':

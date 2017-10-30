@@ -36,7 +36,7 @@ def read_raster(raster, x_block_size, y_block_size):
       blocks += 1
   band = None
   ds = None
-  print "{0} blocks size {1} x {2}:".format(blocks, x_block_size, y_block_size)
+  print("{0} blocks size {1} x {2}:".format(blocks, x_block_size, y_block_size))
 
 # Function to run the test and print the time taken to complete.
 def timer(raster, x_block_size, y_block_size):
@@ -44,13 +44,13 @@ def timer(raster, x_block_size, y_block_size):
   t = timeit.Timer("read_raster('{0}', {1}, {2})".format(raster, x_block_size,
                                                        y_block_size),
                    setup="from __main__ import read_raster")
-  print "\t{:.4f}s\n".format(t.timeit(1))
+  print("\t{:.4f}s\n".format(t.timeit(1)))
 
 def purge():
   subprocess.call(['/usr/bin/sudo', 'purge'])
 
 if len(sys.argv) < 2:
-  print "Error; please pass the name of a raster file"
+  print("Error; please pass the name of a raster file")
   sys.exit(1)
 
 gdal.SetCacheMax(1)

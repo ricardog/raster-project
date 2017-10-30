@@ -41,7 +41,7 @@ def bbox(f):
 def generator(layer):
   for idx, feat in enumerate(layer):
     if idx % 1000 == 0:
-      print idx
+      print(idx)
     fid = int(feat['id'])
     shape = shapely.geometry.shape(feat['geometry'])
     #geom = shape(feat['geometry'])

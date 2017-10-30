@@ -4,7 +4,7 @@ import gdal
 import sys
 
 def error(msg, code=1):
-  print "Error: %s" % msg
+  print("Error: %s" % msg)
   sys.exit(1)
   
 if len(sys.argv) < 2:

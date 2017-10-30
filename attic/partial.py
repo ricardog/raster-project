@@ -48,7 +48,7 @@ def main(model_file, max_x=1.2, steps=20):
                            lu + '_minimal': np.full(steps, 0.35)
     }))
   df = pd.DataFrame(out, index=np.linspace(0, max_x, steps))
-  print df
+  print(df)
 
   df.plot()
   ax.set_title('')

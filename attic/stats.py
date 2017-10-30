@@ -83,13 +83,13 @@ def stats(op, infiles, band, log, area_weighted):
         op = 'total'
       res = eval("%s(data)" % op)
       if re.search(r'-hpd-(\d){4}.tif', arg):
-        print '%s: %8.4f %8.4f' % (os.path.basename(arg), res, np.log(res+1) / 10.02083)
+        print('%s: %8.4f %8.4f' % (os.path.basename(arg), res, np.log(res+1) / 10.02083))
       else:
-        print '%s: %8.4f' % (os.path.basename(arg), res)
+        print('%s: %8.4f' % (os.path.basename(arg), res))
       scenario, what, year = os.path.splitext(arg)[0].split('-')
       df.ix[int(year), what] = res
 
-  print df
+  print(df)
   df.plot.bar()
   plt.savefig('lu-comp.png')
   plt.show()

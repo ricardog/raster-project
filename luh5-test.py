@@ -47,7 +47,7 @@ def select_models(model, model_dir):
   return [os.path.join(model_dir, mod)]
 
 def project_year(model, model_dir, what, scenario, year):
-  print "projecting %s for %d using %s" % (what, year, scenario)
+  print("projecting %s for %d using %s" % (what, year, scenario))
 
   models = select_models(model, model_dir)
   # Read Sam's abundance model (forested and non-forested)
@@ -56,7 +56,7 @@ def project_year(model, model_dir, what, scenario, year):
     
   # Import standard PREDICTS rasters
   by_age = 'young_secondary' in mod.syms
-  print 'by_age: %s' % str(by_age)
+  print('by_age: %s' % str(by_age))
   rasters = predicts.rasterset('luh5', scenario, year, by_age)
   rs = RasterSet(rasters)
 
@@ -68,14 +68,14 @@ def project_year(model, model_dir, what, scenario, year):
   rs[vname] = mod
 
   if what not in rs:
-    print '%s not in rasterset' % what
-    print ', '.join(sorted(rs.keys()))
+    print('%s not in rasterset' % what)
+    print(', '.join(sorted(rs.keys())))
     sys.exit(1)
     
   stime = time.time()
   data, meta = rs.eval(what, quiet=False)
   etime = time.time()
-  print "executed in %6.2fs" % (etime - stime)
+  print("executed in %6.2fs" % (etime - stime))
   oname = 'ds/luh5/%s-%s-%d.tif' % (scenario, what, year)
   #hpd, _ = rs.eval('hpd', quiet=False)
   #hpd_max, meta2 = rs.eval('hpd_max', quiet=False)

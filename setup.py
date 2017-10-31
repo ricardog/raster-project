@@ -7,9 +7,8 @@ setup(
     include_package_data=True,
     install_requires=[
       'Click',
-#      'GDAL',
+      'gdal',
       'fiona',
-      'futures',
       'geopy',
       'joblib',
       'matplotlib',

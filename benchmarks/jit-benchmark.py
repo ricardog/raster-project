@@ -17,9 +17,9 @@ import urban
 import projections.modelr as modelr
 import projections.predicts as predicts
 
-cland_ds = rasterio.open('./ds/luh5/cropland-recal.tif')
-hpd_ds = rasterio.open('./ds/luh5/gluds00ag-full.tif')
-unsub_ds = rasterio.open('./ds/luh5/un_subregions-full.tif')
+cland_ds = rasterio.open('/out/luh5/cropland-recal.tif')
+hpd_ds = rasterio.open('/out/luh5/gluds00ag-full.tif')
+unsub_ds = rasterio.open('/out/luh5/un_subregions-full.tif')
 
 unsub = unsub_ds.read(1, masked=True)
 hpd = hpd_ds.read(1, masked=True)

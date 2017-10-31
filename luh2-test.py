@@ -96,7 +96,7 @@ def project_year(model, model_dir, what, scenario, year):
   #data = datan
   etime = time.time()
   print("executed in %6.2fs" % (etime - stime))
-  oname = 'ds/luh2/%s-%s-%d.tif' % (scenario, what, year)
+  oname = '%s/luh2/%s-%s-%d.tif' % (utils.outdir(), scenario, what, year)
   with rasterio.open(oname, 'w', **meta) as dst:
     dst.write(data.filled(meta['nodata']), indexes = 1)
   if None:

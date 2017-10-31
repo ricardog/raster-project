@@ -12,17 +12,18 @@ import projections.poly as poly
 from projections.rasterset import Raster, RasterSet
 import projections.reproject as reproj
 from projections.simpleexpr import SimpleExpr
-import projections.utils as utils
+from projections.utils import luh2_dir, luh2_prefix, luh2_scenarios, \
+  lui_model_dir, outfn
 
 def luh2_states(ssp):
   if ssp != 'historical':
-    dname = utils.luh2_prefix() + ssp.upper()
+    dname = luh2_prefix() + ssp.upper()
   else:
     dname = ssp
-  return 'netcdf:' + os.path.join(utils.luh2_dir(), dname, 'states.nc')
+  return 'netcdf:' + os.path.join(luh2_dir(), dname, 'states.nc')
 
 def luh2_secd(ssp):
-  return 'netcdf:' + os.path.join('ds/luh2', 'secd-%s.nc' % ssp)
+  return 'netcdf:' + .outfn('luh2', 'secd-%s.nc' % ssp)
 
 def luh2_secd_types():
   return [x % fnf
@@ -31,7 +32,7 @@ def luh2_secd_types():
 
 def luh2_types(ssp, year):
   res = {}
-  assert ssp in utils.luh2_scenarios()
+  assert ssp in luh2_scenarios()
   path = luh2_states(ssp)
   if ssp == 'historical':
     assert year >= 850 and year < 2015
@@ -62,9 +63,9 @@ def luh2_rasterset(scenario, year):
   return RasterSet(rset)
 
 def process_lu(rcp_lu, comps, luh2, mask=None):
-  rcp_lui_ds = rasterio.open('ds/lui/%s.tif' % rcp_lu)
+  rcp_lui_ds = rasterio.open(outfn('lui', %s.tif' % rcp_lu))
   rcp_lui_data = rcp_lui_ds.read(masked=True)
-  rcp_lu_ds = rasterio.open('ds/lu/rcp/hyde/%s_1999.tif' % rcp_lu)
+  rcp_lu_ds = rasterio.open(outfn('lu', 'rcp', 'hyde', '%s_1999.tif' % rcp_lu))
   rcp_lu_data = rcp_lu_ds.read(masked=True)
   rcp_lui_data /= rcp_lu_data
   meta, data = reproj.reproject2(rcp_lui_ds, rcp_lui_data, (0.25, 0.25),
@@ -86,26 +87,26 @@ def process_lu(rcp_lu, comps, luh2, mask=None):
     fract[idx] = ma.where(total == 0, 0, shares[idx] / total)
 
   for idx, lu in enumerate(comps):
-    with rasterio.open('ds/luh2/%s.tif' % lu, 'w', **meta) as dst:
+    with rasterio.open(outfn('luh2', '%s.tif' % lu), 'w', **meta) as dst:
       xxx = data * fract[idx] * shares[idx]
       dst.write(xxx.filled(meta['nodata']), indexes=range(1, count + 1))
-    with rasterio.open('ds/luh2/lu-%s.tif' % lu, 'w', **lu_meta) as dst:
+      with rasterio.open(outfn('luh2', lu-%s.tif' % lu), 'w', **lu_meta) as dst:
       dst.write(shares[idx].filled(meta['nodata']), indexes=1)
 
     cmd = [os.path.join(os.getcwd(), 'lu-recalibrate.R'),
-           '-m', utils.outdir(),
-           '--hpd', 'ds/luh2/gluds00ag-full.tif',
-           '-u', 'ds/luh2/un_subregions-full.tif',
+           '-m', lui_model_dir(),
+           '--hpd', outfn('luh2', 'gluds00ag-full.tif'),
+           '-u', outfn('luh2', 'un_subregions-full.tif'),
            '--mask',
-           'netcdf:%s/staticData_quarterdeg.nc:icwtr' % utils.luh2_dir(),
-           '--lu', 'ds/luh2/lu-%s.tif' % lu,
-           '--lui', 'ds/luh2/%s.tif' % lu,
-           '-o', 'ds/luh2/%s-recal.tif' % lu,
+           'netcdf:%s/staticData_quarterdeg.nc:icwtr' % luh2_dir(),
+           '--lu', outfn('luh2', 'lu-%s.tif' % lu),
+           '--lui', outfn('luh2', '%s.tif' % lu),
+           '-o', outfn('luh2', '%s-recal.tif' % lu),
            '-t', rcp_lu]
     subprocess.check_output(cmd, shell=False)
 
 def main(scenario='historical', year=1999):
-  static = os.path.join(utils.data_root(), 'luh2_v2',
+  static = os.path.join(data_root(), 'luh2_v2',
                         'staticData_quarterdeg.nc')
   icewtr = rasterio.open('netcdf:%s:icwtr' % static)
   icewtr_mask = ma.where(icewtr.read(1) == 1.0, True, False)

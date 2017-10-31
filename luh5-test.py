@@ -76,7 +76,7 @@ def project_year(model, model_dir, what, scenario, year):
   data, meta = rs.eval(what, quiet=False)
   etime = time.time()
   print("executed in %6.2fs" % (etime - stime))
-  oname = 'ds/luh5/%s-%s-%d.tif' % (scenario, what, year)
+  oname = '/out/luh5/%s-%s-%d.tif' % (scenario, what, year)
   #hpd, _ = rs.eval('hpd', quiet=False)
   #hpd_max, meta2 = rs.eval('hpd_max', quiet=False)
   with rasterio.open(oname, 'w', **meta) as dst:

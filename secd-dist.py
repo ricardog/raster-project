@@ -82,11 +82,11 @@ def pos_re(fnf):
               default='all',
               help='Which LUH2 scenario to run (default: all)')
 @click.option('--outdir', type=click.Path(file_okay=False),
-              default='ds/luh2',
-              help='Output directory (default: ds/luh2)')
+              default='/out/luh2',
+              help='Output directory (default: /out/luh2)')
 @click.option('--start-index', type=int, default=0,
               help='Start from given index skipping earlier years (default: 0)')
-def doit(scenario, outdir='ds/luh2', start_index=0):
+def doit(scenario, outdir, start_index=0):
   static = Dataset(os.path.join(utils.luh2_dir(), 'staticData_quarterdeg.nc'))
   icwtr = static.variables['icwtr'][:, :]
   fstnf = static.variables['fstnf'][:, :]

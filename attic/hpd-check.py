@@ -37,13 +37,13 @@ def one(name, fname, scale=True, band=1):
 for year in (2010, 2099):
   scenario = 'ssp3'
   one('%s/%d' % (scenario, year),
-      'netcdf:ds/luh2/sps.nc:%s' %scenario,
+      'netcdf:%s/luh2/sps.nc:%s' % (utils.outdir(), scenario),
       False, year - 2009)
 
-for name, fname, scale in (('gluds qd', 'ds/luh2/gluds00ag.tif', True),
-                           ('v4 qd', 'ds/luh2/grumps4.tif', True),
+for name, fname, scale in (('gluds qd', '/out/luh2/gluds00ag.tif', True),
+                           ('v4 qd', '/out/luh2/grumps4.tif', True),
 #                           ('1950', '/Volumes/Vagrant 155/playground/ds/luh2/historical-hpd-1950.tif', True),
-                           ('sps3/2015', 'netcdf:ds/luh2/sps.nc:ssp3', False),
+                           ('sps3/2015', 'netcdf:/out/luh2/sps.nc:ssp3', False),
                            ('v4', utils.grumps4(), True),
                            ('gluds', utils.grumps1(), True),):
   one(name, fname, scale)

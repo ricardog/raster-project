@@ -27,7 +27,7 @@ def project(year):
                                                'primary_light + primary_intense')
   rasters['cropland_lightintense'] = SimpleExpr('cropland_lightintense',
                                                 'cropland_light + cropland_intense')
-  rasters['rd_dist'] = Raster('rd_dist', 'ds/1km/roads-adrid.tif')
+  rasters['rd_dist'] = Raster('rd_dist', '/out/1km/roads-adrid.tif')
   rasters['hpd'] = Raster('hpd',
                           '/vsizip//data/from-adriana/HPD01to12.zip/yr%d/hdr.adf' % year)
                           

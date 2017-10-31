@@ -107,7 +107,7 @@
                     time so likely broken.
 
   Drivers expect source data to be under $DATA_ROOT and generated data
-  under ds/<name>/...
+  under $OUTDIR/<name>/...
 
   The script *setup.sh* will attempt to generate all the derived data
   for all land-use data sources (luh2, luh5, rcp, 1km) but will likely

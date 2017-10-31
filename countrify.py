@@ -147,7 +147,7 @@ def parse_fname2(fname):
 
 def printit(stacked):
   print("%4s %8s %8s %6s" % ('fips', 'start', 'end', '%'))
-  for idx in xrange(stacked.shape[0]):
+  for idx in range(stacked.shape[0]):
     print("%4s %8.2f %8.2f %6.2f%%" % (cid_to_fips(stacked[idx, 0, 0]),
                                        stacked[idx, 2, 0],
                                        stacked[idx, 2, -1],
@@ -162,7 +162,7 @@ def to_df(stacked, names):
         'ratio': stacked[:, 2, -1] / stacked[:, 2, 0],
         'percent': (stacked[:, 2, -1] - stacked[:, 2, 0]) / stacked[:, 2, 0]}
   assert len(names) == stacked.shape[2]
-  for idx in xrange(stacked.shape[2]):
+  for idx in range(stacked.shape[2]):
     hs[names[idx]] = stacked[:, 2, idx]
   df = pd.DataFrame(hs, index=stacked[:, 0, 0].astype(int))
   return df

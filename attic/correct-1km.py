@@ -11,7 +11,7 @@ def window_shape(win):
 in_dir = '/data/version3.3/tif'
 out_dir = '/home/vagrant/trop'
 lus = ['crp', 'pas', 'pri', 'sec', 'urb']
-for year in xrange(2001, 2013):
+for year in range(2001, 2013):
   print(year)
   inputs = {}
   outputs = {}

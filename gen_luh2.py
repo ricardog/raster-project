@@ -82,7 +82,7 @@ def process_lu(rcp_lu, comps, luh2, mask=None):
   total = shares.sum(axis=0)
   #fract = shares / total
   fract = ma.empty_like(shares)
-  for idx in xrange(shares.shape[0]):
+  for idx in range(shares.shape[0]):
     fract[idx] = ma.where(total == 0, 0, shares[idx] / total)
 
   for idx, lu in enumerate(comps):

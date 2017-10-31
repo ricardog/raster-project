@@ -118,7 +118,7 @@ def do_block(win, mask, index):
   click.echo("block %d:%d" % (win[0][0], win[0][1]))
   lats = np.linspace(starty, endy, height)
   lons = np.linspace(startx, endx, width)
-  for y in xrange(height):
+  for y in range(height):
     if y > 10:
       break
     click.echo("block %d" % (y + win[0][0]))
@@ -150,7 +150,7 @@ def doit(index, mask, layer):
 
   click.echo("processing %d:%d" % (mask_win[0][0], mask_win[0][1]))
   with rasterio.open('roads-density.tif', 'w', **out_meta) as dst:
-    for j in xrange(mask_win[0][0], mask_win[0][1], num_rows):
+    for j in range(mask_win[0][0], mask_win[0][1], num_rows):
       win = ((j, j + num_rows), (0, width))
       out = do_block(win, mask, index)
       dst.write(out.filled(), window = win, indexes = 1)

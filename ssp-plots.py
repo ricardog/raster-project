@@ -57,7 +57,7 @@ def to_df(stacked, names):
         'ratio': stacked[:, 2, -1] / stacked[:, 2, 0],
         'percent': (stacked[:, 2, -1] - stacked[:, 2, 0]) / stacked[:, 2, 0]}
   assert len(names) == stacked.shape[2]
-  for idx in xrange(stacked.shape[2]):
+  for idx in range(stacked.shape[2]):
     hs[names[idx]] = stacked[:, 2, idx]
   df = pd.DataFrame(hs, index=stacked[:, 0, 0].astype(int))
   return df

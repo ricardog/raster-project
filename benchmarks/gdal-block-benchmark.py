@@ -17,12 +17,12 @@ def read_raster(raster, x_block_size, y_block_size):
   xsize = band.XSize
   ysize = band.YSize
   blocks = 0
-  for y in xrange(0, ysize, y_block_size):
+  for y in range(0, ysize, y_block_size):
     if y + y_block_size < ysize:
       rows = y_block_size
     else:
       rows = ysize - y
-    for x in xrange(0, xsize, x_block_size):
+    for x in range(0, xsize, x_block_size):
       if x + x_block_size < xsize:
         cols = x_block_size
       else:

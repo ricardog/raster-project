@@ -116,14 +116,15 @@ def unpack(args):
 @click.argument('scenario', type=click.Choice(utils.luh2_scenarios()))
 @click.argument('years', type=YEAR_RANGE)
 @click.option('--model-dir', '-m', type=click.Path(file_okay=False),
-                default=os.path.join('..', 'models'),
+              default=os.path.abspath('.'),
               help='Directory where to find the models ' +
               '(default: ../models)')
 @click.option('--parallel', '-p', default=1, type=click.INT,
               help='How many projections to run in parallel (default: 1)')
 def project(model, what, scenario, years, model_dir, parallel=1):
   if parallel == 1:
-    map(lambda y: project_year(model, model_dir, what, scenario, y), years)
+    tuple(map(lambda y: project_year(model, model_dir, what, scenario, y),
+              years))
     return
   pool = multiprocessing.Pool(processes=parallel)
   pool.map(unpack, itertools.izip(itertools.repeat(model),

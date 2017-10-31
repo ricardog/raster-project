@@ -43,7 +43,7 @@ def select_models(model, model_dir):
     mods = ('sr-fst.rds', 'sr-nfst.rds')
   else:
     mods = ('bii-fst-scaled.rds', 'bii-nfst-scaled.rds')
-  return map(lambda x: os.path.join(model_dir, x), mods)
+  return tuple(map(lambda x: os.path.join(model_dir, x), mods))
 
 def project_year(model, model_dir, what, scenario, year):
   print("projecting %s for %d using %s" % (what, year, scenario))

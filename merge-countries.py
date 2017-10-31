@@ -24,7 +24,7 @@ def cname_to_fips(name, df):
     assert len(row) == 1
     return row.values[0]
 
-  if not isinstance(name, (str, unicode)):
+  if not isinstance(name, (str)):
     return None
   index = df['cow.name'] == name
   if index.any():

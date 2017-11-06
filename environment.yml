@@ -4,11 +4,14 @@ dependencies:
   - fiona
   - gdal
   - geopy
+  - joblib
   - matplotlib
   - netCDF4
   - numba
+  - pandas
   - pyparsing
   - rasterio
+  - r-lme4
   - rpy2
   - shapely
   - xlrd

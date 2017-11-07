@@ -145,7 +145,7 @@ def doit(scenario, outdir, start_index=0):
           click.echo("  " + ', '.join(negf))
           click.echo("  " + ', '.join(posn))
           click.echo("  " + ', '.join(negn))
-          for idx in range(start_index, trans.variables['time'].shape[0] + 1):
+          for idx in range(start_index, trans.variables['time'].shape[0]):
             click.echo("  year %d" % to_year(scenario, idx))
             # Compute transitions from / to secondary.
             sum_layers(trans, idx, negf, remove)

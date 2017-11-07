@@ -122,6 +122,8 @@ def unpack(args):
 @click.option('--parallel', '-p', default=1, type=click.INT,
               help='How many projections to run in parallel (default: 1)')
 def project(model, what, scenario, years, model_dir, parallel=1):
+  utils.luh2_check_year(min(years), scenario)
+  utils.luh2_check_year(max(years), scenario)
   if parallel == 1:
     tuple(map(lambda y: project_year(model, model_dir, what, scenario, y),
               years))

@@ -13,7 +13,7 @@ import sys
 import projections.geotools as geotools
 import projections.utils as utils
 
-import pdb
+BINS = 52
 
 def sum_layers(ds, idx, layers, out):
   out.fill(0)
@@ -57,9 +57,9 @@ def write_bins(out, vname, values):
 def init_values(state, vname, start_index, mask):
   shape = state.variables[vname].shape
   dtype = state.variables[vname].dtype
-  values = ma.zeros((52, shape[1], shape[2]),
-                     dtype = state.variables[vname].dtype,
-                     fill_value=-9999)
+  values = ma.zeros((BINS, shape[1], shape[2]),
+                    dtype = state.variables[vname].dtype,
+                    fill_value=-9999)
   values.mask = np.broadcast_to(mask == 1.0, values.shape)
   values[-1] = state.variables[vname][start_index]
   values[-2] = state.variables[vname][start_index]
@@ -92,10 +92,11 @@ def doit(scenario, outdir, start_index=0):
   fstnf = static.variables['fstnf'][:, :]
   atol = 5e-5
 
-  variables = tuple([(x % fnf, 'f4', '1', -9999)
+  variables = tuple([(x % fnf, 'f4', '1', -9999, 'time')
                      for fnf in ('f', 'n')
                      for x in ('secd%s%%s' % n for n in ('y', 'i', 'm'))] +
-                    [('bins%s' % fnf, 'f4', '1', -9999) for fnf in ('f', 'n')])
+                    [('bins%s' % fnf, 'f4', '1', -9999, 'bins')
+                     for fnf in ('f', 'n')])
   baselinef = None
   baselinen = None
 
@@ -189,7 +190,8 @@ def init_nc(dst_ds, src_ds, variables):
   dst_ds.createDimension('time', None)
   dst_ds.createDimension('lat', len(src_ds.variables['lat']))
   dst_ds.createDimension('lon', len(src_ds.variables['lon']))
-
+  dst_ds.createDimension('bins', BINS)
+  
   # Create variables
   times = dst_ds.createVariable("time", "f8", ("time"), zlib=True,
                                 least_significant_digit=3)
@@ -222,14 +224,15 @@ def init_nc(dst_ds, src_ds, variables):
   crs.grid_mapping_name = 'latitude_longitude'
   crs.spatial_ref = srs.ExportToWkt()
   crs.GetTransform = ' '.join(map(str, src_trans))
-  crs.longitude_of_prime_meridian = srs.GetPrimeMeridian()
-  crs.semi_major_axis = srs.GetSemiMajor()
-  crs.inverse_flattening = srs.GetInvFlattening()
+  # FIXME: Attribute getters don't work in python3 or GDAL2
+  crs.longitude_of_prime_meridian = 0 #srs.GetPrimeMeridian()
+  crs.semi_major_axis = 6378137.0 # srs.GetSemiMajor()
+  crs.inverse_flattening = 298.257223563 #srs.GetInvFlattening()
 
   out = {}
-  for name, dtype, units, fill in variables:
+  for name, dtype, units, fill, dimension in variables:
     dst_data = dst_ds.createVariable(name, dtype,
-                                     ("time", "lat","lon"), zlib = True,
+                                     (dimension, "lat","lon"), zlib = True,
                                      least_significant_digit = 4,
                                      fill_value = fill)
     dst_data.units = units

@@ -225,9 +225,9 @@ def init_nc(dst_ds, src_ds, variables):
   crs.spatial_ref = srs.ExportToWkt()
   crs.GetTransform = ' '.join(map(str, src_trans))
   # FIXME: Attribute getters don't work in python3 or GDAL2
-  crs.longitude_of_prime_meridian = 0 #srs.GetPrimeMeridian()
-  crs.semi_major_axis = 6378137.0 # srs.GetSemiMajor()
-  crs.inverse_flattening = 298.257223563 #srs.GetInvFlattening()
+  crs.longitude_of_prime_meridian = geotools.srs_get_prime_meridian(srs)
+  crs.semi_major_axis = geotools.srs_get_semi_major(srs)
+  crs.inverse_flattening = geotools.srs_get_inv_flattening(srs)
 
   out = {}
   for name, dtype, units, fill, dimension in variables:

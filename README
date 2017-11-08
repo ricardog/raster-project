@@ -141,17 +141,16 @@
   - attic :: miscellaneous scripts that I found useful and didn't want
              to delete but didn't expect to keep using.
 
-
 * Installation
 
-  #+BEGIN_SRC: bash
+  #+BEGIN_SRC bash
   pip install -e .
   #+END_SRC:  
 
   In the directory you are in should take care of things.  But, I've
   found this often fails.  On linux the following seems to do the trick
 
-  #+BEGIN_SRC: bash
+  #+BEGIN_SRC bash
   sudo apt-get -y install software-properties-common
   sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
   sudo add-apt-repository 'deb [arch=amd64,i386] https://cran.rstudio.com/bin/linux/ubuntu xenial/'
@@ -162,12 +161,87 @@
   pip install numpy
   CPLUS_INCLUDE_PATH=/usr/include/gdal C_INCLUDE_PATH=/usr/include/gdal pip install GDAL==1.11.2 --no-binary GDAL
   pip install -e .
-  #+END_SRC:  
+  #+END_SRC  
   
   This will install all the required libraries in a virtual environment
   (so you can keep python packages for different project separate).
 
   For windows [[https://sandbox.idre.ucla.edu/sandbox/tutorials/installing-gdal-for-windows][these]] instructions may be useful.
+
+* Docker
+
+  This repo consains a Dockerfile which you can use to build a docker
+  image for generating projections.  The image is built using
+  [[https://hub.docker.com/r/jupyter/datascience-notebook/][jupyter/datascience-notebook]] as a base and therefore has the jupyter
+  notebook server installed with support for python3, R, and Julia.  In
+  addition it contains many packages useful for fitting models so you
+  can do both model fitting and projections in the same environment (but
+  you don't have to).
+
+  The advantage f using docker is that anyone should be able to download
+  (~pull~ in docker-lingo) the image and get started using the code
+  right away (all the packages are already installed and ready to go).
+
+  Assuming you have docker toolbox or docker installed run
+
+  #+BEGIN_SRC bash
+  docker build . -t ricardog/project-notebook
+  #+END_SRC
+
+  If the build succeeds it is a good idea to verify all the packages
+  installed correctly (or at least verify some troublesome ones
+  installed correctly).  In particular, I've had problem with the conda
+  dependency calculation decides to install libgdal 2.2.* when both
+  fiona and rasterio are pinned to libgdal 2.1.*.  The way I worke
+  around this for now was to add an explicit dependency on libgdal
+  2.1.*.  This seems to make conda do the "right thing".
+
+  If you are satisfied with the container, [[https://docs.docker.com/docker-cloud/builds/push-images/][push it to docker hub]] with
+
+  #+BEGIN_SRC bash
+  docker push ricardog/project-notebook
+  #+END_SRC
+
+  See the inked instructions for more details.  I am not certain whether
+  anyone other than me (ricardog) can push to that image or not but we
+  will find out when someone tries.
+
+  Use ~docker pull~ to download the image on a different computer.  Once
+  the image is ready use docker run to run it
+
+  #+BEGIN_SRC bash
+  docker run --rm -it ricardog/project-notebook -v
+  /path/to/data/folder:/data -v /path/to/output/folder:/out -e
+  GRANT_SUDO=yes -p 8888:8888 --user root  
+  #+END_SRC
+
+  It will print a URL you can use to access the notebook server.  From
+  there you can run or create notebooks and access the console.
+  Notebooks can be in python, R, or Julia.
+
+  When using [[https://www.docker.com/products/docker-toolbox][docker toolbox]] (instead of [[https://www.docker.com/docker-windows][docker for windows]] or [[https://www.docker.com/docker-mac][docker for
+  mac]]) you will need to increase the resources of the default VM.  See
+  this [[https://github.com/crops/docker-win-mac-docs/wiki/Windows-Instructions-(Docker-Toolbox)#change-default-vm-settings][page]] for instructions (see the section title "Change default vm
+  settings").  You will need to choose how much memory (RAM) and CPU to
+  allocate.  This depends on how "big" the computer is and how big are
+  the projections you want to run.  You don't need to change the size of
+  the disk since the projections place output files in a shared folder
+  (~/out~).
+
+  #+BEGIN_SRC bash
+  docker-machine rm default
+
+  docker-machine create -d virtualbox --virtualbox-disk-size "50000"
+  --virtualbox-cpu-count "4" --virtualbox-memory "8092" docker2
+  #+END_SRC
+
+  If you use the existing scripts to generate projections, they will
+  write output files to ~/out~, which is a shared folder between the
+  container and the host computer.  You specify which folder to use when
+  running the contains (see the ~-v~ options above).
+
+  When you are done, simply press Ctrl-C in the window where the
+  container started and it will be destroyed and removed.
 
 * Model building
 

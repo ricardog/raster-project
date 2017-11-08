@@ -212,13 +212,15 @@
   pip install -e .
   #+END_SRC
 
-  The ~-e~ flag tell pip to make the package editable.  If you edit the
+  The ~-e~ flag tells ~pip~ to make the package editable.  If you edit the
   code the changes will get picked up automatically.  You only need to
   re-run this step if you add a new entry point. 
 
-* Docker
+  That's it.  Don't forget that to run projections you use the **conda**
+  window but to use ~git~ use the **git** window.
 
-  This repo consains a Dockerfile which you can use to build a docker
+* Docker
+  This repo contains a Dockerfile which you can use to build a docker
   image for generating projections.  The image is built using
   [[https://hub.docker.com/r/jupyter/datascience-notebook/][jupyter/datascience-notebook]] as a base and therefore has the jupyter
   notebook server installed with support for python3, R, and Julia.  In
@@ -226,7 +228,7 @@
   can do both model fitting and projections in the same environment (but
   you don't have to).
 
-  The advantage f using docker is that anyone should be able to download
+  The advantage of using docker is that anyone should be able to download
   (~pull~ in docker-lingo) the image and get started using the code
   right away (all the packages are already installed and ready to go).
 
@@ -240,7 +242,7 @@
   installed correctly (or at least verify some troublesome ones
   installed correctly).  In particular, I've had problem with the conda
   dependency calculation decides to install libgdal 2.2.* when both
-  fiona and rasterio are pinned to libgdal 2.1.*.  The way I worke
+  fiona and rasterio are pinned to libgdal 2.1.*.  The way I worked
   around this for now was to add an explicit dependency on libgdal
   2.1.*.  This seems to make conda do the "right thing".
 
@@ -275,13 +277,6 @@
   the projections you want to run.  You don't need to change the size of
   the disk since the projections place output files in a shared folder
   (~/out~).
-
-  #+BEGIN_SRC bash
-  docker-machine rm default
-
-  docker-machine create -d virtualbox --virtualbox-disk-size "50000"
-  --virtualbox-cpu-count "4" --virtualbox-memory "8092" docker2
-  #+END_SRC
 
   If you use the existing scripts to generate projections, they will
   write output files to ~/out~, which is a shared folder between the

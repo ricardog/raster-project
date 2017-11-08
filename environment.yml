@@ -5,6 +5,7 @@ dependencies:
   - gdal
   - geopy
   - joblib
+  - libgdal=2.1.*
   - matplotlib
   - netCDF4
   - numba

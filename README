@@ -143,6 +143,7 @@
 
 * Installation
 
+** Ubuntu
   #+BEGIN_SRC bash
   pip install -e .
   #+END_SRC:  
@@ -166,7 +167,54 @@
   This will install all the required libraries in a virtual environment
   (so you can keep python packages for different project separate).
 
-  For windows [[https://sandbox.idre.ucla.edu/sandbox/tutorials/installing-gdal-for-windows][these]] instructions may be useful.
+** Windows
+  The easiest way to install the code on Windows is to use [[https://www.anaconda.com/][Anaconda]] (or
+  miniconda) and [[https://git-scm.com/download/win][git]].  If they are not already installed on your system,
+  follow the instructions in the Download page.
+
+  Once you have ~conda~ installed first define which channels to use.
+  Make sure the channels are listed with the following priority
+
+  1. conda-forge
+  2. r
+  3. defaults
+
+  I've run into problems when conda decides to mix packages from
+  different channels so put conda-forge at the top since it has the most
+  packages and is most likely to be consistent.  Adding a new channel
+  will make it the highest priority, so add them in reverse order.
+
+  #+BEGIN_SRC bash
+  conda config --add channels defaults
+  conda config --add channels r
+  conda config --add channels conda-forge
+  #+END_SRC
+
+  The next step is to clone the repo using git.  Unfortunately because
+  of the way things work on Windows you may need to switch back and
+  forth between the git window and the conda window.  Use the git window
+  (shell) to clone the repo
+
+  #+BEGIN_SRC bash
+  git clone https://github.com/NaturalHistoryMuseum/raster-project
+  #+END_SRC
+
+  Go back to the conda window and create a new environment for your
+  projections.  Use ~cd~ to go to the repo you just checked out.
+
+  #+BEGIN_SRC bash
+  conda env create -n gis python=3.6 --file environment.yml
+  #+END_SRC
+
+  The last step is to use ~pip~ to install the projections package.  
+
+  #+BEGIN_SRC bash
+  pip install -e .
+  #+END_SRC
+
+  The ~-e~ flag tell pip to make the package editable.  If you edit the
+  code the changes will get picked up automatically.  You only need to
+  re-run this step if you add a new entry point. 
 
 * Docker
 

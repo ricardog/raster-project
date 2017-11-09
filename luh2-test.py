@@ -38,7 +38,7 @@ YEAR_RANGE = YearRangeParamType()
 
 def select_models(model, model_dir):
   if model == 'ab':
-    mods = ('ab-fst-1.rds', 'ab-nfst-1.rds')
+    mods = ('ab-fst.rds', 'ab-nfst.rds')
   elif model == 'sr':
     mods = ('sr-fst.rds', 'sr-nfst.rds')
   else:

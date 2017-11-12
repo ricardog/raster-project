@@ -92,13 +92,13 @@ The code requires the following data-sets:
   WWF dataset [Terrestrial ecoregions of the world (2012)](http://www.worldwildlife.org/publications/terrestrial-ecoregions-of-the-world)
 
 - PREDCITS database:
-  can't do without!
+  only needed ig you plan to fit new models.
 
 All map / grid based data needs to be cleaned up and normalized, that is
 make sure they all have the same projection, dimensions, and cell size.
 
-Drivers
-=======
+How to
+======
 
 There are a number of scripts to can be used to generate projections
 using PREDICTS models.
@@ -122,8 +122,14 @@ using PREDICTS models.
   requirements during the computation. I haven't tried running it in
   some time so likely broken.
 
-Drivers expect source data to be under `$DATA_ROOT` and generated data
-under `$OUTDIR/<name>/...`
+These scripts are meant as starting points from which you should develop
+your own code.  They have hard-coded assumptions about where to find
+input rasters and models, and where to save output rasters.  They expect
+source data to be under `$DATA_ROOT` and generated data under
+`$OUTDIR/<name>/...`
+
+You will need to have a number of input data rasters, e.g. UN
+sub-regions, reference human population density.
 
 The script `setup.sh` will attempt to generate all the derived data for
 all land use data sources (luh2, luh5, rcp, 1km) but will likely not
@@ -162,9 +168,9 @@ Code structure
   Code for projecting human population density. I implemented three
   algorithms.
 
-  -   scale GRUMPS based on WPP (scaling by country)
-  -   Interpolate SPS
-  -   Scale GRUMPS by interpolated SPS (scaling by pixel)
+  - scale GRUMPS based on WPP (scaling by country)
+  - Interpolate SPS
+  - Scale GRUMPS by interpolated SPS (scaling by pixel)
 
   Note that WPP only extends back to 1950 so there is currently no
   mechanism for projecting/calculating population density before 1950.
@@ -208,13 +214,17 @@ pip install -e .
 This will install all the required libraries in a virtual environment
 (so you can keep python packages for different project separate).
 
-Windows
--------
+Windows (or Mac) with Anaconda
+------------------------------
 
 The easiest way to install the code on Windows is to use
 [Anaconda](https://www.anaconda.com/) (or miniconda) and
 [git](https://git-scm.com/download/win).  If they are not already
 installed on your system, follow the instructions in the Download page.
+
+To follow this instructions, on Windows open an Anaconda prompt (should
+be in the start menu if Anaconda was installed properly).  On macOS open
+a terminal.  Type the commands below into the window you just opened.
 
 Once you have `conda` installed first define which channels to use.  Make
 sure the channels are listed with the following priority
@@ -238,7 +248,9 @@ conda config --add channels conda-forge
 The next step is to clone the repo using git.  Unfortunately because of
 the way things work on Windows you may need to switch back and forth
 between the git window and the conda window.  Use the git window (shell)
-to clone the repo
+to clone the repo (on macOS use the same terminal).  If you are using
+(Github Desktop)[https://desktop.github.com] clone the repo and then
+`cd` to the folder of the repo.
 
 ```bash
 git clone https://github.com/NaturalHistoryMuseum/raster-project
@@ -249,7 +261,9 @@ for your projections.  Use `cd` to go to the repo you just checked out.
 
 ```bash
 conda env create -n gis python=3.6 --file environment.yml
-activate gis
+activate gis # For Windows
+
+# source activate gis # For macOS
 ```
 
 The last step is to use `pip` to install the projections package.
@@ -359,18 +373,18 @@ They are not relevant to using the code.
 - Build a species richness model:
   depends on
 
-    -   Human population density (log)
-    -   Distance to a road (log)
-    -   Land-use type
-    -   SS, SSB, SSBS
+    - Human population density (log)
+    - Distance to a road (log)
+    - Land-use type
+    - SS, SSB, SSBS
 
 - Build a (log of) total abundance model:
   depends on
 
-    -   Land-use intensity
-    -   Human population density (log)
-    -   Land-use type
-    -   SS, SSB
+    - Land-use intensity
+    - Human population density (log)
+    - Land-use type
+    - SS, SSB
 
 - Build a land-use intensity model:
   This model is required because we assume land-use intensity data is
@@ -381,9 +395,9 @@ They are not relevant to using the code.
 
   The model depends on:
 
-  -   Land-use type (log + 1)
-  -   Human population density (log + 1)
-  -   UN subregion
+  - Land-use type (log + 1)
+  - Human population density (log + 1)
+  - UN subregion
 
 - Build compositional similarity model:
   **OLD**. This model predicts compositional similarity and is used to

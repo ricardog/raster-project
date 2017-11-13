@@ -7,6 +7,7 @@ import os
 import psycopg2
 import rasterio
 from rasterio.plot import show
+import re
 import sys
 import time
 
@@ -27,6 +28,14 @@ DB_NAME = 'groads'
 USER = 'vagrant'
 PASSWORD = 'vagrant'
 HOST = '192.168.0.155'
+
+def get_srid(crs):
+  if crs == {}:
+    return 4326
+  m = re.match(r'epsg:(\d+)$', crs['init'])
+  if m:
+    return int(m.group(1))
+  raise RuntimeError("Unknow CRS: %s" % str(crs))
 
 def bounds_to_params(bounds, affine):
   l, b, r, t = bounds
@@ -52,9 +61,10 @@ def put(array, data):
   idx = np.ravel_multi_index((y, x), array.shape)
   np.put(array, idx, v)
   
-def do_query(bounds, affine, nodata, dtype):
+def do_query(bounds, affine, srid, nodata, dtype):
   query_sql = read_query()
   params = bounds_to_params(bounds, affine)
+  params['srid'] = srid
   nrows = params['nrows']
   ncols = params['ncols']
   shape = (nrows, ncols)
@@ -76,7 +86,7 @@ def do_query(bounds, affine, nodata, dtype):
     print("bbox: %5.2f:%5.2f" % (y0, y1))
     params['yoff'] = y0
     query_str = query_sql % params
-    #print(query_str)
+    print(query_str)
     cursor.execute(query_sql, params)
     while True:
       data = cursor.fetchmany(params['nrows'] * params['ncols'])
@@ -91,10 +101,12 @@ def do_query(bounds, affine, nodata, dtype):
 if __name__ == '__main__':
   #do_query((-180, -90, 180, 90), Affine(0.5, 0, -180, 0, -0.5, 90))
   ref = '/Users/ricardog/src/eec/predicts/playground/ds/rcp/un_codes.tif'
+  #ref = '/Users/ricardog/src/eec/predicts/playground/ds/luh2/un_codes.tif'
   with rasterio.open(ref) as ds:
     meta = ds.meta
     meta.update({'dtype': 'float32', 'nodata': -1.0})
-    out = do_query(ds.bounds, ds.meta['affine'], -1.0, 'float32')
+    out = do_query(ds.bounds, ds.meta['affine'], get_srid(ds.crs), -1.0,
+                   'float32')
     with rasterio.open('road-length.tif', 'w', **meta) as dst:
       dst.write(out, 1)
     show(out)

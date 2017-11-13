@@ -89,7 +89,7 @@ def read_query():
 def put(array, data):
   y = tuple(map(lambda x: x[0] - 1, data))
   x = tuple(map(lambda x: x[1] - 1, data))
-  v = tuple(map(lambda x: x[2] / 1000, data))
+  v = tuple(map(lambda x: 0 if x[2] < 1 else x[2] / 1000, data))
   idx = np.ravel_multi_index((y, x), array.shape)
   np.put(array, idx, v)
   

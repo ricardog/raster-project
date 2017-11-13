@@ -33,15 +33,31 @@ os.environ['DB_HOST'] = '192.168.0.155'
 os.environ['DB_USER'] = 'vagrant'
 os.environ['PASSWORD'] = 'vagrant'
 
-# From https://stackoverflow.com/questions/41268949/python-click-option-with-a-prompt-and-default-hidden
 class HiddenPassword(object):
+  """Class for prompting the user for a password.  If there is a default
+(from the environment, for example, hide the default as a collection of
+*'s.
+
+  Code from
+  https://stackoverflow.com/questions/41268949/python-click-option-with-a-prompt-and-default-hidden
+
+  """
+  
   def __init__(self, password=''):
     self.password = password
   def __str__(self):
     return '*' * len(self.password)
 
-# From https://stackoverflow.com/questions/45868549/creating-a-click-option-with-prompt-that-shows-only-if-default-value-is-empty
 class OptionPromptNull(click.Option):
+  """Click option processing class that only prompts the user for a value
+if there is no default.  Set the value via an environment vairble to
+skip the prompt.
+  
+
+  Code from:
+  https://stackoverflow.com/questions/45868549/creating-a-click-option-with-prompt-that-shows-only-if-default-value-is-empty
+
+  """
   _value_key = '_default_val'
 
   def get_default(self, ctx):
@@ -58,12 +74,14 @@ class OptionPromptNull(click.Option):
 
     return default
   
-GisInfo = collections.namedtuple('GisInfo', ['bounds', 'affine', 'srid',
-                                             'dtype', 'nodata'])
-ConnInfo = collections.namedtuple('ConnInfo', ['db', 'host', 'user',
-                                               'password'])
-
 def get_srid(crs):
+  """Get the SRID from a raster CRS.  This seems to work but I do not
+understand all the possible ways rasterio returns CRS.  Also, on some
+systems checking whether CRS is an empty has causes problems.
+
+  Returns the EPSG code as an integer.
+
+  """
   if crs == {}:
     return 4326
   m = re.match(r'epsg:(\d+)$', crs['init'])
@@ -72,6 +90,7 @@ def get_srid(crs):
   raise RuntimeError("Unknow CRS: %s" % str(crs))
 
 def get_template():
+  """Read the PostGIS query template fomr a file. """
   my_dir = os.path.dirname(__file__)
   fname = os.path.join(my_dir, 'query.psql')
   with open(fname) as f:
@@ -79,6 +98,10 @@ def get_template():
   return query_sql
 
 def put(array, data):
+  """Put the data returned from the PostGIS query into the output array.
+The returned data is a list of tuples (row, col, value).
+
+  """
   y = tuple(map(lambda x: x[0] - 1, data))
   x = tuple(map(lambda x: x[1] - 1, data))
   v = tuple(map(lambda x: 0.0 if x[2] < 1 else x[2] / 1000, data))
@@ -89,7 +112,15 @@ def put(array, data):
     pass
   np.put(array, idx, v)
 
+# Code ideas from https://stackoverflow.com/questions/34815650/python-multithread-and-postgresql
 def do_block(ds, win, conn_pool, template):
+  """Do one PostGIS query (for a block window).  Grabs one connection from
+the connection pool, does the query, returns the connection to
+the pool and stuffs the query data into the output array.
+
+  Returns the data as a new array (shape of array given by block shape).
+
+  """
   nodata = -9999
   dtype = 'float32'
   width = win[1][1] - win[1][0]
@@ -118,6 +149,16 @@ def do_block(ds, win, conn_pool, template):
   return ma.masked_equal(out, nodata)
   
 def do_parallel(ds, pg_url, num_workers):
+  """Generate road length data for an entire raster.  Uses threads and a
+connection pool to parallelize queries to the database.
+
+  Takes as input a reference raster that defines the bounds and the
+  block shape of the queries.  The code does one query per block window.
+  Only the master thread writes to the output file.  Each slave thread
+  does a query and returns the result data stuffed into a new array
+  (shape set by block shape).
+
+  """
   dtype = 'float32'
   nodata = -9999
 
@@ -159,81 +200,13 @@ def do_parallel(ds, pg_url, num_workers):
               default=lambda: HiddenPassword(os.environ.get('PASSWORD', '')),
               hide_input=True)
 def generate(ref_raster, num_workers, db, host, user, password):
+  """Wrapper around do_parallel() to process command-line options."""
   if isinstance(password, HiddenPassword):
     password = password.password
   pg_url = "postgresql://{user}:{password}@{host}/{db}".format(
     user = user, password = password, host = host, db = db)
   with rasterio.open(ref_raster) as ds:
     do_parallel(ds, pg_url, num_workers)
-
-
-def do_query(gis_info, conn_info):
-  query_sql = read_query()
-  params = bounds_to_params(gis_info.bounds, gis_info.affine)
-  params['srid'] = gis_info.srid
-  height = params['height']
-  width = params['width']
-  shape = (height, width)
-  ul = (gis_info.bounds[0], gis_info.bounds[3])  * ~gis_info.affine
-  
-  params['height'] = min(int(1e6 / height), height)
-  params.update({'xoff': gis_info.bounds[0]})
-  out = np.full(shape, gis_info.nodata, dtype=gis_info.dtype)
-
-  conn = psycopg2.connect(dbname=conn_info.db, user=conn_info.user,
-                          host=conn_info.host, password=conn_info.password)
-  cursor = conn.cursor()
-
-  stime = time.time()
-  for yoff in range(int(ul[1]), int(ul[1]) + height, params['height']):
-    print("rows: %d:%d" % (yoff, yoff + params['height']))
-    _, y0 = (0, yoff) * gis_info.affine
-    _, y1 = (0, yoff + params['height']) * gis_info.affine
-    print("bbox: %5.2f:%5.2f" % (y0, y1))
-    params['yoff'] = y0
-    query_str = query_sql % params
-    #print(query_str)
-    cursor.execute(query_sql, params)
-    while True:
-      data = cursor.fetchmany(params['height'] * params['width'])
-      if len(data) == 0:
-        break
-      put(out, data)
-  masked = ma.masked_equal(out, gis_info.nodata)
-  etime = time.time()
-  print("executed in %7.2fs" % (etime - stime))
-  return masked
-
-@click.command()
-@click.argument('reference', type=click.Path(dir_okay=False))
-@click.argument('out-file', type=click.Path(dir_okay=False),
-                default='road-length.tif')
-@click.option('--db', cls=OptionPromptNull, prompt=True,
-              default=lambda: os.environ.get('DB_NAME', ''))
-@click.option('--host', cls=OptionPromptNull, prompt=True,
-              default=lambda: os.environ.get('DB_HOST', ''))
-@click.option('--user', cls=OptionPromptNull, prompt=True,
-              default=lambda: os.environ.get('DB_USER', ''))
-@click.option('--password',
-              default=lambda: HiddenPassword(os.environ.get('PASSWORD', '')),
-              hide_input=True)
-def generate2(reference, out_file, db, host, user, password):
-  if isinstance(password, HiddenPassword):
-    password = password.password
-  with rasterio.open(reference) as ds:
-    gis_info = GisInfo(bounds=ds.bounds, affine=ds.meta['affine'],
-                       srid=get_srid(ds.crs), dtype='float32', nodata=-9999)
-    conn_info = ConnInfo(db=db, host=host, user=user, password=password)
-    out = do_query(gis_info, conn_info)
-    meta = ds.meta.copy()
-    meta.update({'dtype': gis_info.dtype, 'nodata': gis_info.nodata})
-    with rasterio.open(out_file, 'w', **meta) as dst:
-      dst.write(out, 1)
-    show(out)
   
 if __name__ == '__main__':
   generate()
-  
-  #ref = '/Users/ricardog/src/eec/predicts/playground/ds/rcp/un_codes.tif'
-  #with rasterio.open(ref) as ds:
-  #  do_parallel(ds)

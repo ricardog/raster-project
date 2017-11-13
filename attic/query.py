@@ -3,10 +3,12 @@
 from affine import Affine
 import click
 import collections
+import concurrent.futures
 import numpy as np
 import numpy.ma as ma
 import os
 import psycopg2
+import psycopg2.pool
 import rasterio
 from rasterio.plot import show
 import re
@@ -69,17 +71,7 @@ def get_srid(crs):
     return int(m.group(1))
   raise RuntimeError("Unknow CRS: %s" % str(crs))
 
-def bounds_to_params(bounds, affine):
-  l, b, r, t = bounds
-  (x0, y0) = (l, t) * ~affine
-  (x1, y1) = (r, b) * ~affine
-  width = int(x1 - x0)
-  height = int(y1 - y0)
-  xres = affine[0]
-  yres = affine[4]
-  return {'width': width, 'height': height, 'xres': xres, 'yres': yres}
-
-def read_query():
+def get_template():
   my_dir = os.path.dirname(__file__)
   fname = os.path.join(my_dir, 'query.psql')
   with open(fname) as f:
@@ -89,10 +81,92 @@ def read_query():
 def put(array, data):
   y = tuple(map(lambda x: x[0] - 1, data))
   x = tuple(map(lambda x: x[1] - 1, data))
-  v = tuple(map(lambda x: 0 if x[2] < 1 else x[2] / 1000, data))
-  idx = np.ravel_multi_index((y, x), array.shape)
+  v = tuple(map(lambda x: 0.0 if x[2] < 1 else x[2] / 1000, data))
+  try:
+    idx = np.ravel_multi_index((y, x), array.shape)
+  except Exception as e:
+    pdb.set_trace()
+    pass
   np.put(array, idx, v)
+
+def do_block(ds, win, conn_pool, template):
+  nodata = -9999
+  dtype = 'float32'
+  width = win[1][1] - win[1][0]
+  height = win[0][1] - win[0][0]
+  xoff, yoff = (win[1][0], win[0][0]) * ds.affine
+  params = {'width': width,
+            'height': height,
+            'xres': ds.affine[0],
+            'yres': ds.affine[4],
+            'xoff': xoff,
+            'yoff': yoff,
+            'srid': get_srid(ds.crs)
+            }
+  out = np.full((height, width), nodata, dtype=dtype)
+  #print(template % params)
+  stime = time.time()
+  conn = conn_pool.getconn()
+  cursor = conn.cursor()
+  cursor.execute(template, params)
+  data = cursor.fetchall()
+  conn_pool.putconn(conn)
+  etime = time.time()
+  print("[%d:%d] executed in %7.2fs" % (win[0][0], win[1][0], etime - stime))
+  if len(data) > 0:
+    put(out, data)
+  return ma.masked_equal(out, nodata)
   
+def do_parallel(ds, pg_url, num_workers):
+  dtype = 'float32'
+  nodata = -9999
+
+  path = 'road-length.tif'
+  template = get_template()
+
+  meta = ds.meta.copy()
+  meta.update({'dtype': dtype, 'nodata': nodata})
+
+  conn_pool = psycopg2.pool.ThreadedConnectionPool(1, num_workers, pg_url)
+
+  def compute(win):
+    return do_block(ds, win, conn_pool, template)
+
+  stime = time.time()
+  with rasterio.open(path, 'w', **meta) as dst:
+    with concurrent.futures.ThreadPoolExecutor(
+      max_workers=num_workers) as executor:
+      future_to_window = {
+        executor.submit(compute, win): win for _, win in ds.block_windows()
+      }
+      for future in concurrent.futures.as_completed(future_to_window):
+        win = future_to_window[future]
+        out = future.result()
+        dst.write(out.filled(meta['nodata']), window = win, indexes = 1)
+  etime = time.time()
+  print("executed in %7.2fs" % (etime - stime))
+      
+@click.command()
+@click.argument('ref-raster', type=click.Path(dir_okay=False))
+@click.option('--num_workers', '-n', type=int, default=10)
+@click.option('--db', cls=OptionPromptNull, prompt=True,
+              default=lambda: os.environ.get('DB_NAME', ''))
+@click.option('--host', cls=OptionPromptNull, prompt=True,
+              default=lambda: os.environ.get('DB_HOST', ''))
+@click.option('--user', cls=OptionPromptNull, prompt=True,
+              default=lambda: os.environ.get('DB_USER', ''))
+@click.option('--password',
+              default=lambda: HiddenPassword(os.environ.get('PASSWORD', '')),
+              hide_input=True)
+def generate(ref_raster, num_workers, db, host, user, password):
+  if isinstance(password, HiddenPassword):
+    password = password.password
+  pg_url = "postgresql://{user}:{password}@{host}/{db}".format(
+    user = user, password = password, host = host, db = db)
+  with rasterio.open(ref_raster) as ds:
+    do_parallel(ds, pg_url, num_workers)
+
+
 def do_query(gis_info, conn_info):
   query_sql = read_query()
   params = bounds_to_params(gis_info.bounds, gis_info.affine)
@@ -143,7 +217,7 @@ def do_query(gis_info, conn_info):
 @click.option('--password',
               default=lambda: HiddenPassword(os.environ.get('PASSWORD', '')),
               hide_input=True)
-def generate(reference, out_file, db, host, user, password):
+def generate2(reference, out_file, db, host, user, password):
   if isinstance(password, HiddenPassword):
     password = password.password
   with rasterio.open(reference) as ds:
@@ -159,3 +233,7 @@ def generate(reference, out_file, db, host, user, password):
   
 if __name__ == '__main__':
   generate()
+  
+  #ref = '/Users/ricardog/src/eec/predicts/playground/ds/rcp/un_codes.tif'
+  #with rasterio.open(ref) as ds:
+  #  do_parallel(ds)

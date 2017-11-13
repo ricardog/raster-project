@@ -112,29 +112,30 @@ The returned data is a list of tuples (row, col, value).
     pass
   np.put(array, idx, v)
 
-# Code ideas from https://stackoverflow.com/questions/34815650/python-multithread-and-postgresql
-def do_block(ds, win, conn_pool, template):
+# Code ideas from 
+def do_block(dst, win, conn_pool, template):
   """Do one PostGIS query (for a block window).  Grabs one connection from
 the connection pool, does the query, returns the connection to
 the pool and stuffs the query data into the output array.
 
+  Example for using threaded connection pool is from 
+  https://stackoverflow.com/questions/34815650/python-multithread-and-postgresql
+
   Returns the data as a new array (shape of array given by block shape).
 
   """
-  nodata = -9999
-  dtype = 'float32'
   width = win[1][1] - win[1][0]
   height = win[0][1] - win[0][0]
-  xoff, yoff = (win[1][0], win[0][0]) * ds.affine
+  xoff, yoff = (win[1][0], win[0][0]) * dst.affine
   params = {'width': width,
             'height': height,
-            'xres': ds.affine[0],
-            'yres': ds.affine[4],
+            'xres': dst.affine[0],
+            'yres': dst.affine[4],
             'xoff': xoff,
             'yoff': yoff,
-            'srid': get_srid(ds.crs)
+            'srid': get_srid(dst.crs)
             }
-  out = np.full((height, width), nodata, dtype=dtype)
+  out = np.full((height, width), dst.nodata, dtype=dst.dtypes[0])
   #print(template % params)
   stime = time.time()
   conn = conn_pool.getconn()
@@ -143,12 +144,12 @@ the pool and stuffs the query data into the output array.
   data = cursor.fetchall()
   conn_pool.putconn(conn)
   etime = time.time()
-  print("[%d:%d] executed in %7.2fs" % (win[0][0], win[1][0], etime - stime))
+  print("[%d:%d] executed in %7.2fs" % (win[0][0], win[0][1], etime - stime))
   if len(data) > 0:
     put(out, data)
-  return ma.masked_equal(out, nodata)
+  return ma.masked_equal(out, dst.nodata)
   
-def do_parallel(ds, pg_url, num_workers):
+def do_parallel(src, dst, pg_url, num_workers):
   """Generate road length data for an entire raster.  Uses threads and a
 connection pool to parallelize queries to the database.
 
@@ -159,36 +160,31 @@ connection pool to parallelize queries to the database.
   (shape set by block shape).
 
   """
-  dtype = 'float32'
-  nodata = -9999
-
-  path = 'road-length.tif'
   template = get_template()
 
-  meta = ds.meta.copy()
-  meta.update({'dtype': dtype, 'nodata': nodata})
 
   conn_pool = psycopg2.pool.ThreadedConnectionPool(1, num_workers, pg_url)
 
   def compute(win):
-    return do_block(ds, win, conn_pool, template)
+    return do_block(dst, win, conn_pool, template)
 
   stime = time.time()
-  with rasterio.open(path, 'w', **meta) as dst:
-    with concurrent.futures.ThreadPoolExecutor(
+  with concurrent.futures.ThreadPoolExecutor(
       max_workers=num_workers) as executor:
-      future_to_window = {
-        executor.submit(compute, win): win for _, win in ds.block_windows()
-      }
-      for future in concurrent.futures.as_completed(future_to_window):
-        win = future_to_window[future]
-        out = future.result()
-        dst.write(out.filled(meta['nodata']), window = win, indexes = 1)
+    future_to_window = {
+      executor.submit(compute, win): win for _, win in src.block_windows()
+    }
+    for future in concurrent.futures.as_completed(future_to_window):
+      win = future_to_window[future]
+      out = future.result()
+      dst.write(out, window = win, indexes = 1)
   etime = time.time()
   print("executed in %7.2fs" % (etime - stime))
       
 @click.command()
 @click.argument('ref-raster', type=click.Path(dir_okay=False))
+@click.argument('path', type=click.Path(dir_okay=False),
+                default='road-length.tif')
 @click.option('--num_workers', '-n', type=int, default=10)
 @click.option('--db', cls=OptionPromptNull, prompt=True,
               default=lambda: os.environ.get('DB_NAME', ''))
@@ -199,14 +195,21 @@ connection pool to parallelize queries to the database.
 @click.option('--password',
               default=lambda: HiddenPassword(os.environ.get('PASSWORD', '')),
               hide_input=True)
-def generate(ref_raster, num_workers, db, host, user, password):
+def generate(ref_raster, path, num_workers, db, host, user, password):
   """Wrapper around do_parallel() to process command-line options."""
   if isinstance(password, HiddenPassword):
     password = password.password
   pg_url = "postgresql://{user}:{password}@{host}/{db}".format(
     user = user, password = password, host = host, db = db)
-  with rasterio.open(ref_raster) as ds:
-    do_parallel(ds, pg_url, num_workers)
+  with rasterio.open(ref_raster) as src:
+    dtype = 'float32'
+    nodata = -9999
+    meta = src.meta.copy()
+    meta.update({'dtype': dtype, 'nodata': nodata})
+    if 'compress' not in meta:
+      meta.update({'compress': 'lzw', 'predictpr': 2})
+    with rasterio.open(path, 'w', **meta) as dst:
+      do_parallel(src, dst, pg_url, num_workers)
   
 if __name__ == '__main__':
   generate()

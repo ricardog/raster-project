@@ -73,11 +73,11 @@ def bounds_to_params(bounds, affine):
   l, b, r, t = bounds
   (x0, y0) = (l, t) * ~affine
   (x1, y1) = (r, b) * ~affine
-  ncols = int(x1 - x0)
-  nrows = int(y1 - y0)
+  width = int(x1 - x0)
+  height = int(y1 - y0)
   xres = affine[0]
   yres = affine[4]
-  return {'ncols': ncols, 'nrows': nrows, 'xres': xres, 'yres': yres}
+  return {'width': width, 'height': height, 'xres': xres, 'yres': yres}
 
 def read_query():
   my_dir = os.path.dirname(__file__)
@@ -97,12 +97,12 @@ def do_query(gis_info, conn_info):
   query_sql = read_query()
   params = bounds_to_params(gis_info.bounds, gis_info.affine)
   params['srid'] = gis_info.srid
-  nrows = params['nrows']
-  ncols = params['ncols']
-  shape = (nrows, ncols)
+  height = params['height']
+  width = params['width']
+  shape = (height, width)
   ul = (gis_info.bounds[0], gis_info.bounds[3])  * ~gis_info.affine
   
-  params['nrows'] = min(int(1e6 / nrows), nrows)
+  params['height'] = min(int(1e6 / height), height)
   params.update({'xoff': gis_info.bounds[0]})
   out = np.full(shape, gis_info.nodata, dtype=gis_info.dtype)
 
@@ -111,17 +111,17 @@ def do_query(gis_info, conn_info):
   cursor = conn.cursor()
 
   stime = time.time()
-  for yoff in range(int(ul[1]), int(ul[1]) + nrows, params['nrows']):
-    print("rows: %d:%d" % (yoff, yoff + params['nrows']))
+  for yoff in range(int(ul[1]), int(ul[1]) + height, params['height']):
+    print("rows: %d:%d" % (yoff, yoff + params['height']))
     _, y0 = (0, yoff) * gis_info.affine
-    _, y1 = (0, yoff + params['nrows']) * gis_info.affine
+    _, y1 = (0, yoff + params['height']) * gis_info.affine
     print("bbox: %5.2f:%5.2f" % (y0, y1))
     params['yoff'] = y0
     query_str = query_sql % params
     #print(query_str)
     cursor.execute(query_sql, params)
     while True:
-      data = cursor.fetchmany(params['nrows'] * params['ncols'])
+      data = cursor.fetchmany(params['height'] * params['width'])
       if len(data) == 0:
         break
       put(out, data)

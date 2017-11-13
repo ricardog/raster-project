@@ -1,6 +1,6 @@
 WITH temp_grid AS
   (SELECT *
-   FROM ST_CreateGrid(%(ncols)s, %(nrows)s, %(xres)s, %(yres)s, %(xoff)s, %(yoff)s, %(srid)s))
+   FROM ST_CreateGrid(%(width)s, %(height)s, %(xres)s, %(yres)s, %(xoff)s, %(yoff)s, %(srid)s))
 SELECT a.row,
        a.col,
        sum(ST_LENGTH(ST_Intersection(a.geom, b.wkb_geometry), TRUE)) AS road_length

@@ -35,6 +35,7 @@ define resize
 endef
 
 WORLD_BORDERS := ${DATA_ROOT}/from-sam/world-countries/TM_WORLD_BORDERS-0.3.shp
+NE_10M_COUNTRIES := ${DATA_ROOT}/natural-earth/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp
 GROADS := ${DATA_ROOT}/groads1.0/groads-v1-global-gdb/gROADS_v1.gdb
 GRUMPS := ${DATA_ROOT}/grump1.0/gluds00ag
 GRUMPS4 := ${DATA_ROOT}/grump4.0/gpw-v4-population-density-adjusted-to-2015-unwpp-country-totals_2015.tif
@@ -59,27 +60,27 @@ all: ${ALL}
 luh: $(addsuffix .tif, $(addprefix luh2/, ${RASTERS} un_codes-full un_subregions-full gluds00ag-full)) $(addprefix vector/, ${VECTORS})
 
 ### un_codes
-1km/un_codes.tif: ${WORLD_BORDERS}
-	$(call rasterize, UN, Int16, ${OneKm}, $<, $@)
+1km/un_codes.tif: ${NE_10M_COUNTRIES}
+	$(call rasterize, UN_A3, Int16, ${OneKm}, $<, $@)
 
-1km/un_codes-full.tif: ${WORLD_BORDERS}
-	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN -ot Int16 \
+1km/un_codes-full.tif: ${NE_10M_COUNTRIES}
+	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN_A3 -ot Int16 \
 		-tr ${OneKm} ${OneKm} -te -180 -90 180 90 \
 		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
 
-luh2/un_codes.tif: ${WORLD_BORDERS}
-	$(call rasterize, UN, Int16, ${QD}, $<, $@)
+luh2/un_codes.tif: ${NE_10M_COUNTRIES}
+	$(call rasterize, UN_A3, Int16, ${QD}, $<, $@)
 
-luh2/un_codes-full.tif: ${WORLD_BORDERS}
-	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN -ot Int16 \
+luh2/un_codes-full.tif: ${NE_10M_COUNTRIES}
+	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN_A3 -ot Int16 \
 		-tr ${QD} ${QD} -te -180 -90 180 90 \
 		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
 
-rcp/un_codes.tif: ${WORLD_BORDERS}
-	$(call rasterize, UN, Int16, ${HD}, $<, $@)
+rcp/un_codes.tif: ${NE_10M_COUNTRIES}
+	$(call rasterize, UN_A3, Int16, ${HD}, $<, $@)
 
-rcp/un_codes-full.tif: ${WORLD_BORDERS}
-	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN -ot Int16 \
+rcp/un_codes-full.tif: ${NE_10M_COUNTRIES}
+	gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN_A3 -ot Int16 \
 		-tr ${HD} ${HD} -te -180 -90 180 90 \
 		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
 

@@ -74,10 +74,16 @@ The code requires the following data-sets:
 
 - UN countries database:
   Rasters are generated from a shape file called
-  [TM~WORLDBORDERS](http://thematicmapping.org/downloads/TM_WORLD_BORDERS-0.3.zip).
+  [Natural Earth 10m Admin 0 -- Countries](http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_admin_0_countries.zip).
+
+  Much of the information available in this vector file is also
+  available in **TM-WORLDBORDER** but the later has follen out of date
+  and does not have the latest information and the former does not
+  include the numerical code for the UN subregions. 
 
 - UN subregion database::
-  Also generated using TM~WORLDBORDERS.
+  Rasters are generated from a shape file called
+  [TM-WORLDBORDERS](http://thematicmapping.org/downloads/TM_WORLD_BORDERS-0.3.zip).
 
 - UP world population prospects database:
   WPP 2010](https://esa.un.org/unpd/wpp/)

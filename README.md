@@ -106,6 +106,19 @@ make sure they all have the same projection, dimensions, and cell size.
 How to
 ======
 
+Before you begin
+----------------
+
+You need to get a copy of the source datasets and the scaled datasets
+for the resolution you want.  For example, if you want to generate 0.5°
+rasters, you will need to take the **TM-WORLDBORDERS** shape file and
+rasterize it---once to generate a map of UN country code and once to
+generate a map of UN subregion codes.
+
+
+Scripts
+-------
+
 There are a number of scripts to can be used to generate projections
 using PREDICTS models.
 
@@ -220,6 +233,16 @@ pip install -e .
 This will install all the required libraries in a virtual environment
 (so you can keep python packages for different project separate).
 
+You now need to set two environment variables that point to the root of
+the data folder and the output folder.  Place the following two lines in
+**.bash_profile**, replacing `/data` and `/ds` with the location of the data
+and ds folders on your computer.
+
+```bash
+set DATA_ROOT=/data
+set OUTDIR=/ds
+```
+
 Windows (or Mac) with Anaconda
 ------------------------------
 
@@ -281,6 +304,19 @@ pip install -e .
 The `-e` flag tells `pip` to make the package editable. If you edit the
 code the changes will get picked up automatically. You only need to
 re-run this step if you add a new entry point.
+
+You now need to set two variables that point to the root of the data
+folder and the output folder.  Replace `/data` and `/ds` with the
+location of the data and ds folders on your computer.
+
+```bash
+set DATA_ROOT=/data
+set OUTDIR=/ds
+```
+
+You will need to do this once in every window you use, i.e. if you close
+a window and open a new one you will need to run this again.  Unless you
+put these commands in a startup file.
 
 That's it. Don't forget that to run projections you use the **conda**
 window but to use `git` use the **git** window.

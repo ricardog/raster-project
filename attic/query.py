@@ -11,7 +11,9 @@ import psycopg2
 import psycopg2.pool
 import rasterio
 from rasterio.plot import show
+from rasterio.warp import calculate_default_transform
 import re
+import shapely.wkb
 import sys
 import time
 
@@ -89,6 +91,16 @@ systems checking whether CRS is an empty has causes problems.
     return int(m.group(1))
   raise RuntimeError("Unknow CRS: %s" % str(crs))
 
+def get_bounds(pg_url):
+  with psycopg2.connect(pg_url) as conn:
+    #conn = conn_pool.getconn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT ST_SetSRID(ST_Extent(wkb_geometry), 4326) as table_extent from global_roads")
+    data = cursor.fetchall()
+    #conn_pool.putconn(conn)
+    shape = shapely.wkb.loads(data[0][0], hex=True)
+  return shape.bounds
+  
 def get_template():
   """Read the PostGIS query template fomr a file. """
   my_dir = os.path.dirname(__file__)
@@ -172,7 +184,7 @@ connection pool to parallelize queries to the database.
   with concurrent.futures.ThreadPoolExecutor(
       max_workers=num_workers) as executor:
     future_to_window = {
-      executor.submit(compute, win): win for _, win in src.block_windows()
+      executor.submit(compute, win): win for _, win in dst.block_windows()
     }
     for future in concurrent.futures.as_completed(future_to_window):
       win = future_to_window[future]
@@ -208,6 +220,17 @@ def generate(ref_raster, path, num_workers, db, host, user, password):
     meta.update({'dtype': dtype, 'nodata': nodata})
     if 'compress' not in meta:
       meta.update({'compress': 'lzw', 'predictpr': 2})
+
+    # Query DB to find bounding box of all features and use the information
+    # to set the bounds of the raster.  This save query time (empty queries
+    # are not free) and generates a raster sized to only cover regions of
+    # the world with features.
+    bounds = get_bounds(pg_url)
+    affine, width, height = calculate_default_transform(
+      src.crs, src.crs, src.width, src.height, *bounds, resolution=src.res)
+    del meta['transform']
+    meta.update({'affine': affine, 'height': height, 'width': width})
+    
     with rasterio.open(path, 'w', **meta) as dst:
       do_parallel(src, dst, pg_url, num_workers)
   

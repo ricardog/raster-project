@@ -22,15 +22,13 @@ import projections.utils as utils
 
 @lrudecorator(5)
 def carea(bounds=None, height=None):
-  ds = rasterio.open('netcdf:%s:carea' %
-                     os.path.join(utils.luh2_dir(),
-                                  'staticData_quarterdeg.nc'))
-  if bounds is None:
-    return ds.read(1, masked=True)
-  win = ds.window(*bounds)
-  if win[1][1] - win[0][1] > height:
-    win = ((win[0][0], win[0][0] + height), win[1])
-  return ds.read(1, masked=True, window=win)
+  with rasterio.open(utils.luh2_static('carea')) as ds:
+    if bounds is None:
+      return ds.read(1, masked=True)
+    win = ds.window(*bounds)
+    if win[1][1] - win[0][1] > height:
+      win = ((win[0][0], win[0][0] + height), win[1])
+    return ds.read(1, masked=True, window=win)
 
 @lrudecorator(5)
 def tarea(bounds=None, height=None):
@@ -156,9 +154,9 @@ def printit(stacked):
                                         stacked[idx, 2, 0])))
 
 def to_df(stacked, names):
-  hs = {'fips': map(cid_to_fips, stacked[:, 0, 0]),
-        'name': map(cid_to_name, stacked[:, 0, 0]),
-        'ar5': map(cid_to_ar5, stacked[:, 0, 0]),
+  hs = {'fips': tuple(map(cid_to_fips, stacked[:, 0, 0])),
+        'name': tuple(map(cid_to_name, stacked[:, 0, 0])),
+        'ar5': tuple(map(cid_to_ar5, stacked[:, 0, 0])),
         'ratio': stacked[:, 2, -1] / stacked[:, 2, 0],
         'percent': (stacked[:, 2, -1] - stacked[:, 2, 0]) / stacked[:, 2, 0]}
   assert len(names) == stacked.shape[2]
@@ -170,10 +168,10 @@ def to_df(stacked, names):
 @click.group(invoke_without_command=True)
 @click.pass_context
 def cli(ctx):
-    if ctx.invoked_subcommand is None:
-        click.echo('I was invoked without subcommand')
-    else:
-        click.echo('I am about to invoke %s' % ctx.invoked_subcommand)
+  if ctx.invoked_subcommand is None:
+    click.echo('I was invoked without subcommand')
+  else:
+    click.echo('I am about to invoke %s' % ctx.invoked_subcommand)
 
 @cli.command()
 @click.argument('country-file', type=click.Path(dir_okay=False))
@@ -219,7 +217,7 @@ def countrify(infiles, band, country_file, npp, mp4, log):
         res = weighted_mean_by_country(ccode, data, carea(src.bounds,
                                                           src.height))
         if area == None:
-          ice_ds = rasterio.open('NETCDF:"../../data/luh2_v2/staticData_quarterdeg.nc":icwtr')
+          ice_ds = rasterio.open(utils.luh2_static('icwtr'))
           ice = ice_ds.read(1, window=ice_ds.window(*src.bounds))
           area = ma.MaskedArray(carea(src.bounds, src.height))
           area.mask = np.where(ice == 1, True, False)
@@ -235,7 +233,7 @@ def countrify(infiles, band, country_file, npp, mp4, log):
         print('%40s: %8.2f / %8.2f' % (os.path.basename(arg),
                                        res[2, :].max(), res[2, :].min()))
     stacked = np.dstack(stack)
-    names = map(parse_fname, infiles)
+    names = tuple(map(parse_fname, infiles))
     df = to_df(stacked, names)
     print(df)
 

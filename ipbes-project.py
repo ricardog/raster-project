@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
-import click
-import fiona
 import itertools
-import matplotlib.pyplot as plt
 import multiprocessing
-import numpy as np
-import numpy.ma as ma
 import os
 import sys
 import time
+
+import click
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.ma as ma
 import rasterio
-from rasterio.plot import show, show_hist
+from rasterio.plot import show
 
-import pdb
-
-from projections.rasterset import RasterSet, Raster
+from projections.rasterset import RasterSet
 from projections.simpleexpr import SimpleExpr
 import projections.r2py.modelr as modelr
 import projections.predicts as predicts
@@ -29,14 +27,22 @@ class YearRangeParamType(click.ParamType):
       try:
         return [int(value)]
       except ValueError:
-        l, h = value.split(':')
-        return range(int(l), int(h))
+        low, high = value.split(':')
+        return range(int(low), int(high))
     except ValueError:
       self.fail('%s is not a valid year range' % value, param, ctx)
 
 YEAR_RANGE = YearRangeParamType()
 
 def select_models(model, model_dir):
+  """Select the appropriate models for abundance, spieces richness, or
+compositional similarity depending on what the user wants to project.
+
+  Assumes models have fixed name and live in the folder passed as a
+  parameter.
+
+  """
+
   if model == 'ab':
     mods = ('ab-forested.rds', 'ab-nonforested.rds')
     out = 'Abundance'
@@ -54,18 +60,21 @@ def select_models(model, model_dir):
   return out, tuple(map(lambda x: os.path.join(model_dir, x), mods))
 
 def project_year(model, model_dir, scenario, year):
+  """Run a projection for a single year.  Can be called in parallel when
+projecting a range of years.
+
+  """
+
   print("projecting %s for %d using %s" % (model, year, scenario))
 
   what, models = select_models(model, model_dir)
   # Read Sam's abundance model (forested and non-forested)
   modf = modelr.load(models[0])
-  intercept_f = modf.intercept
   predicts.predictify(modf)
 
   modn = modelr.load(models[1])
-  intercept_n = modn.intercept
   predicts.predictify(modn)
-  
+
   # Open forested/non-forested mask layer
   fstnf = rasterio.open(utils.luh2_static('fstnf'))
 
@@ -90,7 +99,7 @@ def project_year(model, model_dir, scenario, year):
     print('%s not in rasterset' % what)
     print(', '.join(sorted(rsf.keys())))
     sys.exit(1)
-    
+
   stime = time.time()
   datan, meta = rsn.eval(what, quiet=True)
   dataf, _ = rsf.eval(what, quiet=True)
@@ -101,15 +110,15 @@ def project_year(model, model_dir, scenario, year):
   print("executed in %6.2fs" % (etime - stime))
   oname = '%s/luh2/%s-%s-%d.tif' % (utils.outdir(), scenario, what, year)
   with rasterio.open(oname, 'w', **meta) as dst:
-    dst.write(data.filled(meta['nodata']), indexes = 1)
+    dst.write(data.filled(meta['nodata']), indexes=1)
   if None:
     fig = plt.figure(figsize=(8, 6))
-    ax = plt.gca()
-    show(data, cmap='viridis', ax=ax)
-    plt.savefig('luh2-%s-%d.png' % (scenario, year))
+    show(data, cmap='viridis', ax=plt.gca())
+    fig.savefig('luh2-%s-%d.png' % (scenario, year))
   return
 
 def unpack(args):
+  """Unpack arguments passed to parallel map."""
   project_year(*args)
 
 @click.command()
@@ -123,6 +132,12 @@ def unpack(args):
 @click.option('--parallel', '-p', default=1, type=click.INT,
               help='How many projections to run in parallel (default: 1)')
 def project(what, scenario, years, model_dir, parallel=1):
+  """Project changes in terrestrial biodiversity using REDICTS models.
+
+  Writes output to a GeoTIFF file named <scenario>-<what>-<year>.tif.
+
+  """
+
   utils.luh2_check_year(min(years), scenario)
   utils.luh2_check_year(max(years), scenario)
   if parallel == 1:
@@ -133,6 +148,8 @@ def project(what, scenario, years, model_dir, parallel=1):
   pool.map(unpack, zip(itertools.repeat(what),
                        itertools.repeat(model_dir),
                        itertools.repeat(scenario), years))
-    
+
 if __name__ == '__main__':
+#pylint: disable-msg=no-value-for-parameter
   project()
+#pylint: enable-msg=no-value-for-parameter

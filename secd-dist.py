@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
+import collections
+import os
+import re
+import time
+import sys
+
 import click
 from netCDF4 import Dataset
 import numpy as np
 import numpy.ma as ma
-import os
 import osr
-import re
-import time
-import sys
 
 import projections.geotools as geotools
 import projections.utils as utils
@@ -134,14 +136,14 @@ def doit(scenario, outdir, start_index=0):
             valuesn = baselinen.copy()
           remove = ma.empty_like(valuesf[0])
           frac = ma.empty_like(valuesf[0])
-          posf = filter(lambda x: re.match(pos_re('f'), x),
-                        trans.variables.keys())
-          posn = filter(lambda x: re.match(pos_re('n'), x),
-                        trans.variables.keys())
-          negf = filter(lambda x: re.match(neg_re('f'), x),
-                        trans.variables.keys())
-          negn = filter(lambda x: re.match(neg_re('n'), x),
-                        trans.variables.keys())
+          posf = tuple(filter(lambda x: re.match(pos_re('f'), x),
+                              trans.variables.keys()))
+          posn = tuple(filter(lambda x: re.match(pos_re('n'), x),
+                              trans.variables.keys()))
+          negf = tuple(filter(lambda x: re.match(neg_re('f'), x),
+                              trans.variables.keys()))
+          negn = tuple(filter(lambda x: re.match(neg_re('n'), x),
+                              trans.variables.keys()))
           click.echo("  " + ', '.join(posf))
           click.echo("  " + ', '.join(negf))
           click.echo("  " + ', '.join(posn))
@@ -223,7 +225,7 @@ def init_nc(dst_ds, src_ds, variables):
   src_trans = (-180.0, 0.25, 0.0, 90.0, 0.0, -0.25)
   crs.grid_mapping_name = 'latitude_longitude'
   crs.spatial_ref = srs.ExportToWkt()
-  crs.GetTransform = ' '.join(map(str, src_trans))
+  crs.GetTransform = ' '.join(tuple(map(str, src_trans)))
   # FIXME: Attribute getters don't work in python3 or GDAL2
   crs.longitude_of_prime_meridian = geotools.srs_get_prime_meridian(srs)
   crs.semi_major_axis = geotools.srs_get_semi_major(srs)

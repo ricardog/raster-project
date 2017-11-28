@@ -88,21 +88,43 @@ def cli(ctx):
   if ctx.invoked_subcommand is None:
     click.echo('I was invoked without subcommand')
     summarize()
-  else:
-    click.echo('I am about to invoke %s' % ctx.invoked_subcommand)
 
 @cli.command()
-@click.argument('what', type=click.Choice(['ab', 'sr']))
+@click.argument('what', type=click.Choice(['ab', 'sr',
+                                           'cs-ab', 'cs-sr',
+                                           'bii-ab', 'bii-sr']))
 @click.argument('scenario', type=click.Choice(utils.luh2_scenarios()))
 @click.argument('years', type=YEAR_RANGE)
 @click.option('--npp', type=click.Path(dir_okay=False))
 def summary(what, scenario, years, npp):
+  """Generate a per-year and per-IPBES region summary of a diversity metric.
+
+  Diversity metric supported are
+
+  - ab: abundance (Abundance)
+
+  - sr: species richness (Richness)
+
+  - cs-ab: abundance-based compositional similarity (CompSimAb)
+
+  - cs-sr: species richness-based compositional similarity (CompSimSR)
+
+  - bii-ab: abundance-based BII (BIIAb)
+
+  - bii-sr: species richness-based BII (BIISR)
+
+"""
+  
   df = get_ipbes_regions()
-  template = '%s-%s-%%4d.tif' % (scenario, 'BIIAb'
-                                 if what == 'ab' else 'BIISR')
-
+  vname =  'Abundance' if what == 'ab' \
+           else 'Richness' if what =='sr' \
+                else 'CompSimAb' if what == 'cs-ab' \
+                     else 'CompSimSR' if what == 'cs-sr' \
+                          else 'BIIAb' if what == 'bii-ab' \
+                               else 'BIISR'
+  template = '%s-%s-%%4d.tif' % (scenario, vname)
+  
   for year in years:
-
     fnames = [utils.outfn('luh2', template % year)]
     fnames.append(utils.luh2_static('carea'))
     if npp:
@@ -125,8 +147,7 @@ def summary(what, scenario, years, npp):
     df[year] = by_subs.Mean / intact_by_subs.Mean
   if len(years) < 10:
     print(df)
-  df.to_csv('%s-%s-%4d-%4d.csv' % (scenario,
-                                   'BIIAb' if what == 'ab' else 'BIISR',
+  df.to_csv('%s-%s-%4d-%4d.csv' % (scenario, vname,
                                    years[0], years[-1]))
 
 @cli.command()

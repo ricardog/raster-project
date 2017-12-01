@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
+import time
+
 import fiona
 import multiprocessing
-import os
-import time
-from rasterio.plot import show, show_hist
+from rasterio.plot import show
 
 from projections.rasterset import RasterSet, Raster
 from projections.simpleexpr import SimpleExpr
@@ -33,13 +33,13 @@ def project(year):
   rasters['rd_dist'] = Raster('rd_dist', '/out/1km/roads-adrid.tif')
   rasters['hpd'] = Raster('hpd',
                           '/vsizip//data/from-adriana/HPD01to12.zip/yr%d/hdr.adf' % year)
-                          
+
   rs = RasterSet(rasters, shapes = shapes, crop = True, all_touched = True)
-  
+
   what = 'LogAbund'
   rs[what] = mod
   stime = time.time()
-  data = rs.write(what, utils.outfn('1km', 'adrid-%d.tif' % year))
+  rs.write(what, utils.outfn('1km', 'adrid-%d.tif' % year))
   etime = time.time()
   print("executed in %6.2fs" % (etime - stime))
 
@@ -48,5 +48,4 @@ if __name__ == '__main__':
   #sys.exit()
   #pool = multiprocessing.Pool(processes=4)
   #pool.map(project, range(2001, 2013))
-  #map(project, range(2001, 2013)) 
-  
+  #map(project, range(2001, 2013))

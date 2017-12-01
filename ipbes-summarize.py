@@ -116,6 +116,8 @@ def summary(what, scenario, years, npp):
 """
   
   df = get_ipbes_regions()
+  df_global = pd.DataFrame({'ID': [-1], 'Name': ['Global']},
+                           columns=('ID', 'Name'))
   vname =  'Abundance' if what == 'ab' \
            else 'Richness' if what =='sr' \
                 else 'CompSimAb' if what == 'cs-ab' \
@@ -145,11 +147,18 @@ def summary(what, scenario, years, npp):
     if 'Cells' not in df.columns:
       df['Cells'] = by_subs.Cells
     df[year] = by_subs.Mean / intact_by_subs.Mean
+
+    if 'Cells' not in df_global.columns:
+      df_global['Cells'] = (bii.shape[0] * bii.shape[1] -
+                               ma.count_masked(bii))
+    df_global[year] = ma.average(bii) / ma.average(intact)
+    
   if len(years) < 10:
     print(df)
-  df.to_csv('%s-%s-%4d-%4d.csv' % (scenario, vname,
-                                   years[0], years[-1]))
-
+  df.to_csv('%s-%s-subreg-%4d-%4d.csv' % (scenario, vname,
+                                          years[0], years[-1]))
+  df_global.to_csv('%s-%s-global-%4d-%4d.csv' % (scenario, vname,
+                                                 years[0], years[-1]))
 @cli.command()
 @click.argument('what', type=click.Choice(['ab', 'sr']))
 @click.argument('scenario', type=click.Choice(utils.luh2_scenarios()))

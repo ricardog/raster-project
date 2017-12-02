@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-import collections
 import os
 import re
 import time
-import sys
 
 import click
 from netCDF4 import Dataset
@@ -58,9 +56,8 @@ def write_bins(out, vname, values):
 
 def init_values(state, vname, start_index, mask):
   shape = state.variables[vname].shape
-  dtype = state.variables[vname].dtype
   values = ma.zeros((BINS, shape[1], shape[2]),
-                    dtype = state.variables[vname].dtype,
+                    dtype=state.variables[vname].dtype,
                     fill_value=-9999)
   values.mask = np.broadcast_to(mask == 1.0, values.shape)
   values[-1] = state.variables[vname][start_index]
@@ -91,7 +88,6 @@ def pos_re(fnf):
 def doit(scenario, outdir, start_index=0):
   static = Dataset(os.path.join(utils.luh2_dir(), 'staticData_quarterdeg.nc'))
   icwtr = static.variables['icwtr'][:, :]
-  fstnf = static.variables['fstnf'][:, :]
   atol = 5e-5
 
   variables = tuple([(x % fnf, 'f4', '1', -9999, 'time')
@@ -122,7 +118,7 @@ def doit(scenario, outdir, start_index=0):
       click.echo(tname)
       with Dataset(tname) as trans:
         with Dataset(sname) as state:
-          data = init_nc(out, state, variables)
+          _ = init_nc(out, state, variables)
           if scenario == 'historical':
             # Create a 3-D array to hold the last 50 years (plus 2)
             valuesf = init_values(state, 'secdf', start_index, icwtr)
@@ -185,11 +181,6 @@ def doit(scenario, outdir, start_index=0):
         baselinen = write_bins(out, 'binsn', valuesn).copy()
         start_index = 0
 
-def id(x):
-  # This function returns the memory
-  # block address of an array.
-  return x.__array_interface__['data'][0]
-
 def init_nc(dst_ds, src_ds, variables):
   # Set attributes
   dst_ds.setncattr('Conventions', u'CF-1.5')
@@ -200,12 +191,12 @@ def init_nc(dst_ds, src_ds, variables):
   dst_ds.createDimension('lat', len(src_ds.variables['lat']))
   dst_ds.createDimension('lon', len(src_ds.variables['lon']))
   dst_ds.createDimension('bins', BINS)
-  
+
   # Create variables
   times = dst_ds.createVariable("time", "f8", ("time"), zlib=True,
                                 least_significant_digit=3)
   latitudes = dst_ds.createVariable("lat", "f4", ("lat"), zlib=True,
-                                    least_significant_digit = 3)
+                                    least_significant_digit=3)
   longitudes = dst_ds.createVariable("lon", "f4", ("lon"), zlib=True,
                                      least_significant_digit=3)
   crs = dst_ds.createVariable('crs', "S1", ())
@@ -241,15 +232,16 @@ def init_nc(dst_ds, src_ds, variables):
   out = {}
   for name, dtype, units, fill, dimension in variables:
     dst_data = dst_ds.createVariable(name, dtype,
-                                     (dimension, "lat","lon"), zlib = True,
-                                     least_significant_digit = 4,
-                                     fill_value = fill)
+                                     (dimension, "lat", "lon"), zlib=True,
+                                     least_significant_digit=4,
+                                     fill_value=fill)
     dst_data.units = units
     dst_data.grid_mapping = 'crs'
     out[name] = dst_data
   return out
 
 if __name__ == '__main__':
+#pylint: disable-msg=no-value-for-parameter
   doit()
+#pylint: enable-msg=no-value-for-parameter
   click.echo('done')
-

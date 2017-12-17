@@ -134,6 +134,11 @@ def doit(scenario, outdir, start_index=0):
           else:
             valuesf = baselinef.copy()
             valuesn = baselinen.copy()
+
+          # Write initial data to output.
+          write_data(out, 'f', start_index, valuesf)
+          write_data(out, 'n', start_index, valuesn)
+
           remove = ma.empty_like(valuesf[0])
           frac = ma.empty_like(valuesf[0])
           posf = tuple(filter(lambda x: re.match(pos_re('f'), x),
@@ -166,8 +171,8 @@ def doit(scenario, outdir, start_index=0):
             asserts(state, idx, 'secdn', valuesn, atol)
 
             # Write data to output.
-            write_data(out, 'f', idx, valuesf)
-            write_data(out, 'n', idx, valuesn)
+            write_data(out, 'f', idx + 1, valuesf)
+            write_data(out, 'n', idx + 1, valuesn)
 
             # Rotate the array.
             valuesf = roll_values(valuesf)

@@ -86,7 +86,7 @@ projecting a range of years.
   #rsn = RasterSet(rastersn)
 
   if what in ('CompSimAb', 'CompSimSR'):
-    expr = '(inv_logit(%s) - 0.001) / (inv_logit(%f) - 0.001)'
+    expr = '(inv_logit(%s) - 0.01) / (inv_logit(%f) - 0.01)'
   else:
     expr = '(exp(%s) / exp(%f))'
   rsf[what] = SimpleExpr(what, expr % (modf.output, modf.intercept))

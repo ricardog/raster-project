@@ -136,6 +136,8 @@ def doit(scenario, outdir, start_index=0):
             valuesn = baselinen.copy()
 
           # Write initial data to output.
+          valuesf[0].fill(0)
+          valuesn[0].fill(0)
           write_data(out, 'f', start_index, valuesf)
           write_data(out, 'n', start_index, valuesn)
 

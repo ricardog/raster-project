@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-import click
 import math
+
+import click
+import joblib
 import matplotlib.pyplot as plt
 from multiprocessing import Pool as ThreadPool
 from netCDF4 import Dataset
@@ -63,6 +65,7 @@ def calculate(scenario, years):
                              min(len(scenarios), 3))
     all_axes = [ax for sublist in axes for ax in sublist]
 
+  storage = {}
   for scene in scenarios:
     with Dataset(utils.luh2_states(scene)) as ds:
       base_year = (850 if scene == 'historical' else 2015)
@@ -78,7 +81,8 @@ def calculate(scenario, years):
         idx = int(year) - base_year
         click.echo('year: %d' % int(year))
         cr = (ds.variables['c3ann'][idx, :, :] + ds.variables['c4ann'][idx, :, :] +
-              ds.variables['c3nfx'][idx, :, :] + ds.variables['c3per'][idx, :, :])
+              ds.variables['c3per'][idx, :, :] + ds.variables['c4per'][idx, :, :] +
+              ds.variables['c3nfx'][idx, :, :])
         pa = (ds.variables['range'][idx, :, :] + ds.variables['pastr'][idx, :, :])
         pr = (ds.variables['primf'][idx, :, :] + ds.variables['primn'][idx, :, :])
         se = (ds.variables['secdf'][idx, :, :] + ds.variables['secdn'][idx, :, :])
@@ -100,8 +104,10 @@ def calculate(scenario, years):
     ax.set_xlabel('Year')
     ax.set_title(scene)
     ax.grid('on')
-    ax.legend()
+    ax.legend(loc='center left')
+    storage[scene] = np.vstack((years, crop, past, prim, secd, urbn, human))
   plt.show()
+  joblib.dump(storage, 'overtime.dat', compress=True)
 
 if __name__ == '__main__':
 #pylint: disable-msg=no-value-for-parameter

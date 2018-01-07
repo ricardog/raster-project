@@ -16,6 +16,9 @@ for dname in /data/luh2_v2/LUH2_v2f_SSP[0-9]_*; do
 	printf "  %-6s :: %s:%s\n" ${what} ${year0} ${year1}
 	if ${for_real}; then
 	    echo > /dev/null
+	    ./ipbes-project.py -p ${num_jobs} \
+			       -m /vagrant/models/sam/2018-01-05/ \
+			       ${what} ${scenario} ${year0}:${year1} > /dev/null
 	fi
     done
 

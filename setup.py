@@ -28,6 +28,7 @@ setup(
         [console_scripts]
         extract_values=projections.scripts.extract_values:main
         gen_sps=projections.scripts.gen_sps:main
+	hyde2nc=projections.scripts.hyde2nc:main
         nc_dump=projections.scripts.nc_dump:main
         nctomp4=projections.scripts.nctomp4:main
         project=projections.scripts.project:cli

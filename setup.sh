@@ -35,3 +35,5 @@ make -C lui
 ## Generate SPS rasters
 gen_sps
 
+## Generate HYDE historical rasters
+#gen_hyde

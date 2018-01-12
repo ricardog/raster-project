@@ -96,7 +96,8 @@ def cli(ctx):
 @click.argument('scenario', type=click.Choice(utils.luh2_scenarios()))
 @click.argument('years', type=YEAR_RANGE)
 @click.option('--npp', type=click.Path(dir_okay=False))
-def summary(what, scenario, years, npp):
+@click.option('--vsr', type=click.Path(dir_okay=False))
+def summary(what, scenario, years, npp, vsr):
   """Generate a per-year and per-IPBES region summary of a diversity metric.
 
   Diversity metric supported are
@@ -114,7 +115,7 @@ def summary(what, scenario, years, npp):
   - bii-sr: species richness-based BII (BIISR)
 
 """
-  
+
   df = get_ipbes_regions()
   df_global = pd.DataFrame({'ID': [-1], 'Name': ['Global']},
                            columns=('ID', 'Name'))
@@ -125,12 +126,14 @@ def summary(what, scenario, years, npp):
                           else 'BIIAb' if what == 'bii-ab' \
                                else 'BIISR'
   template = '%s-%s-%%4d.tif' % (scenario, vname)
-  
+
   for year in years:
     fnames = [utils.outfn('luh2', template % year)]
     fnames.append(utils.luh2_static('carea'))
     if npp:
       fnames.append(npp)
+    if vsr:
+      fnames.append(vsr)
     fnames.append(utils.outfn('luh2', 'ipbes-subs.tif'))
 
     sources = [rasterio.open(src) for src in fnames]
@@ -140,6 +143,8 @@ def summary(what, scenario, years, npp):
     bii.mask = np.any(tuple(d.mask for d in data[0:-1]), 0)
 
     intact = ma.prod([np.full(data[0].shape, 1), data[1]], 0)
+    if (npp or vsr):
+      intact *= data[-2]
     intact.mask = bii.mask
 
     by_subs = weighted_mean_by(data[-1], bii)
@@ -152,7 +157,7 @@ def summary(what, scenario, years, npp):
       df_global['Cells'] = (bii.shape[0] * bii.shape[1] -
                                ma.count_masked(bii))
     df_global[year] = ma.average(bii) / ma.average(intact)
-    
+
   if len(years) < 10:
     print(df)
   df.to_csv('%s-%s-subreg-%4d-%4d.csv' % (scenario, vname,

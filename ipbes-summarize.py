@@ -125,7 +125,7 @@ def summary(what, scenario, years, npp, vsr):
                      else 'CompSimSR' if what == 'cs-sr' \
                           else 'BIIAb' if what == 'bii-ab' \
                                else 'BIISR'
-  template = '%s-%s-%%4d.tif' % (scenario, vname)
+  template = '%s-%s-%%d.tif' % (scenario, vname)
 
   for year in years:
     fnames = [utils.outfn('luh2', template % year)]
@@ -160,9 +160,9 @@ def summary(what, scenario, years, npp, vsr):
 
   if len(years) < 10:
     print(df)
-  df.to_csv('%s-%s-subreg-%4d-%4d.csv' % (scenario, vname,
+  df.to_csv('%s-%s-subreg-%d-%d.csv' % (scenario, vname,
                                           years[0], years[-1]))
-  df_global.to_csv('%s-%s-global-%4d-%4d.csv' % (scenario, vname,
+  df_global.to_csv('%s-%s-global-%d-%d.csv' % (scenario, vname,
                                                  years[0], years[-1]))
 @cli.command()
 @click.argument('what', type=click.Choice(['ab', 'sr']))

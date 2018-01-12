@@ -39,9 +39,9 @@ NE_10M_COUNTRIES := ${DATA_ROOT}/natural-earth/ne_10m_admin_0_countries/ne_10m_a
 GROADS := ${DATA_ROOT}/groads1.0/groads-v1-global-gdb/gROADS_v1.gdb
 GRUMPS := ${DATA_ROOT}/grump1.0/gluds00ag
 GRUMPS4 := ${DATA_ROOT}/grump4.0/gpw-v4-population-density-adjusted-to-2015-unwpp-country-totals_2015.tif
-NPP := ${DATA_ROOT}/npp/npp/hdr.adf
+NPP := ${DATA_ROOT}/npp/npp.tif
 AG_SUIT := ${DATA_ROOT}/ag_suitability/overall_cropsuit_i_2011-2040.tif
-VSR := ${DATA_ROOT}/vertebrate-richness/vertebrate-richness.asc
+VSR := ${DATA_ROOT}/vertebrate-richness/vertebrate-richness.tif
 
 OneKm := 0.008333333333300
 ED := 0.125

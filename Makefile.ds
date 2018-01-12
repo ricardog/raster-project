@@ -41,6 +41,7 @@ GRUMPS := ${DATA_ROOT}/grump1.0/gluds00ag
 GRUMPS4 := ${DATA_ROOT}/grump4.0/gpw-v4-population-density-adjusted-to-2015-unwpp-country-totals_2015.tif
 NPP := ${DATA_ROOT}/npp/npp/hdr.adf
 AG_SUIT := ${DATA_ROOT}/ag_suitability/overall_cropsuit_i_2011-2040.tif
+VSR := ${DATA_ROOT}/vertebrate-richness/vertebrate-richness.asc
 
 OneKm := 0.008333333333300
 ED := 0.125
@@ -48,7 +49,7 @@ QD := 0.25
 HD := 0.5
 
 RASTERS := un_codes un_codes-full un_subregions un_subregions-full \
-	gluds00ag grumps4 npp ag_suitability
+	gluds00ag grumps4 npp ag_suitability vertebrate-richness
 RESOLUTIONS := 1km luh2 rcp
 VECTORS := ssp-regions.shp
 ALL := $(addsuffix .tif, $(foreach res, ${RESOLUTIONS}, $(addprefix ${res}/, ${RASTERS}))) $(addprefix vector/, ${VECTORS})
@@ -127,6 +128,16 @@ luh2/ag_suitability.tif: ${AG_SUIT}
 	$(call resize, ${QD}, $<, $@)
 
 rcp/ag_suitability.tif: ${AG_SUIT}
+	$(call resize, ${HD}, $<, $@)
+
+### Vertebrate Species Richness (VSR)
+1km/vertebrate-richness.tif: ${VSR}
+	$(call resize, ${OneKm}, $<, $@)
+
+luh2/vertebrate-richness.tif: ${VSR}
+	$(call resize, ${QD}, $<, $@)
+
+rcp/vertebrate-richness.tif: ${VSR}
 	$(call resize, ${HD}, $<, $@)
 
 ### roads.tif

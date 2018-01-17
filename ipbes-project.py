@@ -34,7 +34,7 @@ class YearRangeParamType(click.ParamType):
 
 YEAR_RANGE = YearRangeParamType()
 
-def select_models(model, model_dir):
+def select_model(model, model_dir):
   """Select the appropriate models for abundance, spieces richness, or
 compositional similarity depending on what the user wants to project.
 
@@ -44,20 +44,20 @@ compositional similarity depending on what the user wants to project.
   """
 
   if model == 'ab':
-    mods = ('ab.rds', )
+    mod = 'ab.rds'
     out = 'Abundance'
   elif model == 'sr':
-    mods = ('sr.rds', )
+    mod = 'sr.rds'
     out = 'Richness'
   elif model == 'cs-ab':
-    mods = ('cs-ab.rds', )
+    mod = 'cs-ab.rds'
     out = 'CompSimAb'
   elif model == 'cs-sr':
-    mods = ('cs-sr.rds', )
+    mod = 'cs-sr.rds'
     out = 'CompSimSR'
   else:
     raise RuntimeError('Unknown model type %s' % model)
-  return out, tuple(map(lambda x: os.path.join(model_dir, x), mods))
+  return out, os.path.join(model_dir, mod)
 
 def project_year(model, model_dir, scenario, year):
   """Run a projection for a single year.  Can be called in parallel when
@@ -67,14 +67,16 @@ projecting a range of years.
 
   print("projecting %s for %d using %s" % (model, year, scenario))
 
-  what, models = select_models(model, model_dir)
-  # Read Sam's abundance model (forested and non-forested)
-  mod = modelr.load(models[0])
-  predicts.predictify(mod)
-
   # Import standard PREDICTS rasters
   rasters = predicts.rasterset('luh2', scenario, year)
   rs = RasterSet(rasters)
+
+  what, model = select_model(model, model_dir)
+  # Read Sam's models
+  if model:
+    mod = modelr.load(model)
+    predicts.predictify(mod)
+    rs[mod.output] = mod
 
   if what in ('CompSimAb', 'CompSimSR'):
     expr = '(inv_logit(%s) - 0.01) / (inv_logit(%f) - 0.01)'
@@ -82,7 +84,6 @@ projecting a range of years.
     expr = '(exp(%s) / exp(%f))'
   rs[what] = SimpleExpr(what, expr % (mod.output, mod.intercept))
 
-  rs[mod.output] = mod
 
   if what not in rs:
     print('%s not in rasterset' % what)

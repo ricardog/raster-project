@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import io
+import re
 
 from bokeh.io import output_file, show
 from bokeh.layouts import gridplot
@@ -13,8 +14,14 @@ import requests
 import pdb
 
 def csv2df(url, stype, syear, eyear):
-    s = requests.get(url % (stype, int(syear), int(eyear))).content
-    df = pd.read_csv(io.StringIO(s.decode('utf-8')))
+    m = re.match(r'file://(.*)', url)
+    if m:
+        path = m.group(1)
+        fd = open(path % (stype, int(syear), int(eyear)), 'r')
+    else:
+        s = requests.get(url % (stype, int(syear), int(eyear))).text
+        fd = io.StringIO(s)
+    df = pd.read_csv(fd)
     subset = df.loc[:, syear:eyear].T.reset_index()
     subset.columns = ['Year'] + df['Name'].values.tolist()
     return subset

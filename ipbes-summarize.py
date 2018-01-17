@@ -115,6 +115,8 @@ def summary(what, scenario, years, npp, vsr):
   - bii-sr: species richness-based BII (BIISR)
 
 """
+  if npp and vsr:
+    raise RuntimeError('Please specify --npp or --vsr, not both')
 
   df = get_ipbes_regions()
   df_global = pd.DataFrame({'ID': [-1], 'Name': ['Global']},
@@ -155,7 +157,7 @@ def summary(what, scenario, years, npp, vsr):
 
     if 'Cells' not in df_global.columns:
       df_global['Cells'] = (bii.shape[0] * bii.shape[1] -
-                               ma.count_masked(bii))
+                            ma.count_masked(bii))
     df_global[year] = ma.average(bii) / ma.average(intact)
 
   if len(years) < 10:

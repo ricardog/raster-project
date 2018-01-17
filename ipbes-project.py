@@ -44,16 +44,16 @@ compositional similarity depending on what the user wants to project.
   """
 
   if model == 'ab':
-    mods = ('ab-forested.rds', 'ab-nonforested.rds')
+    mods = ('ab.rds', )
     out = 'Abundance'
   elif model == 'sr':
-    mods = ('sr-forested.rds', 'sr-nonforested.rds')
+    mods = ('sr.rds', )
     out = 'Richness'
   elif model == 'cs-ab':
-    mods = ('cs-for-ab.rds', 'cs-non-ab.rds')
+    mods = ('cs-ab.rds', )
     out = 'CompSimAb'
   elif model == 'cs-sr':
-    mods = ('cs-for-sr.rds', 'cs-non-sr.rds')
+    mods = ('cs-sr.rds', )
     out = 'CompSimSR'
   else:
     raise RuntimeError('Unknown model type %s' % model)
@@ -69,43 +69,28 @@ projecting a range of years.
 
   what, models = select_models(model, model_dir)
   # Read Sam's abundance model (forested and non-forested)
-  modf = modelr.load(models[0])
-  predicts.predictify(modf)
-
-  modn = modelr.load(models[1])
-  predicts.predictify(modn)
-
-  # Open forested/non-forested mask layer
-  fstnf = rasterio.open(utils.luh2_static('fstnf'))
+  mod = modelr.load(models[0])
+  predicts.predictify(mod)
 
   # Import standard PREDICTS rasters
-  rastersf = predicts.rasterset('luh2', scenario, year, 'f')
-  rsf = RasterSet(rastersf, mask=fstnf, maskval=0.0)
-  rastersn = predicts.rasterset('luh2', scenario, year, 'n')
-  rsn = RasterSet(rastersn, mask=fstnf, maskval=1.0)
-  #rsn = RasterSet(rastersn)
+  rasters = predicts.rasterset('luh2', scenario, year)
+  rs = RasterSet(rasters)
 
   if what in ('CompSimAb', 'CompSimSR'):
     expr = '(inv_logit(%s) - 0.01) / (inv_logit(%f) - 0.01)'
   else:
     expr = '(exp(%s) / exp(%f))'
-  rsf[what] = SimpleExpr(what, expr % (modf.output, modf.intercept))
-  rsn[what] = SimpleExpr(what, expr % (modn.output, modn.intercept))
+  rs[what] = SimpleExpr(what, expr % (mod.output, mod.intercept))
 
-  rsf[modf.output] = modf
-  rsn[modn.output] = modn
+  rs[mod.output] = mod
 
-  if what not in rsf:
+  if what not in rs:
     print('%s not in rasterset' % what)
-    print(', '.join(sorted(rsf.keys())))
+    print(', '.join(sorted(rs.keys())))
     sys.exit(1)
 
   stime = time.time()
-  datan, meta = rsn.eval(what, quiet=True)
-  dataf, _ = rsf.eval(what, quiet=True)
-  data_vals = dataf.filled(0) + datan.filled(0)
-  data = data_vals.view(ma.MaskedArray)
-  data.mask = np.logical_and(dataf.mask, datan.mask)
+  data, meta = rs.eval(what, quiet=True)
   etime = time.time()
   print("executed in %6.2fs" % (etime - stime))
   oname = '%s/luh2/%s-%s-%d.tif' % (utils.outdir(), scenario, what, year)

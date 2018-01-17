@@ -141,6 +141,13 @@ using PREDICTS models.
   requirements during the computation. I haven't tried running it in
   some time so likely broken.
 
+- ipbes-project.py:
+  Generates projections for IPBES assessment using Sam's models.  These
+  models use the LUH2 dataset and have a finer land-use categorization.
+  In addition, there are two separate models; one for potentially
+  forested regions and one for not potentially-forested regions (the
+  LUH2 dataset provides a map to distinguish between the two).
+
 These scripts are meant as starting points from which you should develop
 your own code.  They have hard-coded assumptions about where to find
 input rasters and models, and where to save output rasters.  They expect

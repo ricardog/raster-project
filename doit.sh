@@ -12,7 +12,7 @@ for dname in /data/luh2_v2/LUH2_v2f_SSP[0-9]_*; do
     scenario=${full#luh2_v2f_}
     echo ${scenario}
     ## Generate the four base layers.
-    for what in sr cs-sr ab cs-ab; do
+    for what in sr cs-sr ab cs-ab hpd; do
 	printf "  %-6s :: %s:%s\n" ${what} ${year0} ${year1}
 	if ${for_real}; then
 	    echo > /dev/null

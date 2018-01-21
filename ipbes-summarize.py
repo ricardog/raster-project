@@ -127,8 +127,17 @@ def summary(what, scenario, years, npp, vsr):
                      else 'CompSimSR' if what == 'cs-sr' \
                           else 'BIIAb' if what == 'bii-ab' \
                                else 'BIISR'
-  template = '%s-%s-%%d.tif' % (scenario, vname)
+  template = '%s-%s-%%04d.tif' % (scenario, vname)
 
+  if scenario == 'historical':
+    # This is horrible kludge!
+    years = (900, 1000, 1100, 1200, 1300, 1400, 1500, 1600,
+             1700, 1710, 1720, 1730, 1740, 1750, 1760, 1770, 1780, 1790,
+             1800, 1810, 1820, 1830, 1840, 1850, 1860, 1870, 1880, 1890,
+             1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990,
+             2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+             2010, 2011, 2012, 2013, 2014)
+    
   for year in years:
     fnames = [utils.outfn('luh2', template % year)]
     fnames.append(utils.luh2_static('carea'))

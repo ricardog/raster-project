@@ -96,7 +96,7 @@ projecting a range of years.
   data, meta = rs.eval(what, quiet=True)
   etime = time.time()
   print("executed in %6.2fs" % (etime - stime))
-  oname = '%s/luh2/%s-%s-%d.tif' % (utils.outdir(), scenario, what, year)
+  oname = '%s/luh2/%s-%s-%04d.tif' % (utils.outdir(), scenario, what, year)
   with rasterio.open(oname, 'w', **meta) as dst:
     dst.write(data.filled(meta['nodata']), indexes=1)
   if None:

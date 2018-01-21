@@ -56,8 +56,10 @@ compositional similarity depending on what the user wants to project.
     mod = 'cs-sr.rds'
     out = 'CompSimSR'
   else:
-    raise RuntimeError('Unknown model type %s' % model)
-  return out, os.path.join(model_dir, mod)
+    mod = None
+    out = model
+    #raise RuntimeError('Unknown model type %s' % model)
+  return out, None if mod is None else os.path.join(model_dir, mod)
 
 def project_year(model, model_dir, scenario, year):
   """Run a projection for a single year.  Can be called in parallel when
@@ -78,12 +80,12 @@ projecting a range of years.
     predicts.predictify(mod)
     rs[mod.output] = mod
 
-  if what in ('CompSimAb', 'CompSimSR'):
-    expr = '(inv_logit(%s) - 0.01) / (inv_logit(%f) - 0.01)'
-  else:
-    expr = '(exp(%s) / exp(%f))'
-  rs[what] = SimpleExpr(what, expr % (mod.output, mod.intercept))
-
+  if what in ('CompSimAb', 'CompSimSR', 'Abundance', 'Richness'):
+    if what in ('CompSimAb', 'CompSimSR'):
+      expr = '(inv_logit(%s) - 0.01) / (inv_logit(%f) - 0.01)'
+    else:
+      expr = '(exp(%s) / exp(%f))'
+    rs[what] = SimpleExpr(what, expr % (mod.output, mod.intercept))
 
   if what not in rs:
     print('%s not in rasterset' % what)
@@ -108,7 +110,8 @@ def unpack(args):
   project_year(*args)
 
 @click.command()
-@click.argument('what', type=click.Choice(['ab', 'sr', 'cs-ab', 'cs-sr']))
+@click.argument('what', type=click.Choice(['ab', 'sr', 'cs-ab', 'cs-sr',
+                                           'hpd']))
 @click.argument('scenario', type=click.Choice(utils.luh2_scenarios()))
 @click.argument('years', type=YEAR_RANGE)
 @click.option('--model-dir', '-m', type=click.Path(file_okay=False),

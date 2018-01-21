@@ -2,15 +2,16 @@
 
 set -e
 year=$1
+oyear=$(printf "%04d" ${year})
 scenario='historical'
-export DATA_ROOT=${DATA_ROOT:=/Users/ricardog/src/eec/data}
-export OUTDIR=${OUTDIR:=/Users/ricardog/src/eec/predicts/playground/ds}
+export DATA_ROOT=${DATA_ROOT:=/data}
+export OUTDIR=${OUTDIR:=/out}
+model_dir=/vagrant/models/sam/2018-01-05/
 
 ## Generate the four base layers.
-for what in sr cs-sr ab cs-ab; do
+for what in sr cs-sr ab cs-ab hpd; do
     printf "  %-6s :: %s\n" ${what} ${year}
-    ./ipbes-project.py -m ~/src/eec/predicts/models/sam/2018-01-05/ \
-		       ${what} ${scenario} ${year} > /dev/null
+    ./ipbes-project.py -m ${model_dir} ${what} ${scenario} ${year} > /dev/null
 done
 
 ## Combine base layers into BII layer.
@@ -23,13 +24,13 @@ for what in sr ab; do
 	v2="SR"
     fi
 
-    rio clip ${OUTDIR}/luh2/${scenario}-CompSim${v2}-${year}.tif \
-	--like ${OUTDIR}/luh2/${scenario}-${v1}-${year}.tif \
-	--output ${OUTDIR}/luh2/${scenario}-CompSim${v2}-${year}.tif
+    rio clip ${OUTDIR}/luh2/${scenario}-CompSim${v2}-${oyear}.tif \
+	--like ${OUTDIR}/luh2/${scenario}-${v1}-${oyear}.tif \
+	--output ${OUTDIR}/luh2/${scenario}-CompSim${v2}-${oyear}.tif
 
     rio calc --co "COMPRESS=lzw" --co "PREDICTOR=2" --masked \
 	-t float32 "(* (read 1 1) (read 2 1))" \
-	-o ${OUTDIR}/luh2/${scenario}-BII${v2}-${year}.tif \
-	${OUTDIR}/luh2/${scenario}-${v1}-${year}.tif \
-	${OUTDIR}/luh2/${scenario}-CompSim${v2}-${year}.tif
+	-o ${OUTDIR}/luh2/${scenario}-BII${v2}-${oyear}.tif \
+	${OUTDIR}/luh2/${scenario}-${v1}-${oyear}.tif \
+	${OUTDIR}/luh2/${scenario}-CompSim${v2}-${oyear}.tif
 done

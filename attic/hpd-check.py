@@ -6,7 +6,7 @@ import re
 import sys
 
 from bokeh.io import output_file, show, save
-from bokeh.layouts import gridplot
+from bokeh.layouts import gridplot, column
 from bokeh.models import Range1d, ColumnDataSource, HoverTool, CrosshairTool
 from bokeh.palettes import Category20, brewer, viridis
 from bokeh.plotting import figure
@@ -79,9 +79,9 @@ def pline(p, df, column, legend=None, color='black', line_width=3):
     p.line('year', 'data', source=src, line_width=line_width,
            legend=legend, color=color)
 
-def bokeh_plot(dfs):
-  p = figure(title='Worldwide Human Population')
-  mypalette=Category20[len(dfs)]
+def bokeh_plot(dfs, title=''):
+  p = figure(title='Worldwide Human Population (%s)' % title)
+  mypalette=Category20[min(max(3, len(dfs)), 20)]
   for idx, scenario in enumerate(dfs):
     df = dfs[scenario]
     name = scenario.split('_', 1)[0]
@@ -92,9 +92,9 @@ def bokeh_plot(dfs):
   p.legend.location = "top_left"
   return p
 
-def do_plot(dfs, bokeh, out):
+def do_plot(dfs, title, bokeh, out):
   if bokeh:
-    p = bokeh_plot(dfs)
+    p = bokeh_plot(dfs, title)
     if out:
       output_file(out)
     save(p)
@@ -102,7 +102,7 @@ def do_plot(dfs, bokeh, out):
     ax = None
     for key in dfs:
       ax = dfs[key].plot(ax=ax)
-    ax.set_title('Worldwide Human Population')
+    ax.set_title('Worldwide Human Population (%s)' % title)
     plt.show()
   
 @click.group(invoke_without_command=True)
@@ -113,14 +113,44 @@ def cli(ctx):
     projections()
 
 @cli.command()
-@click.option('--datadir', type=click.Path(dir_okay=True, file_okay=False),
-              default='/data')
+@click.pass_context
+@click.argument('series', type=click.Choice(('hyde', 'sps', 'projected', 'all')))
 @click.option('--outdir', type=click.Path(dir_okay=True, file_okay=False),
               default='/out/luh2')
 @click.option('-o', '--out', type=click.Path(dir_okay=False, file_okay=True))
-@click.option('-r', '--raw', is_flag=True, type=str, default=False)
 @click.option('-b', '--bokeh', is_flag=True, default=False)
-def sps(datadir, outdir, out, raw, bokeh):
+def plot(ctx, series, outdir, out, bokeh):
+  if series == 'hyde':
+    dfs = hyde(outdir)
+  elif series == 'sps':
+    dfs = sps(outdir)
+  elif series == 'projected':
+    dfs = projected(outdir, 'hpd')
+  elif series == 'all':
+    p1 = bokeh_plot(hyde(outdir), 'hyde')
+    p2 = bokeh_plot(sps(outdir), 'sps')
+    p3 = bokeh_plot(projected(outdir), 'projected')
+    col = column(p1, p2, p3)
+    if out:
+      output_file(out)
+    save(col)
+    return
+  do_plot(dfs, series, bokeh, out)
+
+def hyde(outdir):
+  print('hyde')
+  df = pd.DataFrame()
+  ds = rasterio.open('netcdf:' + os.path.join(outdir, 'hyde.nc:popd'))
+  years = tuple(map(lambda idx: int(ds.tags(idx)['NETCDF_DIM_time']),
+                    ds.indexes))
+  df['historical'] = tuple(map(lambda y: _one(ds.name, True,
+                                              years.index(y) + 1),
+                               years))
+  df.index = years
+  return {'historical': df}
+
+
+def sps(outdir, raw=False):
   dfs = {}
   for scenario in map(lambda n: 'ssp%d' % n, range(1, 6)):
     print(scenario)
@@ -136,34 +166,10 @@ def sps(datadir, outdir, out, raw, bokeh):
                                                  masked=True).sum(), years))
       df.index = years
     dfs[scenario] = df
-  do_plot(dfs, bokeh, out)
-  
-@cli.command()
-@click.option('--outdir', type=click.Path(dir_okay=True, file_okay=False),
-              default='/out/luh2')
-@click.option('-o', '--out', type=click.Path(dir_okay=False, file_okay=True))
-@click.option('-b', '--bokeh', is_flag=True, default=False)
-def hyde(outdir, out, bokeh):
-  dfs = {}
-  df = pd.DataFrame()
-  ds = rasterio.open('netcdf:' + os.path.join(outdir, 'hyde.nc:popd'))
-  years = tuple(map(lambda idx: int(ds.tags(idx)['NETCDF_DIM_time']),
-                    ds.indexes))
-  df['historical'] = tuple(map(lambda y: _one(ds.name, True,
-                                              years.index(y) + 1),
-                               years))
-  df.index = years
-  dfs['historical'] = df
-  do_plot(dfs, bokeh, out)
+  return dfs
 
 
-@cli.command()
-@click.option('--outdir', type=click.Path(dir_okay=True, file_okay=False),
-              default='/out/luh2')
-@click.option('-o', '--out', type=click.Path(dir_okay=False, file_okay=True))
-@click.option('--what', type=str, default='hpd')
-@click.option('-b', '--bokeh', is_flag=True, default=False)
-def projections(outdir, out, what, bokeh):
+def projected(outdir, what='hpd'):
   files = get_files(outdir, what)
   dfs = {}
   for scenario in files:
@@ -174,10 +180,14 @@ def projections(outdir, out, what, bokeh):
     df.index = tuple(map(lambda f: int(os.path.splitext(f)[0].rsplit('-', 1)[-1]),
                          files[scenario]))
     dfs[scenario] = df
-  do_plot(dfs, bokeh, out)
+  return dfs
 
-
+@cli.command()
 def old_school():
+  for year in (2011, 2012, 2013, 2014):
+    one(str(year), '/out/luh2/historical-hpd-%d.tif' %year, True)
+  return
+
   for year in (2010, 2099):
     scenario = 'ssp3'
     one('%s/%d' % (scenario, year),

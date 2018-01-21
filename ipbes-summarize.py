@@ -184,7 +184,7 @@ def summarize(what, scenario, years, npp):
   df = get_ipbes_regions()
 
   for year in years:
-    template = '%s-%%s-%4d.tif' % (scenario, year)
+    template = '%s-%%s-%04d.tif' % (scenario, year)
     vnames = ('Abundance', 'CompSimAb') if what == 'ab' else ('Richness',
                                                               'CompSimSR')
     fnames = [utils.outfn('luh2', template % vname)

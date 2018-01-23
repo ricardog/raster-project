@@ -11,7 +11,11 @@ for dname in /data/luh2_v2/LUH2_v2f_SSP[0-9]_*; do
     full=${dd,,}
     scenario=${full#luh2_v2f_}
     for what in sr cs-sr ab cs-ab bii-ab bii-sr; do
-	printf "%s %s %d:%d\n" "${what}" "${scenario}" "${year0}" "${year1}"
+	if [[ ("$what" = "sr") || ("$what" = "cs-sr") || ( "$what" = "bii-sr") ]]; then
+	    printf "%s /out/luh2/vertebrate-richness.tif %s %s %d:%d\n" "--vsr" "${what}" "${scenario}" "${year0}" "${year1}"
+	else
+	    printf "%s /out/luh2/npp.tif %s %s %d:%d\n" "--npp" "${what}" "${scenario}" "${year0}" "${year1}"
+	fi
     done
 done | xargs -P 10 -n 1 -l1 ./ipbes-summarize.py summary
 

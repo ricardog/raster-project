@@ -71,10 +71,10 @@ def indicators(merged, local):
     plots = []
 
     base_url = "http://ipbes.s3.amazonaws.com/summary/" + \
-               "%s-%s-%%s-%%d-%%d.csv"
+               "%s-%s-%s-%%s-%%04d-%%04d.csv"
     if local:
         print('Using local summary files')
-        base_url = "file://ipbes-upload/%s-%s-%%s-%%d-%%d.csv"
+        base_url = "file://ipbes-upload/%s-%s-%s-%%s-%%04d-%%04d.csv"
 
     hsubset = {}
     hglob = {}

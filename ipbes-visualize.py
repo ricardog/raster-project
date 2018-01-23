@@ -86,7 +86,8 @@ def indicators(merged, local):
             title = 'historical'
             syear = '900'
             eyear = '2014'
-            url = base_url % (scenario, indicator)
+            weight = 'npp' if indicator == 'BIIAb' else 'vsr'
+            url = base_url % (scenario, indicator, weight)
             if scenario != 'historical':
                 ssp, rcp, model = scenario.upper().split('_')
                 title = '%s -- %s / %s' % (indicator, ssp, rcp)

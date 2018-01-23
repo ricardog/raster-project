@@ -171,10 +171,11 @@ def summary(what, scenario, years, npp, vsr):
 
   if len(years) < 10:
     print(df)
-  df.to_csv('%s-%s-subreg-%d-%d.csv' % (scenario, vname,
-                                          years[0], years[-1]))
-  df_global.to_csv('%s-%s-global-%d-%d.csv' % (scenario, vname,
-                                                 years[0], years[-1]))
+  weight = "-npp" if npp else "-vsr" if vsr else ""
+  df.to_csv('%s-%s%s-subreg-%04d-%04d.csv' % (scenario, vname, weight,
+                                              years[0], years[-1]))
+  df_global.to_csv('%s-%s%s-global-%04d-%04d.csv' % (scenario, vname, weight,
+                                                     years[0], years[-1]))
 @cli.command()
 @click.argument('what', type=click.Choice(['ab', 'sr']))
 @click.argument('scenario', type=click.Choice(utils.luh2_scenarios()))

@@ -60,7 +60,8 @@ def cli(ctx):
 @cli.command()
 @click.option('-m', '--merged', is_flag=True, default=False)
 @click.option('-l', '--local', is_flag=True, default=False)
-def indicators(merged, local):
+@click.option('--out', type=click.Path(dir_okay=False))
+def indicators(merged, local, out):
     scenarios = ('historical',
                  'ssp1_rcp2.6_image',
                  'ssp2_rcp4.5_message-globiom',
@@ -120,6 +121,8 @@ def indicators(merged, local):
             row.append(p)
         plots.append(row)
     grid = gridplot(plots, sizing_mode='scale_width')
+    if out:
+        output_file(out)
     save(grid)
 
 @cli.command()

@@ -45,6 +45,18 @@ def is_luh5(syms, prefix):
       return False
   return True
 
+def as_contrast(root, prefix):
+  if isinstance(root, str) and re.match(prefix, root):
+    newr = root.replace(prefix, '')
+    left, right = newr.split('-')
+    if left in ('Primary Minimal', 'Primary Vegetation Minimal use'):
+      return _predictify(right, '')
+    if left == right:
+      return 0
+    return 0
+    assert False, 'Contrast should be Primary Minimal-X or X-X'
+  return root
+
 def predictify(root, prefix):
   if isinstance(root, str) and re.match(prefix, root):
     newr = _predictify(root, prefix)

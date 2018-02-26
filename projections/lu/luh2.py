@@ -58,6 +58,7 @@ def is_luh2(syms, prefix):
 def _predictify(sym, prefix):
   newr = sym.replace(prefix, '')
   newr = newr.replace(' vegetation', '')
+  newr = newr.replace(' Vegetation', '')
   newr = newr.replace(' forest', '_pri')
   newr = newr.replace('Managed ', '')
   newr = newr.replace(' secondary', '_secondary')
@@ -79,10 +80,14 @@ def is_luh2(syms, prefix):
 def as_contrast(root, prefix):
   if isinstance(root, str) and re.match(prefix, root):
     newr = root.replace(prefix, '')
-    newr = re.sub(r'^.*-', '', newr)
-    newr = newr.replace('Managed ', '')
-    newr = newr.replace(' Minimal', '')
-    return _predictify(newr, '')
+    left, right = newr.split('-')
+    if left in ('Primary Minimal', 'Primary Vegetation Minimal use'):
+      import pdb; pdb.set_trace()
+      return _predictify(right, '')
+    if left == right:
+      return '0'
+    return '0'
+    assert False, 'Contrast should be Primary Minimal-X or X-X'
   return root
 
 def predictify(root, prefix):

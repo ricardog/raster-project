@@ -12,6 +12,7 @@ from . import lui
 from . import ui
 from . import utils
 from .utils import outfn
+from .r2py.tree import Node, Operator
 
 def rcp(scenario, year, hpd_trend):
   rasters = {}
@@ -335,6 +336,11 @@ def predictify(mod):
       newr = root.replace('.', '_')
       return newr
     return root
+  def squash_zero(node):
+    if (isinstance(node, Node) and node.type is Operator('in') and
+        node.args[0] == 0):
+      return 0.0
+    return node
   
   syms = mod.hstab
   if not syms:
@@ -369,9 +375,9 @@ def predictify(mod):
       f = lambda x: lu.rcp.predictify(x, 'LandUse')
     mod.equation.transform(f)
   if 'Contrast' in syms:
-    print('predictify Contrasts as luh2')
-    f = lambda x: lu.luh2.as_contrast(x, 'Contrast')
+    print('predictify Contrasts as luh5')
+    f = lambda x: lu.luh5.as_contrast(x, 'Contrast')
     mod.equation.transform(f)
     
-    
   mod.equation.transform(nodots)
+  mod.equation.transform(squash_zero)

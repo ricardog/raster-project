@@ -25,16 +25,27 @@ import pdb
 import projections.utils as utils
 
 import osr
-def earth_radius():
+def earth_radius(authalic=False):
+  if authalic:
+    return 6371007.2
   srs = osr.SpatialReference()
   srs.ImportFromEPSG(4326)
   return srs.GetSemiMajor()
 
+def rcs2(ds, authalic=False):
+  ul = ds.affine * (0.5, 0.5)
+  lr = ds.affine * (ds.width - 0.5, ds.height - 0.5)
+  lats = np.linspace(ul[1], lr[1], ds.height)
+  vec = ((np.sin(np.radians(lats + ds.res[1] / 2.0)) -
+          np.sin(np.radians(lats - ds.res[1] / 2.0))) *
+         (ds.res[0] * np.pi/180) * earth_radius(authalic) ** 2 / 1e6)
+  return vec.reshape((vec.shape[0], 1))
+
 def rcs(height, res, left, bottom, right, top):
-  lats = np.linspace(top, bottom + res[1], height)
+  lats = np.linspace(top, bottom + res[1] / 2.0, height)
   vec = ((np.sin(np.radians(lats + res[1] / 2.0)) -
           np.sin(np.radians(lats - res[1] / 2.0))) *
-         (res[0] * np.pi/180) * earth_radius() ** 2 / 1e6)
+         (res[0] * np.pi/180) * earth_radius(False) ** 2 / 1e6)
   return vec.reshape((vec.shape[0], 1))
 
 def _one(fname, scale=True, band=1):

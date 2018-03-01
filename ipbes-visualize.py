@@ -60,7 +60,8 @@ def cli(ctx):
 @cli.command()
 @click.option('-m', '--merged', is_flag=True, default=False)
 @click.option('-l', '--local', is_flag=True, default=False)
-def indicators(merged, local):
+@click.option('--out', type=click.Path(dir_okay=False))
+def indicators(merged, local, out):
     scenarios = ('historical',
                  'ssp1_rcp2.6_image',
                  'ssp2_rcp4.5_message-globiom',
@@ -71,10 +72,10 @@ def indicators(merged, local):
     plots = []
 
     base_url = "http://ipbes.s3.amazonaws.com/summary/" + \
-               "%s-%s-%%s-%%d-%%d.csv"
+               "%s-%s-%s-%%s-%%04d-%%04d.csv"
     if local:
         print('Using local summary files')
-        base_url = "file://ipbes-upload/%s-%s-%%s-%%d-%%d.csv"
+        base_url = "file://ipbes-upload/%s-%s-%s-%%s-%%04d-%%04d.csv"
 
     hsubset = {}
     hglob = {}
@@ -86,7 +87,8 @@ def indicators(merged, local):
             title = 'historical'
             syear = '900'
             eyear = '2014'
-            url = base_url % (scenario, indicator)
+            weight = 'npp' if indicator == 'BIIAb' else 'vsr'
+            url = base_url % (scenario, indicator, weight)
             if scenario != 'historical':
                 ssp, rcp, model = scenario.upper().split('_')
                 title = '%s -- %s / %s' % (indicator, ssp, rcp)
@@ -119,6 +121,8 @@ def indicators(merged, local):
             row.append(p)
         plots.append(row)
     grid = gridplot(plots, sizing_mode='scale_width')
+    if out:
+        output_file(out)
     save(grid)
 
 @cli.command()

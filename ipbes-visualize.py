@@ -131,6 +131,7 @@ def landuse():
     historical = storage['historical']
 
     rows = []
+    row = []
     for scenario in filter(lambda s: s != 'historical', storage.keys()):
         ssp, rcp, model = scenario.upper().split('_')
         title = '%s / %s' % (ssp, rcp)
@@ -146,7 +147,7 @@ def landuse():
         source = ColumnDataSource(data={
             'year' : [x2] * areas.shape[1],
             'data' : [areas[c].values for c in areas],
-            'color': viridis(areas.shape[1]),
+            'color': Category20[areas.shape[1]],
             'label': areas.columns
         })
         p = figure(x_range=(df.index[0], df.index[-1]), y_range=(0, 100),
@@ -157,14 +158,21 @@ def landuse():
                    source=source)
         #p.patches([x2] * areas.shape[1], [areas[c].values for c in areas],
         #    color=colors, alpha=0.8, line_color=None)
-        p.line(df.index, arr[:, 6], legend='Human NPP', line_width=6,
-               color='black')
+        #p.line(df.index, arr[:, 6], legend='Human NPP', line_width=6,
+        #       color='black')
         p.add_tools(HoverTool(tooltips=[('Year', '$x{0}'),
                                         ('Percent', '$y'),
                                         ('Land use', '@label')]))
-        rows.append([p])
-    grid = gridplot(rows, sizing_mode='scale_width')
+        row.append(p)
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    grid = gridplot(rows)
     show(grid)
+    out = False
+    if out:
+        output_file(out)
+    save(grid)
 
 if __name__ == '__main__':
     cli()

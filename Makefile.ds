@@ -12,7 +12,7 @@ endif
 define rasterize
 # $call rasterize attribute type resolution src dst)
 	@echo gdal_rasterize ${4} ${5}
-	gdal_rasterize -q -tap -at -a_nodata -9999 -init -9999 -a ${1} \
+	gdal_rasterize -tap -at -a_nodata -9999 -init -9999 -a ${1} \
 		-ot ${2} -tr ${3} ${3} -co "COMPRESS=lzw" \
 		-co "PREDICTOR=2" ${4} ${5}
 	@echo done
@@ -31,7 +31,7 @@ endef
 
 define resize
 # $(call resize resolution src dst)
-resize	gdalwarp -tap -overwrite -tr ${1} ${1} -dstnodata -9999 -of GTiff \
+	gdalwarp -tap -overwrite -tr ${1} ${1} -dstnodata -9999 -of GTiff \
 		-co COMPRESS=lzw -co PREDICTOR=2 ${2} ${3}
 endef
 
@@ -44,7 +44,7 @@ NPP := ${DATA_ROOT}/npp/npp.tif
 AG_SUIT := ${DATA_ROOT}/ag_suitability/overall_cropsuit_i_2011-2040.tif
 VSR := ${DATA_ROOT}/vertebrate-richness/vertebrate-richness.tif
 
-OneKm := 0.008333333333300
+OneKm := 0.008333333333333
 ED := 0.125
 QD := 0.25
 HD := 0.5

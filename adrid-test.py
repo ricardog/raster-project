@@ -3,25 +3,28 @@
 import rasterio
 import fiona
 import numpy as np
+import os
 import time
 
 from rasterio.plot import show
 import matplotlib.pyplot as plt
 
-from projections.rasterset import RasterSet
+from projections.rasterset import RasterSet, Raster
 import projections.predicts as predicts
 import projections.r2py.modelr as modelr
 
 # Open the mask shape file
-shp_file = '../../data/from-adriana/tropicalforests.shp'
+shp_file = os.path.join(os.environ['DATA_ROOT'],
+                        'from-adriana/tropicalforests.shp')
 shapes = fiona.open(shp_file)
 
 # Read Adriana's abundance model (mainland)
-mod = modelr.load('../models/ab-corrected.rds')
+mod = modelr.load(os.path.join(os.environ['MODEL_DIR'],
+                               'ab-model.rds'))
 predicts.predictify(mod)
 
 # Import standard PREDICTS rasters
-rasters = predicts.rasterset('rcp', 'aim', 2020, 'medium')
+rasters = predicts.rasterset('luh5', 'historical', 1990, True)
 rs = RasterSet(rasters, shapes = shapes, all_touched = True)
 
 what = mod.output
@@ -30,6 +33,7 @@ stime = time.time()
 data1, meta_data1 = rs.eval(what)
 etime = time.time()
 print("executed in %6.2fs" % (etime - stime))
+show(data1)
 
 ##
 ## Compare with good raster

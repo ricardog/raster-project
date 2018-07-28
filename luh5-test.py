@@ -76,7 +76,8 @@ def project_year(model, model_dir, what, scenario, year):
   data, meta = rs.eval(what, quiet=False)
   etime = time.time()
   print("executed in %6.2fs" % (etime - stime))
-  oname = '/out/luh5/%s-%s-%d.tif' % (scenario, what, year)
+  oname = os.path.join(os.environ['OUTDIR'],
+                       'luh5/%s-%s-%d.tif' % (scenario, what, year))
   #hpd, _ = rs.eval('hpd', quiet=False)
   #hpd_max, meta2 = rs.eval('hpd_max', quiet=False)
   with rasterio.open(oname, 'w', **meta) as dst:
@@ -112,7 +113,8 @@ def unpack(args):
               help='How many projections to run in parallel (default: 1)')
 def project(model, what, scenario, years, model_dir, parallel=1):
   if parallel == 1:
-    map(lambda y: project_year(model, model_dir, what, scenario, y), years)
+    for y in years:
+      project_year(model, model_dir, what, scenario, y)
     return
   pool = multiprocessing.Pool(processes=parallel)
   pool.map(unpack, itertools.izip(itertools.repeat(model),

@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 
+from math import pi
 import io
 import re
 
 from bokeh.io import output_file, show, save
 from bokeh.layouts import gridplot
 from bokeh.models import Range1d, ColumnDataSource, HoverTool, CrosshairTool
-from bokeh.palettes import Category20, brewer, viridis
+from bokeh.models import Legend, LegendItem
+from bokeh.palettes import Category20, Spectral6, brewer, viridis
 from bokeh.plotting import figure
+from bokeh.transform import factor_cmap
 
 import click
 import joblib
@@ -170,6 +173,98 @@ def landuse():
     grid = gridplot(rows)
     show(grid)
     out = False
+    if out:
+        output_file(out)
+    save(grid)
+
+@cli.command()
+@click.option('-l', '--local', is_flag=True, default=False)
+@click.option('--out', type=click.Path(dir_okay=False))
+def deltas(local, out):
+    scenarios = ('ssp1_rcp2.6_image',
+                 'ssp2_rcp4.5_message-globiom',
+                 'ssp3_rcp7.0_aim',
+                 'ssp4_rcp3.4_gcam',
+                 'ssp4_rcp6.0_gcam',
+                 'ssp5_rcp8.5_remind-magpie')
+    names = []
+    for s in scenarios:
+        ssp, rcp = s.split('_')[0:2]
+        name = '%s / %s' % (ssp, rcp)
+        names.append(name)
+
+    base_url = "http://ipbes.s3.amazonaws.com/summary/" + \
+               "%s-%s-%s-%%s-%%04d-%%04d.csv"
+    if local:
+        print('Using local summary files')
+        base_url = "file://ipbes-weighted/%s-%s-%s-%%s-%%04d-%%04d.csv"
+
+    delta = None
+    plots = []
+    row = []
+    for indicator in ('BIIAb', 'BIISR'):
+        for name, scenario in zip(names, scenarios):
+            print(scenario, name)
+            weight = 'npp' if indicator == 'BIIAb' else 'vsr'
+            url = base_url % (scenario, indicator, weight)
+            ssp, rcp, model = scenario.upper().split('_')
+            title = 'Change in %s per IPBES subregion' % indicator
+            syear = '2015'
+            eyear = '2100'
+            subset = csv2df(url, 'subreg', syear, eyear)
+            glob = csv2df(url, 'global', syear, eyear)
+            if delta is None:
+                cols = ['Global'] + subset.columns[1:-1].values.tolist()
+                delta = pd.DataFrame(columns=cols, index=names)
+            delta.loc[name, cols[1]:cols[-1]] = \
+                subset.loc[85, cols[1]:cols[-1]] - \
+                subset.loc[0, cols[1]:cols[-1]]
+            delta.loc[name, 'Global'] = glob.loc[85, 'Global'] - \
+                                            glob.loc[0, 'Global']
+            
+        bars = ColumnDataSource(data=dict(regions=cols,
+                                          bottom=delta.min(),
+                                          top=delta.max()))
+        pdb.set_trace()
+        df2 = delta.transpose().stack()
+        df3 = pd.DataFrame(columns=['Subregion', 'Scenario', 'value'])
+        df3.Subregion = df2.index.get_level_values(0)
+        df3.Scenario = df2.index.get_level_values(1)
+        df3.value = df2.values
+
+        points = ColumnDataSource(df3)
+        plt = figure(title=title, x_range=cols, toolbar_location="above")
+        plt.y_range = Range1d(delta.min().min() * 1.1,
+                              delta.max().max() * 1.1)
+        plt.xaxis.major_label_orientation = pi/4
+
+        r1 = plt.vbar(x='regions', width=0.9, source=bars, top='top',
+                      bottom='bottom', fill_color="#D5E1DD",
+                      line_color="black")
+        r2 = plt.circle(x='Subregion', y='value', source=points,
+                        legend='Scenario',
+                        size=8,
+                        fill_color=factor_cmap('Scenario',
+                                               palette=Spectral6,
+                                               factors=names))
+        if None:
+            ## These don't work very well
+            legend = Legend(items=[LegendItem(label=s, renderers=[pp])
+                                   for s in names], location=(0, -30))
+            plt.add_layout(legend, 'right')
+            ## Tooltip pop-up when hovering over the box plot
+            ## I would like it to pop-up only when hovering over a point.
+        else:
+            plt.add_tools(HoverTool(renderers=[r2],
+                                    tooltips=[('Subregion', '@Subregion'),
+                                              ('BII delta', '$y'),
+                                              ('Scenario', '@Scenario')]))
+            plt.legend.location = 'bottom_right'
+
+        row.append(plt)
+    #pdb.set_trace()
+    grid = gridplot([row], sizing_mode='scale_width')
+    show(grid)
     if out:
         output_file(out)
     save(grid)

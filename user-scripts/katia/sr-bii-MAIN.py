@@ -53,7 +53,8 @@ rasters['logHPD_rs'] = SimpleExpr('logHPD_rs',
 
 rasters['DistRd'] = Raster('DistRd', os.path.join(utils.data_root(), '1km/rddistwgs.tif')) ###Use new raster
 rasters['logDistRd_rs'] = SimpleExpr('logDistRd_rs',
-                                     'scale(log(DistRd+100), 0.0, 1.0, -1.120966, 12.18216)')
+                                     'scale(log(clip(DistRd, 0, 195274.2) + '
+                                     '100), 0.0, 1.0, -1.120966, 12.18216)')
 
 ###Added +100 to DistRd to deal with  zero values in raster
 

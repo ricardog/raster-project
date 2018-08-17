@@ -202,15 +202,14 @@ def deltas(local, out):
     delta = None
     plots = []
     row = []
+    syear = '2015'
+    eyear = '2100'
     for indicator in ('BIIAb', 'BIISR'):
+        title = 'Change in %s per IPBES subregion' % indicator
+        weight = 'npp' if indicator == 'BIIAb' else 'vsr'
         for name, scenario in zip(names, scenarios):
             print(scenario, name)
-            weight = 'npp' if indicator == 'BIIAb' else 'vsr'
             url = base_url % (scenario, indicator, weight)
-            ssp, rcp, model = scenario.upper().split('_')
-            title = 'Change in %s per IPBES subregion' % indicator
-            syear = '2015'
-            eyear = '2100'
             subset = csv2df(url, 'subreg', syear, eyear)
             glob = csv2df(url, 'global', syear, eyear)
             if delta is None:
@@ -222,17 +221,13 @@ def deltas(local, out):
             delta.loc[name, 'Global'] = glob.loc[85, 'Global'] - \
                                             glob.loc[0, 'Global']
             
+        df2 = delta.transpose().stack().reset_index()
+        df2.columns=['Subregion', 'Scenario', 'value']
+
         bars = ColumnDataSource(data=dict(regions=cols,
                                           bottom=delta.min(),
                                           top=delta.max()))
-        pdb.set_trace()
-        df2 = delta.transpose().stack()
-        df3 = pd.DataFrame(columns=['Subregion', 'Scenario', 'value'])
-        df3.Subregion = df2.index.get_level_values(0)
-        df3.Scenario = df2.index.get_level_values(1)
-        df3.value = df2.values
-
-        points = ColumnDataSource(df3)
+        points = ColumnDataSource(df2)
         plt = figure(title=title, x_range=cols, toolbar_location="above")
         plt.y_range = Range1d(delta.min().min() * 1.1,
                               delta.max().max() * 1.1)
@@ -247,22 +242,13 @@ def deltas(local, out):
                         fill_color=factor_cmap('Scenario',
                                                palette=Spectral6,
                                                factors=names))
-        if None:
-            ## These don't work very well
-            legend = Legend(items=[LegendItem(label=s, renderers=[pp])
-                                   for s in names], location=(0, -30))
-            plt.add_layout(legend, 'right')
-            ## Tooltip pop-up when hovering over the box plot
-            ## I would like it to pop-up only when hovering over a point.
-        else:
-            plt.add_tools(HoverTool(renderers=[r2],
-                                    tooltips=[('Subregion', '@Subregion'),
-                                              ('BII delta', '$y'),
-                                              ('Scenario', '@Scenario')]))
-            plt.legend.location = 'bottom_right'
-
+        plt.add_tools(HoverTool(renderers=[r2],
+                                tooltips=[('Subregion', '@Subregion'),
+                                          ('BII delta', '$y'),
+                                          ('Scenario', '@Scenario')]))
+        plt.legend.location = 'bottom_right'
         row.append(plt)
-    #pdb.set_trace()
+
     grid = gridplot([row], sizing_mode='scale_width')
     show(grid)
     if out:
@@ -271,5 +257,4 @@ def deltas(local, out):
 
 if __name__ == '__main__':
     cli()
-
 

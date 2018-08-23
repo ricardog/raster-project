@@ -22,11 +22,11 @@ import projections.r2py.modelr as modelr
 import projections.utils as utils
 
 RD_DIST_MIN = 1
-RD_DIST_MAX = 195274.2
+RD_DIST_MAX = 195274.3
 HPD_MIN = 0
 HPD_MAX = 22490
 
-CLIP = True # False
+CLIP = False # True
 
 # Open the mask raster file (Mainlands)
 mask_file = os.path.join(utils.data_root(),
@@ -101,4 +101,5 @@ rs['output'] = SimpleExpr('output', '(pow(%s, 2) / pow(%f, 2))' % (mod.output, 0
 # note that for mainlands, the model intercept is NOT what you want to
 # have as your baseline so change mod.itercept to whatever the value is
 # of the true intercept
-rs.write('output', utils.outfn('katia', 'bii-ab-mainlands.tif'))
+path = ('katia', 'clip' if CLIP else 'no-clip', 'bii-ab-mainlands.tif')
+rs.write('output', utils.outfn(*path))

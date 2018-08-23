@@ -22,7 +22,7 @@ import projections.r2py.modelr as modelr
 import projections.utils as utils
 
 RD_DIST_MIN = 1
-RD_DIST_MAX = 195274.2
+RD_DIST_MAX = 195274.3
 HPD_MIN = 0
 HPD_MAX = 22490
 
@@ -100,5 +100,5 @@ rs['output'] = SimpleExpr('output', 'exp(%s) / exp(%f)' % (mod.output, 2.626708)
 # note that for mainlands, the model intercept is NOT what you want to
 # have as your baseline so change mod.itercept to whatever the value is
 # of the true intercept
-rs.write('output', utils.outfn('katia', 'bii-sr-mainlands.tif'))
-
+path = ('katia', 'clip' if CLIP else 'no-clip', 'bii-sr-mainlands.tif')
+rs.write('output', utils.outfn(*path))

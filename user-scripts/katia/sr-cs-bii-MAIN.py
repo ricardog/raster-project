@@ -23,7 +23,8 @@ import projections.utils as utils
 
 
 # Open the mask raster file
-mask_file = os.path.join(utils.data_root(), '1km/mainland-from-igor.tif')
+mask_file = os.path.join(utils.data_root(),
+                         '1km/mainland-from-igor-edited.tif')
 mask_ds = rasterio.open(mask_file)
 
 # Richness compositional similarity model with updated PriMin-Urb coefficient

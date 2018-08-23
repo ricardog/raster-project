@@ -21,6 +21,12 @@ import projections.predicts as predicts
 import projections.r2py.modelr as modelr
 import projections.utils as utils
 
+RD_DIST_MIN = 1
+RD_DIST_MAX = 195274.2
+HPD_MIN = 0
+HPD_MAX = 22490
+
+CLIP = True # False
 
 # Open the mask raster file (Mainlands)
 mask_file = os.path.join(utils.data_root(),
@@ -46,19 +52,34 @@ rasters['plantation_pri_minimal'] = SimpleExpr('plantation_pri_minimal', '0')
 rasters['plantation_pri_light'] = SimpleExpr('plantation_pri_light', '0')
 rasters['plantation_pri_intense'] = SimpleExpr('plantation_pri_intense', '0')
 
-# we need to check whether the logHPD.rs automatically produced uses the same values we use
-# if not, manually create logHPD.rs
+## If CLIP is true, limit the predictor variable values to the max seen
+## when fitting the model
+if CLIP:
+  rasters['clip_hpd'] = SimpleExpr('clip_hpd',
+                                  'clip(hpd_ref, %f, %f)' %(HPD_MIN, HPD_MAX))
+else:
+  rasters['clip_hpd'] = SimpleExpr('clip_hpd', 'hpd_ref)')
+###log values and then rescale them 0 to 1
+# we need to check whether the logHPD.rs automatically produced uses the
+# same values we use if not, manually create logHPD.rs
 rasters['logHPD_rs'] = SimpleExpr('logHPD_rs',
-                                  'scale(log(hpd_ref + 1), 0.0, 1.0, 0.0, 10.02087)') ###log values and then rescale them 0 to 1
+                                  'scale(log(clip_hpd + 1), 0.0, 1.0, 0.0, 10.02087)')
 
-##I'm setting up min and max log values to rescale
+## I'm setting up min and max log values to rescale
 
 # Same is true for logDistRd_rs
-
 rasters['DistRd'] = Raster('DistRd', os.path.join(utils.data_root(), '1km/rddistwgs.tif')) ###Use new raster
+## If CLIP is true, limit the predictor variable values to the max seen
+## when fitting the model
+if CLIP:
+  rasters['clipDistRd'] = SimpleExpr('clipDistRd',
+                                     'clip(DistRd, %f, %f)' %(RD_DIST_MIN,
+                                                              RD_DIST_MAX))
+else:
+    rasters['clipDistRd'] = SimpleExpr('clipDistRd', 'DistRd')
 rasters['logDistRd_rs'] = SimpleExpr('logDistRd_rs',
-                                     'scale(log(clip(DistRd, 0, 195274.2) + '
-                                     '100), 0.0, 1.0, -1.120966, 12.18216)')
+                                     'scale(log(clipDistRd + 100),'
+                                     '0.0, 1.0, -1.120966, 12.18216)')
 ###Added +100 to DistRd to deal with  zero values
 
 # set up the rasterset, cropping to mainlands
@@ -77,7 +98,7 @@ rs[mod.output] = mod
 #rs['output'] = SimpleExpr('output', '(pow(%s, 2) / pow(%f, 2))' % (mod.output, mod.intercept))
 rs['output'] = SimpleExpr('output', '(pow(%s, 2) / pow(%f, 2))' % (mod.output, 0.67184))
 
-# note that for mainlands, the model intercept is NOT what you want to have as your baseline
-# so change mod.itercept to whatever the value is of the true intercept
+# note that for mainlands, the model intercept is NOT what you want to
+# have as your baseline so change mod.itercept to whatever the value is
+# of the true intercept
 rs.write('output', utils.outfn('katia', 'bii-ab-mainlands.tif'))
-

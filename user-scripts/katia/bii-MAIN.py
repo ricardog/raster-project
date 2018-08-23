@@ -30,6 +30,8 @@ bii_rs = RasterSet({'abundance': Raster('abundance',
                     'comp_sim': Raster('comp_sim',
                                        utils.outfn('katia',
                                                    'bii-ab-cs-mainlands.tif')),
+                    'clip_ab': SimpleExpr('clip_ab',
+                                          'clip(abundance, 0, 1.7)'),
                     'bii_ab': SimpleExpr('bii_ab', 'abundance * comp_sim')})
 
 # write out bii raster
@@ -44,6 +46,8 @@ bii_rs = RasterSet({'sp_rich': Raster('sp_rich',
                     'comp_sim': Raster('comp_sim',
                                        utils.outfn('katia',
                                                    'bii-sr-cs-mainlands.tif')),
+                    'clip_sr': SimpleExpr('clip_sr',
+                                          'clip(sp_rich, 0, 1.7)'),
                     'bii_sr': SimpleExpr('bii_sr', 'sp_rich * comp_sim')})
 
 # write out bii raster

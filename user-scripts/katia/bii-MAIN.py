@@ -24,18 +24,28 @@ import projections.raster_utils as ru
 
 
 # pull in all the rasters for computing bii
-bii_rs = RasterSet({'abundance': Raster('abundance', utils.outfn('katia', 'bii-ab-mainlands.tif')),
-                    'comp_sim': Raster('comp_sim', utils.outfn('katia', 'bii-ab-cs-mainlands.tif')),
+bii_rs = RasterSet({'abundance': Raster('abundance',
+                                        utils.outfn('katia',
+                                                    'bii-ab-mainlands.tif')),
+                    'comp_sim': Raster('comp_sim',
+                                       utils.outfn('katia',
+                                                   'bii-ab-cs-mainlands.tif')),
                     'bii_ab': SimpleExpr('bii_ab', 'abundance * comp_sim')})
 
 # write out bii raster
-bii_rs.write('bii_ab', utils.outfn('katia','abundance-based-bii-mainlands.tif'))
+bii_rs.write('bii_ab',
+             utils.outfn('katia', 'abundance-based-bii-mainlands.tif'))
 
 # do the same for species richness
 # pull in all the rasters for computing bii
-bii_rs = RasterSet({'abundance': Raster('abundance', utils.outfn('katia', 'bii-sr-mainlands.tif')),
-                    'comp_sim': Raster('comp_sim', utils.outfn('katia', 'bii-sr-cs-mainlands.tif')),
-                    'bii_sr': SimpleExpr('bii_sr', 'abundance * comp_sim')})
+bii_rs = RasterSet({'sp_rich': Raster('sp_rich',
+                                      utils.outfn('katia',
+                                                  'bii-sr-mainlands.tif')),
+                    'comp_sim': Raster('comp_sim',
+                                       utils.outfn('katia',
+                                                   'bii-sr-cs-mainlands.tif')),
+                    'bii_sr': SimpleExpr('bii_sr', 'sp_rich * comp_sim')})
 
 # write out bii raster
-bii_rs.write('bii_sr', utils.outfn('katia','speciesrichness-based-bii-mainlands.tif'))
+bii_rs.write('bii_sr',
+             utils.outfn('katia', 'speciesrichness-based-bii-mainlands.tif'))

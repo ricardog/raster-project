@@ -58,7 +58,7 @@ if CLIP:
   rasters['clip_hpd'] = SimpleExpr('clip_hpd',
                                   'clip(hpd_ref, %f, %f)' %(HPD_MIN, HPD_MAX))
 else:
-  rasters['clip_hpd'] = SimpleExpr('clip_hpd', 'hpd_ref)')
+  rasters['clip_hpd'] = SimpleExpr('clip_hpd', 'hpd_ref')
 ###log values and then rescale them 0 to 1
 # we need to check whether the logHPD.rs automatically produced uses the
 # same values we use if not, manually create logHPD.rs

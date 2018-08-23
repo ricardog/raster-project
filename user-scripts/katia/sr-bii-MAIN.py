@@ -26,7 +26,7 @@ RD_DIST_MAX = 195274.2
 HPD_MIN = 0
 HPD_MAX = 22490
 
-CLIP = True # False
+CLIP = False # True
 
 # Open the mask raster file (Mainlands)
 mask_file = os.path.join(utils.data_root(),
@@ -58,7 +58,7 @@ if CLIP:
   rasters['clip_hpd'] = SimpleExpr('clip_hpd',
                                   'clip(hpd_ref, %f, %f)' %(HPD_MIN, HPD_MAX))
 else:
-  rasters['clip_hpd'] = SimpleExpr('clip_hpd', 'hpd_ref)')
+  rasters['clip_hpd'] = SimpleExpr('clip_hpd', 'hpd_ref')
 ###log values and then rescale them 0 to 1
 # we need to check whether the logHPD.rs automatically produced uses the
 # same values we use if not, manually create logHPD.rs

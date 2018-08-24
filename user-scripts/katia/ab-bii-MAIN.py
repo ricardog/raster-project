@@ -21,12 +21,12 @@ import projections.predicts as predicts
 import projections.r2py.modelr as modelr
 import projections.utils as utils
 
-RD_DIST_MIN = 1
+RD_DIST_MIN = 0
 RD_DIST_MAX = 195274.3
 HPD_MIN = 0
 HPD_MAX = 22490
 
-CLIP = False # True
+CLIP = True # False
 
 # Open the mask raster file (Mainlands)
 mask_file = os.path.join(utils.data_root(),

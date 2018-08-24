@@ -33,7 +33,7 @@ bii_rs = RasterSet({'abundance': Raster('abundance',
                                        utils.outfn('katia',
                                                    'bii-ab-cs-mainlands.tif')),
                     'clip_ab': SimpleExpr('clip_ab',
-                                          'clip(abundance, 0, 1.070242)'),
+                                          'clip(abundance, 0, 1.655183)'),
                     'bii_ab': SimpleExpr('bii_ab', 'abundance * comp_sim'),
                     'bii_ab2': SimpleExpr('bii_ab2', 'clip_ab * comp_sim'),
 })

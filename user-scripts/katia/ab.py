@@ -2,23 +2,11 @@
 
 import argparse
 import math
-import time
-
-import fiona
-import multiprocessing
-from rasterio.plot import show
-import math
 import os
 
-import click
-#import matlibplot.pyplot as plt
-import numpy as np
-import numpy.ma as ma
 import rasterio
-from rasterio.plot import show, show_hist
 
 from projections.rasterset import RasterSet, Raster
-from projections.simpleexpr import SimpleExpr
 import projections.predicts as predicts
 import projections.r2py.modelr as modelr
 import projections.utils as utils
@@ -60,27 +48,26 @@ rasters = predicts.rasterset('1km', 'medium', year = 2005)
 
 # create an ISL_MAINL raster
 # set it to Mainlands this time round (set Mainlands to 1 and Islands to 0)
-rasters['ISL_MAINLMAINLAND'] = SimpleExpr('ISL_MAINLMAINLAND', ISLMAIN)
+rasters['ISL_MAINLMAINLAND'] = ISLMAIN
 
 # specify the plantation forest maps as 0
 # not sure why it's plantations_pri rather than plantation, but hey ho
-rasters['plantation_pri'] = SimpleExpr('plantation_pri', 0)
-rasters['plantation_pri_minimal'] = SimpleExpr('plantation_pri_minimal', 0)
-rasters['plantation_pri_light'] = SimpleExpr('plantation_pri_light', 0)
-rasters['plantation_pri_intense'] = SimpleExpr('plantation_pri_intense', 0)
+rasters['plantation_pri'] = 0
+rasters['plantation_pri_minimal'] = 0
+rasters['plantation_pri_light'] = 0
+rasters['plantation_pri_intense'] = 0
 
 ## If CLIP is true, limit the predictor variable values to the max seen
 ## when fitting the model
 if args.clip:
-  rasters['clip_hpd'] = SimpleExpr('clip_hpd',
-                                  'clip(hpd_ref, %f, %f)' %(HPD_MIN, HPD_MAX))
+  rasters['clip_hpd'] = 'clip(hpd_ref, %f, %f)' % (HPD_MIN, HPD_MAX)
 else:
-  rasters['clip_hpd'] = SimpleExpr('clip_hpd', 'hpd_ref')
-###log values and then rescale them 0 to 1
+  rasters['clip_hpd'] = 'hpd_ref'
+
+# log values and then rescale them 0 to 1
 # we need to check whether the logHPD.rs automatically produced uses the
 # same values we use if not, manually create logHPD.rs
-rasters['logHPD_rs'] = SimpleExpr('logHPD_rs',
-                                  'scale(log(clip_hpd + 1), 0.0, 1.0, 0.0, 10.02087)')
+rasters['logHPD_rs'] = 'scale(log(clip_hpd + 1), 0.0, 1.0, 0.0, 10.02087)'
 
 ## I'm setting up min and max log values to rescale
 
@@ -89,26 +76,18 @@ rasters['DistRd'] = Raster('DistRd', os.path.join(utils.data_root(), '1km/rddist
 ## If args.clip is true, limit the predictor variable values to the max seen
 ## when fitting the model
 if args.clip:
-  rasters['clipDistRd'] = SimpleExpr('clipDistRd',
-                                     'clip(DistRd, %f, %f)' %(RD_DIST_MIN,
-                                                              RD_DIST_MAX))
+  rasters['clipDistRd'] = 'clip(DistRd, %f, %f)' %(RD_DIST_MIN, RD_DIST_MAX)
 else:
-    rasters['clipDistRd'] = SimpleExpr('clipDistRd', 'DistRd')
-rasters['logDistRd_rs'] = SimpleExpr('logDistRd_rs',
-                                     'scale(log(clipDistRd + 100),'
-                                     '0.0, 1.0, -1.120966, 12.18216)')
+  rasters['clipDistRd'] = 'DistRd'
+rasters['logDistRd_rs'] = 'scale(log(clipDistRd + 100), 0.0, 1.0, -1.120966, 12.18216)'
 ###Added +100 to DistRd to deal with  zero values
 
 # set up the rasterset, cropping to mainlands
 rs = RasterSet(rasters, mask = mask_ds, maskval=0, crop = True)
-# if you're projecting the whole world, use this code instead
-# rs = RasterSet(rasters)
-
-# evaluate the model
-# model is square root abundance so square it
 
 # Note that the intercept value has been calculated for the baseline
-# land use when all other variables are held at 0
+# land use with max distance to a road and all other variables are held
+# at 0
 
 # Therefore I calculate separatedly an intercept where DistRd is set to
 # the max value, i.e. logDistRd_RS = 1.
@@ -121,6 +100,8 @@ else:
   ## FIXME: Replace RHS with the R calculated value
   assert math.isclose(intercept, 0.7270164, rel_tol=0.001)
 
+# evaluate the model
+# model is square root abundance so square it
 rs[mod.output] = mod
 rs['output'] = SimpleExpr('output', '(pow(%s, 2) / pow(%f, 2))' % (mod.output, intercept))
 

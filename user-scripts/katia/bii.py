@@ -39,10 +39,9 @@ if args.mainland:
   ab_max = 1.655183
   sr_max = 1.636021
 else:
-  assert False
   suffix = 'islands'
-  ab_max = None
-  sr_max = None
+  ab_max = 1.443549
+  sr_max = 1.413479
 
 folder = 'clip' if args.clip else 'no-clip'
 

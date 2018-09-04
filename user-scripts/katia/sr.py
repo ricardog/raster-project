@@ -44,10 +44,9 @@ if args.mainland:
   mask_file = os.path.join(utils.data_root(),
                            '1km/mainland-from-igor-edited.tif')
 else:
-  assert False, 'Islands projection not yet implemented'
+  ISLMAIN = 0
   mask_file = os.path.join(utils.data_root(),
                          '1km/islands-from-igor-edited.tif')
-  ISLMAIN = 0
 
 # Open the mask raster file (Mainlands)
 mask_ds = rasterio.open(mask_file)
@@ -117,7 +116,7 @@ print("intercept: %.5f" % intercept)
 if args.mainland:
   assert math.isclose(intercept, 2.626708, rel_tol=0.001)
 else:
-  assert math.isclose(intercept, intercept, rel_tol=0.001)
+  assert math.isclose(intercept, 2.796343, rel_tol=0.001)
 
 # evaluate the model
 # model is square root abundance so square it

@@ -44,10 +44,9 @@ if args.mainland:
   mask_file = os.path.join(utils.data_root(),
                            '1km/mainland-from-igor-edited.tif')
 else:
-  assert False, 'Islands projection not yet implemented'
+  ISLMAIN = 0
   mask_file = os.path.join(utils.data_root(),
                          '1km/islands-from-igor-edited.tif')
-  ISLMAIN = 0
 
 # Open the mask raster file (Mainlands)
 mask_ds = rasterio.open(mask_file)
@@ -120,7 +119,7 @@ if args.mainland:
   assert math.isclose(intercept, 0.67184, rel_tol=0.001)
 else:
   ## FIXME: Replace RHS with the R calculated value
-  assert math.isclose(intercept, intercept, rel_tol=0.001)
+  assert math.isclose(intercept, 0.7270164, rel_tol=0.001)
 
 rs[mod.output] = mod
 rs['output'] = SimpleExpr('output', '(pow(%s, 2) / pow(%f, 2))' % (mod.output, intercept))

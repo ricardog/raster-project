@@ -72,7 +72,7 @@ if args.mainland:
 else:
   assert math.isclose(intercept, 1.439107176, rel_tol=0.001)
 
-rs['output'] = SimpleExpr('output', '(inv_logit(%s) - 0.01) / (inv_logit(%f) - 0.01)' % (mod.output, mod.intercept))
+rs['output'] = SimpleExpr('output', '(inv_logit(%s) - 0.01) / (inv_logit(%f) - 0.01)' % (mod.output, intercept))
 
 fname = 'ab-cs-%s.tif' % ('mainland' if args.mainland else 'islands')
 rs.write('output', utils.outfn('katia', fname))

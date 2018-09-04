@@ -70,7 +70,7 @@ else:
 # evaluate the model
 # model is logit transformed with an adjustment, so back-transformation
 rs[mod.output] = mod
-rs['output'] = SimpleExpr('output', '(inv_logit(%s) - 0.01) / (inv_logit(%f) - 0.01)' % (mod.output, mod.intercept))
+rs['output'] = SimpleExpr('output', '(inv_logit(%s) - 0.01) / (inv_logit(%f) - 0.01)' % (mod.output, intercept))
 
 fname = 'sr-cs-%s.tif' % ('mainland' if args.mainland else 'islands')
 rs.write('output', utils.outfn('katia', fname))

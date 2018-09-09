@@ -1,20 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import rasterio
 
-import click
 from copy import copy
 import itertools
 import json
+import math
+import os
+import re
+
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
-import os
 import pandas as pd
+import seaborn as sns
+
+import click
 from pylru import lrudecorator
-from rasterio.plot import show
-import re
+import rasterio
 
 import pdb
 
@@ -59,6 +62,17 @@ def gdp(year, fips=None):
   else:
     return gdp_df().loc[:, year]
 
+@lrudecorator(10)
+def wjp_df():
+  df = pd.read_excel(utils.wjp_xls(), sheet_name=5, index_col=0).T
+  df = pd.merge(df, cnames_df().loc[:, ['fips', 'iso3c']],
+                left_on='Country Code', right_on='iso3c')
+  df.set_index('fips', inplace=True)
+  return df
+
+def wjp(attrs):
+  return wjp_df().loc[:, attrs]
+
 def cid_to_x(cid, x):
   if cid == 736:
     cid = 729
@@ -81,13 +95,13 @@ def mean_by(idx, data):
   assert idx.shape == data.shape
   return np.bincount(idx, weights=data)
 
-def sum_by(idx, data):
+def sum_by(ccode, data):
   df = pd.DataFrame({'idx': ccode.reshape(-1),
                      'data': data.reshape(-1)}).dropna()
   agg = df.groupby(['idx'], sort=False).sum()
   return np.column_stack((agg.index.values.astype(int), agg.values))
   
-def sum_by(ccode, data, weight):
+def sum_by2(ccode, data, weights):
   dd = data * weights
   dd.mask = np.logical_or(data.mask, ccode.mask)
   return sum_by(ccode, dd)
@@ -178,6 +192,8 @@ def cli(ctx):
 @click.argument('infiles', nargs=-1, type=click.Path(dir_okay=False))
 @click.option('--npp', type=click.Path(dir_okay=False),
               help='Weight the abundance data with NPP per cell')
+@click.option('--vsr', type=click.Path(dir_okay=False),
+              help='Weight the richness data with vertebrate richness per cell')
 @click.option('-b', '--band', type=click.INT, default=1,
               help='Index of band to process (default: 1)')
 @click.option('--mp4', type=click.Path(dir_okay=False),
@@ -186,11 +202,10 @@ def cli(ctx):
 @click.option('-l', '--log', is_flag=True, default=False,
               help='When set the data is in log scale and must be ' +
               'converted to linear scale (default: False)')
-def countrify(infiles, band, country_file, npp, mp4, log):
+def countrify(infiles, band, country_file, npp, vsr, mp4, log):
   stack = []
   maps = []
   extent = None
-  extent_inset = None
   area = None
   if npp:
     npp_ds = rasterio.open(npp)
@@ -201,12 +216,10 @@ def countrify(infiles, band, country_file, npp, mp4, log):
         if win[1][1] - win[0][1] > src.height:
           win = ((win[0][0], win[0][0] + src.height), win[1])
         ccode = cc_ds.read(1, masked=True, window=win)
+        ccode = ma.masked_equal(ccode, -99)
         if extent is None:
           extent = (src.bounds.left, src.bounds.right,
                     src.bounds.bottom, src.bounds.top)
-          ul = src.affine * (480, 400)
-          lr = src.affine * (530, 450)
-          extent_inset = (ul[0], lr[0], lr[1], ul[1])
         data = src.read(band, masked=True)
         if log:
           data = ma.exp(data)
@@ -214,9 +227,13 @@ def countrify(infiles, band, country_file, npp, mp4, log):
           npp_data = npp_ds.read(1, masked=True,
                                  window=npp_ds.window(*src.bounds))
           data *= npp_data
+        if vsr:
+          vsr_data = vsr_ds.read(1, masked=True,
+                                 window=vsr_ds.window(*src.bounds))
+          data *= vsr_data
         res = weighted_mean_by_country(ccode, data, carea(src.bounds,
                                                           src.height))
-        if area == None:
+        if area is None:
           ice_ds = rasterio.open(utils.luh2_static('icwtr'))
           ice = ice_ds.read(1, window=ice_ds.window(*src.bounds))
           area = ma.MaskedArray(carea(src.bounds, src.height))
@@ -226,6 +243,10 @@ def countrify(infiles, band, country_file, npp, mp4, log):
             npp_data = npp_ds.read(1, masked=True,
                                    window=npp_ds.window(*src.bounds))
             intercept *= npp_data
+          if vsr:
+            vsr_data = vsr_ds.read(1, masked=True,
+                                   window=vsr_ds.window(*src.bounds))
+            intercept *= vsr_data
 
         #res = weighted_mean_by_country(ccode, data, 1)
         stack.append(res)
@@ -272,17 +293,68 @@ def countrify(infiles, band, country_file, npp, mp4, log):
     
     print("loss w.r.t. primary: %6.4f" % (total / pristine))
     print("loss w.r.t. 1950   : %6.4f" % (total / total1950))
-    #pdb.set_trace()    
-    gdp_1950 = gdp([1950, 1951])
-    gdp_1950.columns = ('gdp', 'gdp_1951')
+    gdp_1950 = gdp([1950, 2010])
+    gdp_1950.columns = ('gdp_1950', 'gdp')
     merged = pd.merge(df, gdp_1950, left_on='fips', right_index=True,
-                      sort=False).sort_values(by=['gdp'])
+                      sort=False)#.sort_values(by=['gdp'])
     #plt.plot(merged.gdp / merged.gdp.min(), merged.ratio, 'o')
     #plt.plot(range(len(merged)), merged.ratio, 'o')
     #ax = plt.gca()
     #ax.set_xscale('log')
     #plt.show()
     merged['pindex'] = range(len(merged))
+    wjp_attrs = ['WJP Rule of Law Index: Overall Score',
+                 'Factor 1: Constraints on Government Powers',
+                 'Factor 2: Absence of Corruption',
+                 'Factor 3: Open Government ',
+                 'Factor 4: Fundamental Rights',
+                 'Factor 5: Order and Security',
+                 'Factor 6: Regulatory Enforcement',
+                 'Factor 7: Civil Justice',
+                 'Factor 8: Criminal Justice']
+    wjp_data = wjp(wjp_attrs)
+    merged2 = pd.merge(merged, wjp_data, left_on='fips', right_index=True,
+                       sort=False)
+    merged2[wjp_attrs] = merged2[wjp_attrs].apply(pd.to_numeric)
+
+    prim_fn = '/Users/ricardog/src/eec/predicts/playground/ds/luh2' + \
+              '/historical-primary-1950.tif'
+    with rasterio.open(prim_fn) as src:
+      win = cc_ds.window(*src.bounds)
+      ccode = cc_ds.read(1, masked=True, window=win)
+      ccode = ma.masked_equal(ccode, -99)
+      with rasterio.open(utils.luh2_static('icwtr')) as ice_ds:
+        ice = ice_ds.read(1, window=ice_ds.window(*src.bounds))
+      area = ma.MaskedArray(carea(src.bounds, src.height))
+      area *= 1 - ice
+      prim = src.read(1, masked=True)
+      prim_by_cc = sum_by2(ccode, prim, area)
+      area_by_cc = sum_by(ccode, area)
+      prim_df = pd.DataFrame({'Primary Area in 1950': prim_by_cc[:, 1]},
+                             index=prim_by_cc[:, 0].astype(int)).sort_index()
+      area_df = pd.DataFrame({'Area': area_by_cc[:, 1]},
+                             index=area_by_cc[:, 0].astype(int)).sort_index()
+      prim_df = prim_df.merge(area_df, left_index=True, right_index=True,
+                              how='inner')
+      prim_df['prim_ratio'] = prim_df['Primary Area in 1950'] / prim_df.Area
+      prim_df = prim_df.apply(pd.to_numeric)
+      merged3 = merged2.merge(prim_df, how='inner', left_index=True,
+                              right_index=True)
+
+    cnames = cnames_df()
+    eci = pd.read_csv(utils.eci_csv())
+    eci_avg = eci[['Country', 'ECI']].groupby('Country').mean()
+    eci_plus = eci_avg.merge(cnames.loc[:, ['country.name.en', 'fips']],
+                             how='inner', left_index=True,
+                             right_on='country.name.en')
+    merged4 = merged3.merge(eci_plus, how='inner', left_on='fips', right_on='fips')
+
+    #pdb.set_trace()
+    sns.regplot(x=wjp_attrs[0], y="ratio", robust=True, data=merged4)
+    plt.show()
+    sns.regplot(x='ECI', y="ratio", robust=True, data=merged4)
+    plt.show()
+
     idx = 0
     syms = ['x', 'o', '+', 'v', '^', '*']
     cols = ['r', 'g', 'blue', 'b', 'purple', 'y']
@@ -292,13 +364,13 @@ def countrify(infiles, band, country_file, npp, mp4, log):
     ax1 = plt.gca()
     for name, group in merged.groupby('ar5'):
       ax1.plot(group.pindex, group.ratio, label=name, marker=syms[idx],
-              linestyle='', #ms=11,
-              c=cols[idx])
+               linestyle='', #ms=11,
+               c=cols[idx])
       idx += 1
     #ax1.set_title('SSP3 (RCP 7.0) AIM')
     ax1.plot([0, len(df)], [1.0, 1.0], color='k', linestyle='-', linewidth=2)
 
-    title = u'Abundance gain (loss) 1950 — 2010'
+    title = u'Abundance gain (loss) 1950 — 2014'
     ax1.set_title(title)
     ax1.set_ylabel('Mean area weighted abundance gain (%)')
     ax1.set_xlabel('Country sorted by GDP (1950)')
@@ -308,6 +380,31 @@ def countrify(infiles, band, country_file, npp, mp4, log):
     fig1.savefig('ab-by-gdp.pdf')
     plt.show()
 
+    sns.set(style="darkgrid")
+    fig1b = plt.figure(figsize=(6, 4))
+    plt.axis('equal')
+    for index, attr in enumerate(wjp_attrs):
+      idx = 0
+      ax1b = plt.subplot(math.ceil(len(wjp_attrs) / 3), 3, index + 1)
+      sns.regplot(x=attr, y="ratio", data=merged2, ax=ax1b)
+#      for name, group in merged2.groupby('ar5'):
+#        ax1b.plot(group.loc[:, attr], group.ratio, label=name,
+#                  marker=syms[idx], linestyle='')
+#        idx += 1
+
+      if index < 3:
+        title = u'Abundance gain (loss) 1950 — 2014'
+        ax1b.set_title(title)
+#      if index % 3 == 0:
+#        ax1b.set_ylabel('Mean area weighted abundance gain (%)')
+#      ax1b.set_xlabel(attr)
+#      ax1b.legend()
+#    fig1b.savefig('ab-by-rol.png')
+#    fig1b.savefig('ab-by-rol.pdf')
+    plt.show()
+
+    return
+
     palette = copy(plt.cm.viridis)
     palette.set_over('w', 1.0)
     palette.set_under('r', 1.0)
@@ -315,7 +412,7 @@ def countrify(infiles, band, country_file, npp, mp4, log):
 
     fig2 = plt.figure(figsize=(6, 4))
     ax2 = plt.gca()
-    title = u'Abundance ratio 2010 / 1950'
+    title = u'Abundance ratio 2014 / 1950'
     ax2.set_title(title)
     ax2.axis('off')
     img = plt.imshow(maps[-1] / maps[0], cmap=palette, vmin=0.75, vmax=1.05,
@@ -323,22 +420,6 @@ def countrify(infiles, band, country_file, npp, mp4, log):
     plt.colorbar(orientation='horizontal')
     fig2.savefig('ab-1950-2010.png')
     fig2.savefig('ab-1950-2010.pdf')
-    plt.show()
-
-    fig3, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 4))
-    ax1.set_title(u'Abundance 1950')
-    ax2.set_title(u'Abundance 2010')
-    mmin = min(maps[0][400:450, 480:530].min(),
-               maps[-1][400:450, 480:530].min())
-    mmax = max(maps[0][400:450, 480:530].max(),
-               maps[-1][400:450, 480:530].max())
-    img1 = ax1.imshow(maps[0][400:450, 480:530], cmap=palette,
-                      extent=extent_inset, vmin=mmin, vmax=mmax)
-    img2 = ax2.imshow(maps[-1][400:450, 480:530], cmap=palette,
-                      extent=extent_inset, vmin=mmin, vmax=mmax)
-    ax3 = fig3.add_axes((0.1, 0.05, 0.8, 0.1))
-    fig3.colorbar(img1, cax=ax3, orientation='horizontal')
-    fig3.savefig('ab-inset.png')
     plt.show()
     
     #printit(stacked)

@@ -7,6 +7,7 @@ import json
 import math
 import os
 import re
+import sys
 
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
@@ -91,10 +92,6 @@ def cid_to_name(cid):
 def cid_to_ar5(cid):
   return cid_to_x(cid, 'ar5')
 
-def mean_by(idx, data):
-  assert idx.shape == data.shape
-  return np.bincount(idx, weights=data)
-
 def sum_by(ccode, data):
   df = pd.DataFrame({'idx': ccode.reshape(-1),
                      'data': data.reshape(-1)}).dropna()
@@ -106,12 +103,16 @@ def sum_by2(ccode, data, weights):
   dd.mask = np.logical_or(data.mask, ccode.mask)
   return sum_by(ccode, dd)
 
+def mean_by(idx, data):
+  assert idx.shape == data.shape
+  return np.bincount(idx, weights=data)
+
 def weighted_mean_by_country(ccode, data, weights):
   dd = data * weights
   dd.mask = np.logical_or(data.mask, ccode.mask)
   save_mask = ccode.mask
-  ccode.mask = dd.mask
-  ccode_idx = ccode.compressed()
+  ccode.mask = ma.getmask(dd)
+  ccode_idx = ccode.compressed().astype(int)
   ccode.mask = save_mask
   sums = mean_by(ccode_idx, dd.compressed())
   ncells = np.bincount(ccode_idx)
@@ -172,7 +173,8 @@ def to_df(stacked, names):
         'name': tuple(map(cid_to_name, stacked[:, 0, 0])),
         'ar5': tuple(map(cid_to_ar5, stacked[:, 0, 0])),
         'ratio': stacked[:, 2, -1] / stacked[:, 2, 0],
-        'percent': (stacked[:, 2, -1] - stacked[:, 2, 0]) / stacked[:, 2, 0]}
+        'percent': (stacked[:, 2, -1] - stacked[:, 2, 0]) / stacked[:, 2, 0],
+        'cells': stacked[:, 1, 0]}
   assert len(names) == stacked.shape[2]
   for idx in range(stacked.shape[2]):
     hs[names[idx]] = stacked[:, 2, idx]
@@ -226,6 +228,7 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
         if npp:
           npp_data = npp_ds.read(1, masked=True,
                                  window=npp_ds.window(*src.bounds))
+          pdb.set_trace()
           data *= npp_data
         if vsr:
           vsr_data = vsr_ds.read(1, masked=True,
@@ -238,7 +241,7 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
           ice = ice_ds.read(1, window=ice_ds.window(*src.bounds))
           area = ma.MaskedArray(carea(src.bounds, src.height))
           area.mask = np.where(ice == 1, True, False)
-          intercept = np.exp(4.63955498) * area
+          intercept = np.exp(3.477987) * area
           if npp:
             npp_data = npp_ds.read(1, masked=True,
                                    window=npp_ds.window(*src.bounds))
@@ -256,12 +259,12 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
     stacked = np.dstack(stack)
     names = tuple(map(parse_fname, infiles))
     df = to_df(stacked, names)
-    print(df)
+    #print(df)
 
     ratio = maps[-1] / maps[0]
     a = ma.where(ratio > 1.05)
     b = ma.where(ratio < 0.85)
-    w = ma.where((ratio >= 0.75) & (ratio <= 1.05))
+    w = ma.where((ratio >= 0.85) & (ratio <= 1.05))
     area.mask = ratio.mask
 
     above = ma.sum(area[a])
@@ -271,32 +274,23 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
     unaccounted = ma.sum(area[ratio.mask != area.mask])
     print("Area: %6.4f / %6.4f / %6.4f" % (above / total, below / total, within / total))
 
-    q = ma.masked_invalid(maps[0] * area)
-    above = ma.sum(q[a])
-    below = ma.sum(q[b])
-    within = ma.sum(q[w])
-    total = ma.sum(q)
-    print("0: %6.4f / %6.4f / %6.4f" % (above / total, below / total,
-                                        within / total))
-
-    q = ma.masked_invalid(maps[-1] * area)
-    above = ma.sum(q[a])
-    below = ma.sum(q[b])
-    within = ma.sum(q[w])
-    total = ma.sum(q)
-    print("1: %6.4f / %6.4f / %6.4f" % (above / total, below / total,
-                                        within / total))
     total1950 = ma.sum(ma.masked_invalid(maps[0] * area))
-    
     # newbold-a intercept is 4.63955498
     pristine = ma.sum(intercept)
-    
+
+    npp_df = pd.DataFrame(weighted_mean_by_country(ccode, npp_data, area),
+                          columns=['ID', 'Cells', 'npp_mean'])
+    npp_df.index = npp_df.ID
+
     print("loss w.r.t. primary: %6.4f" % (total / pristine))
     print("loss w.r.t. 1950   : %6.4f" % (total / total1950))
-    gdp_1950 = gdp([1950, 2010])
-    gdp_1950.columns = ('gdp_1950', 'gdp')
+    gdp_1950 = gdp([1950, 1970, 2010])
+    gdp_1950.columns = ('gdp_1950', 'gdp_1970', 'gdp_2014')
     merged = pd.merge(df, gdp_1950, left_on='fips', right_index=True,
                       sort=False)#.sort_values(by=['gdp'])
+    merged = merged.merge(npp_df, how='inner', left_index=True,
+                          right_index=True)
+
     #plt.plot(merged.gdp / merged.gdp.min(), merged.ratio, 'o')
     #plt.plot(range(len(merged)), merged.ratio, 'o')
     #ax = plt.gca()
@@ -343,18 +337,67 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
 
     cnames = cnames_df()
     eci = pd.read_csv(utils.eci_csv())
+    eci_1970 = eci[eci.Year == 1970]
+    eci_1992 = eci[eci.Year == 1992]
+    eci_2014 = eci[eci.Year == 2014]
     eci_avg = eci[['Country', 'ECI']].groupby('Country').mean()
-    eci_plus = eci_avg.merge(cnames.loc[:, ['country.name.en', 'fips']],
+    eci_plus = eci_avg.merge(cnames.loc[:, ['country.name.en', 'fips', 'un']],
                              how='inner', left_index=True,
                              right_on='country.name.en')
-    merged4 = merged3.merge(eci_plus, how='inner', left_on='fips', right_on='fips')
+    eci_plus = eci_plus.merge(eci_1970, left_on='country.name.en',
+                              right_on='Country')
+    eci_plus.rename(columns={'ECI_x': 'ECI_1970'}, inplace=True)
+    eci_plus = eci_plus.merge(eci_1992, left_on='country.name.en',
+                              right_on='Country')
+    eci_plus.rename(columns={'ECI_y': 'ECI_1992'}, inplace=True)
+    eci_plus = eci_plus.merge(eci_2014, left_on='country.name.en',
+                              right_on='Country')
+    eci_plus.rename(columns={'ECI_x': 'ECI_2014'}, inplace=True)
+    merged4 = merged3.merge(eci_plus, how='inner', left_index=True,
+                            right_on='un')
 
-    #pdb.set_trace()
+    eciw = eci.pivot(index='Year', columns='Country', values='ECI')
+    eci_roll = pd.DataFrame.rolling(eciw, window=5).mean()
+
+    sns.scatterplot(y=merged4[2014] / merged4.npp_mean, x='ECI_2014',
+                    data=merged4)
+    ax = plt.gca()
+    for tpl in merged4.itertuples():
+      ax.arrow(tpl.ECI_1970, tpl._8 / tpl.npp_mean,
+               tpl.ECI_2014 - tpl.ECI_1970,
+               (tpl._9 - tpl._8) / tpl.npp_mean,
+               fc='k', ec='k', length_includes_head=True)
+    #plt.show()
+
+    merged4['ab_delta'] = merged4[2014] / merged4[1970]
+    merged4['ECI_delta'] = merged4.ECI_2014 - merged4.ECI_1970
+    sns.relplot(y='ratio', x='ECI_delta', hue='ar5', size='Cells',
+                data=merged4)
+    ax = plt.gca()
+    ax.plot([-0.6, 1], [1., 1.], color='k', linestyle='-')
+    ax.plot([0, 0], [1.1, 0.9], color='k', linestyle='-')
+    plt.show()
+    pdb.set_trace()
+    title = u'Abundance gain (loss) 1950 — 2014'
+
     sns.regplot(x=wjp_attrs[0], y="ratio", robust=True, data=merged4)
+    ax1 = plt.gca()
+    ax1.set_title(title)
+    ax1.set_ylabel('Mean NPP-weighted abundance ratio')
+    ax1.set_xlabel(wjp_attrs[0])
+    ax1.legend()
     plt.show()
     sns.regplot(x='ECI', y="ratio", robust=True, data=merged4)
+    ax1 = plt.gca()
+    ax1.set_title(title)
+    ax1.set_ylabel('Mean NPP-weighted abundance ratio')
+    ax1.set_xlabel('Economic Complexity Index')
+    ax1.legend()
+    plt.gcf().savefig('ab-by-eci.png')
     plt.show()
 
+    sys.exit()
+    
     idx = 0
     syms = ['x', 'o', '+', 'v', '^', '*']
     cols = ['r', 'g', 'blue', 'b', 'purple', 'y']
@@ -370,7 +413,6 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
     #ax1.set_title('SSP3 (RCP 7.0) AIM')
     ax1.plot([0, len(df)], [1.0, 1.0], color='k', linestyle='-', linewidth=2)
 
-    title = u'Abundance gain (loss) 1950 — 2014'
     ax1.set_title(title)
     ax1.set_ylabel('Mean area weighted abundance gain (%)')
     ax1.set_xlabel('Country sorted by GDP (1950)')

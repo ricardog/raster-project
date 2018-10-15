@@ -228,7 +228,6 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
         if npp:
           npp_data = npp_ds.read(1, masked=True,
                                  window=npp_ds.window(*src.bounds))
-          pdb.set_trace()
           data *= npp_data
         if vsr:
           vsr_data = vsr_ds.read(1, masked=True,
@@ -346,19 +345,39 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
                              right_on='country.name.en')
     eci_plus = eci_plus.merge(eci_1970, left_on='country.name.en',
                               right_on='Country')
-    eci_plus.rename(columns={'ECI_x': 'ECI_1970'}, inplace=True)
+    eci_plus.rename(columns={'ECI_y': 'ECI_1970',
+                             'ECI_x': 'ECI'}, inplace=True)
     eci_plus = eci_plus.merge(eci_1992, left_on='country.name.en',
                               right_on='Country')
-    eci_plus.rename(columns={'ECI_y': 'ECI_1992'}, inplace=True)
+    eci_plus.rename(columns={'ECI_y': 'ECI_1992',
+                             'ECI_x': 'ECI'}, inplace=True)
     eci_plus = eci_plus.merge(eci_2014, left_on='country.name.en',
                               right_on='Country')
-    eci_plus.rename(columns={'ECI_x': 'ECI_2014'}, inplace=True)
+    eci_plus.rename(columns={'ECI_y': 'ECI_2014',
+                             'ECI_x': 'ECI'}, inplace=True)
     merged4 = merged3.merge(eci_plus, how='inner', left_index=True,
                             right_on='un')
 
     eciw = eci.pivot(index='Year', columns='Country', values='ECI')
     eci_roll = pd.DataFrame.rolling(eciw, window=5).mean()
 
+    idx = 0
+    for name, group in merged4.groupby('ar5'):
+      ax = plt.subplot(2, 3, idx + 1)
+      countries = group.fips_x.values.tolist()
+      ser = gdp(tuple(range(1970, 2011)), fips=countries).T
+      cmat = ser.corr(method='pearson')
+      im = ax.matshow(cmat)
+      ax.set_title(name)
+      ax.set_yticklabels(cmat.columns)
+      idx += 1
+    #plt.colorbar(orientation='horizontal')
+    fig = plt.gcf()
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    fig.colorbar(im, cax=cbar_ax)
+    plt.show()
+    pdb.set_trace() 
     sns.scatterplot(y=merged4[2014] / merged4.npp_mean, x='ECI_2014',
                     data=merged4)
     ax = plt.gca()
@@ -369,15 +388,15 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
                fc='k', ec='k', length_includes_head=True)
     #plt.show()
 
-    merged4['ab_delta'] = merged4[2014] / merged4[1970]
+    merged4['ab_delta'] = np.log(merged4[2014] / merged4[1970])
     merged4['ECI_delta'] = merged4.ECI_2014 - merged4.ECI_1970
-    sns.relplot(y='ratio', x='ECI_delta', hue='ar5', size='Cells',
-                data=merged4)
+    #sns.relplot(y='ab_delta', x='ECI_delta', hue='ar5', size='Cells', data=merged4)
+    sns.regplot(y='ab_delta', x='ECI_delta', data=merged4)
     ax = plt.gca()
-    ax.plot([-0.6, 1], [1., 1.], color='k', linestyle='-')
-    ax.plot([0, 0], [1.1, 0.9], color='k', linestyle='-')
+    #ax.plot([-0.6, 1], [1., 1.], color='k', linestyle='-')
+    #ax.plot([0, 0], [1.1, 0.9], color='k', linestyle='-')
     plt.show()
-    pdb.set_trace()
+
     title = u'Abundance gain (loss) 1950 — 2014'
 
     sns.regplot(x=wjp_attrs[0], y="ratio", robust=True, data=merged4)

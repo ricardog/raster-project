@@ -1,6 +1,9 @@
-FROM jupyter/datascience-notebook:latest
+FROM continuumio/miniconda3:latest
 
 MAINTAINER Ricardo E. Gonzalez <ricardog@ricardog.com>
+
+run pip install -U pip
+RUN conda --quiet --yes r-base r-essentials r-lme4 gdal netcdf4 rpy2
 
 COPY Abundance.ipynb \
      gen_luh2.py \
@@ -12,9 +15,6 @@ COPY Abundance.ipynb \
      setup.py \
      /home/jovyan/work/
 COPY projections /home/jovyan/work/projections
-COPY _condarc /opt/conda/.condarc
-RUN conda env update -n root -f /home/jovyan/work/environment.yml && \
-    conda clean -tipsy
 RUN cd /home/jovyan/work && pip install -e .
 
 

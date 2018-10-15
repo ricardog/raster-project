@@ -1,21 +1,23 @@
-  
+#name: projections
+# conda install r-base r-essentials r-lme4 gdal netcdf4 rpy2
+
 dependencies:
   - click
   - fiona
   - gdal
-  - geopy
   - joblib
-  - libgdal=2.1.*
   - matplotlib
   - netCDF4
   - numba
   - pandas
   - pyparsing
   - rasterio
-  - r-lme4
   - rpy2
   - shapely
   - xlrd
+  - r-base
+  - r-essentials
+  - r-lme4
   - pip:
     - pylru
-    
+    - geopy

@@ -18,7 +18,7 @@ setup(
       'pandas',
       'pylru',
       'pyparsing',
-      'rasterio==0.36.0',
+      'rasterio',
       'rpy2',
       'setuptools',
       'shapely',

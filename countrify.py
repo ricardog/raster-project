@@ -258,7 +258,6 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
     stacked = np.dstack(stack)
     names = tuple(map(parse_fname, infiles))
     df = to_df(stacked, names)
-    #print(df)
 
     ratio = maps[-1] / maps[0]
     a = ma.where(ratio > 1.05)
@@ -289,134 +288,10 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
                       sort=False)#.sort_values(by=['gdp'])
     merged = merged.merge(npp_df, how='inner', left_index=True,
                           right_index=True)
+    merged['ab_delta'] = np.log(merged[2014] / merged[1970])
 
-    #plt.plot(merged.gdp / merged.gdp.min(), merged.ratio, 'o')
-    #plt.plot(range(len(merged)), merged.ratio, 'o')
-    #ax = plt.gca()
-    #ax.set_xscale('log')
-    #plt.show()
-    merged['pindex'] = range(len(merged))
-    wjp_attrs = ['WJP Rule of Law Index: Overall Score',
-                 'Factor 1: Constraints on Government Powers',
-                 'Factor 2: Absence of Corruption',
-                 'Factor 3: Open Government ',
-                 'Factor 4: Fundamental Rights',
-                 'Factor 5: Order and Security',
-                 'Factor 6: Regulatory Enforcement',
-                 'Factor 7: Civil Justice',
-                 'Factor 8: Criminal Justice']
-    wjp_data = wjp(wjp_attrs)
-    merged2 = pd.merge(merged, wjp_data, left_on='fips', right_index=True,
-                       sort=False)
-    merged2[wjp_attrs] = merged2[wjp_attrs].apply(pd.to_numeric)
-
-    prim_fn = '/Users/ricardog/src/eec/predicts/playground/ds/luh2' + \
-              '/historical-primary-1950.tif'
-    with rasterio.open(prim_fn) as src:
-      win = cc_ds.window(*src.bounds)
-      ccode = cc_ds.read(1, masked=True, window=win)
-      ccode = ma.masked_equal(ccode, -99)
-      with rasterio.open(utils.luh2_static('icwtr')) as ice_ds:
-        ice = ice_ds.read(1, window=ice_ds.window(*src.bounds))
-      area = ma.MaskedArray(carea(src.bounds, src.height))
-      area *= 1 - ice
-      prim = src.read(1, masked=True)
-      prim_by_cc = sum_by2(ccode, prim, area)
-      area_by_cc = sum_by(ccode, area)
-      prim_df = pd.DataFrame({'Primary Area in 1950': prim_by_cc[:, 1]},
-                             index=prim_by_cc[:, 0].astype(int)).sort_index()
-      area_df = pd.DataFrame({'Area': area_by_cc[:, 1]},
-                             index=area_by_cc[:, 0].astype(int)).sort_index()
-      prim_df = prim_df.merge(area_df, left_index=True, right_index=True,
-                              how='inner')
-      prim_df['prim_ratio'] = prim_df['Primary Area in 1950'] / prim_df.Area
-      prim_df = prim_df.apply(pd.to_numeric)
-      merged3 = merged2.merge(prim_df, how='inner', left_index=True,
-                              right_index=True)
-
-    cnames = cnames_df()
-    eci = pd.read_csv(utils.eci_csv())
-    eci_1970 = eci[eci.Year == 1970]
-    eci_1992 = eci[eci.Year == 1992]
-    eci_2014 = eci[eci.Year == 2014]
-    eci_avg = eci[['Country', 'ECI']].groupby('Country').mean()
-    eci_plus = eci_avg.merge(cnames.loc[:, ['country.name.en', 'fips', 'un']],
-                             how='inner', left_index=True,
-                             right_on='country.name.en')
-    eci_plus = eci_plus.merge(eci_1970, left_on='country.name.en',
-                              right_on='Country')
-    eci_plus.rename(columns={'ECI_y': 'ECI_1970',
-                             'ECI_x': 'ECI'}, inplace=True)
-    eci_plus = eci_plus.merge(eci_1992, left_on='country.name.en',
-                              right_on='Country')
-    eci_plus.rename(columns={'ECI_y': 'ECI_1992',
-                             'ECI_x': 'ECI'}, inplace=True)
-    eci_plus = eci_plus.merge(eci_2014, left_on='country.name.en',
-                              right_on='Country')
-    eci_plus.rename(columns={'ECI_y': 'ECI_2014',
-                             'ECI_x': 'ECI'}, inplace=True)
-    merged4 = merged3.merge(eci_plus, how='inner', left_index=True,
-                            right_on='un')
-
-    eciw = eci.pivot(index='Year', columns='Country', values='ECI')
-    eci_roll = pd.DataFrame.rolling(eciw, window=5).mean()
-
-    idx = 0
-    for name, group in merged4.groupby('ar5'):
-      ax = plt.subplot(2, 3, idx + 1)
-      countries = group.fips_x.values.tolist()
-      ser = gdp(tuple(range(1970, 2011)), fips=countries).T
-      cmat = ser.corr(method='pearson')
-      im = ax.matshow(cmat)
-      ax.set_title(name)
-      ax.set_yticklabels(cmat.columns)
-      idx += 1
-    #plt.colorbar(orientation='horizontal')
-    fig = plt.gcf()
-    fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    fig.colorbar(im, cax=cbar_ax)
-    plt.show()
-    pdb.set_trace() 
-    sns.scatterplot(y=merged4[2014] / merged4.npp_mean, x='ECI_2014',
-                    data=merged4)
-    ax = plt.gca()
-    for tpl in merged4.itertuples():
-      ax.arrow(tpl.ECI_1970, tpl._8 / tpl.npp_mean,
-               tpl.ECI_2014 - tpl.ECI_1970,
-               (tpl._9 - tpl._8) / tpl.npp_mean,
-               fc='k', ec='k', length_includes_head=True)
-    #plt.show()
-
-    merged4['ab_delta'] = np.log(merged4[2014] / merged4[1970])
-    merged4['ECI_delta'] = merged4.ECI_2014 - merged4.ECI_1970
-    #sns.relplot(y='ab_delta', x='ECI_delta', hue='ar5', size='Cells', data=merged4)
-    sns.regplot(y='ab_delta', x='ECI_delta', data=merged4)
-    ax = plt.gca()
-    #ax.plot([-0.6, 1], [1., 1.], color='k', linestyle='-')
-    #ax.plot([0, 0], [1.1, 0.9], color='k', linestyle='-')
-    plt.show()
 
     title = u'Abundance gain (loss) 1950 — 2014'
-
-    sns.regplot(x=wjp_attrs[0], y="ratio", robust=True, data=merged4)
-    ax1 = plt.gca()
-    ax1.set_title(title)
-    ax1.set_ylabel('Mean NPP-weighted abundance ratio')
-    ax1.set_xlabel(wjp_attrs[0])
-    ax1.legend()
-    plt.show()
-    sns.regplot(x='ECI', y="ratio", robust=True, data=merged4)
-    ax1 = plt.gca()
-    ax1.set_title(title)
-    ax1.set_ylabel('Mean NPP-weighted abundance ratio')
-    ax1.set_xlabel('Economic Complexity Index')
-    ax1.legend()
-    plt.gcf().savefig('ab-by-eci.png')
-    plt.show()
-
-    sys.exit()
-    
     idx = 0
     syms = ['x', 'o', '+', 'v', '^', '*']
     cols = ['r', 'g', 'blue', 'b', 'purple', 'y']
@@ -429,7 +304,6 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
                linestyle='', #ms=11,
                c=cols[idx])
       idx += 1
-    #ax1.set_title('SSP3 (RCP 7.0) AIM')
     ax1.plot([0, len(df)], [1.0, 1.0], color='k', linestyle='-', linewidth=2)
 
     ax1.set_title(title)
@@ -440,31 +314,6 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
     fig1.savefig('ab-by-gdp.png')
     fig1.savefig('ab-by-gdp.pdf')
     plt.show()
-
-    sns.set(style="darkgrid")
-    fig1b = plt.figure(figsize=(6, 4))
-    plt.axis('equal')
-    for index, attr in enumerate(wjp_attrs):
-      idx = 0
-      ax1b = plt.subplot(math.ceil(len(wjp_attrs) / 3), 3, index + 1)
-      sns.regplot(x=attr, y="ratio", data=merged2, ax=ax1b)
-#      for name, group in merged2.groupby('ar5'):
-#        ax1b.plot(group.loc[:, attr], group.ratio, label=name,
-#                  marker=syms[idx], linestyle='')
-#        idx += 1
-
-      if index < 3:
-        title = u'Abundance gain (loss) 1950 — 2014'
-        ax1b.set_title(title)
-#      if index % 3 == 0:
-#        ax1b.set_ylabel('Mean area weighted abundance gain (%)')
-#      ax1b.set_xlabel(attr)
-#      ax1b.legend()
-#    fig1b.savefig('ab-by-rol.png')
-#    fig1b.savefig('ab-by-rol.pdf')
-    plt.show()
-
-    return
 
     palette = copy(plt.cm.viridis)
     palette.set_over('w', 1.0)
@@ -482,10 +331,7 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
     fig2.savefig('ab-1950-2010.png')
     fig2.savefig('ab-1950-2010.pdf')
     plt.show()
-    
-    #printit(stacked)
-    #diff = np.column_stack((stacked[:, 0, 0], mmax, mmin))
-    #print(diff)
+
     if mp4:
       gen_mp4(mp4, stacked, ccode)
 

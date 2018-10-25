@@ -468,12 +468,17 @@ def export(infiles, band, country_file, npp, vsr, log, out):
 
     ##
     ## Read GDP data.
+    ## Source: https://www.rug.nl/ggdc/historicaldevelopment/maddison/
+    ## For this source I had to slightly massage the data (see the
+    ## cleanup-maddison.py script) which extracts data since 1950 and
+    ## adds a FIPS attribute to each country.
     ##
     merged2 = merged.merge(gdp_df().add_prefix('GDP_'), how='left',
                            left_on='fips', right_index=True)
 
     ##
     ## Read Rule of Law data (World Justice Project).
+    ## Source: http://data.worldjusticeproject.org/#table
     ##
     wjp_attrs = ['WJP Rule of Law Index: Overall Score',
                  'Factor 1: Constraints on Government Powers',
@@ -492,6 +497,7 @@ def export(infiles, band, country_file, npp, vsr, log, out):
     ##
     ## Read human population density data and compute
     ## human population (per year).
+    ## Source: projections
     ##
     hp_stk = []
     for fname in infiles:
@@ -511,7 +517,8 @@ def export(infiles, band, country_file, npp, vsr, log, out):
     merged4['CID'] = merged4.index
 
     ##
-    ## Read Energy consumption data
+    ## Read Energy consumption data.
+    ## Source: https://www.eia.gov/beta/international/
     ##
     energy = energy_c_df()
     energy.rename(columns=dict((x, 'BTU_' + x) for x in
@@ -523,7 +530,7 @@ def export(infiles, band, country_file, npp, vsr, log, out):
 
     ##
     ## Combine energy consumption and human population into
-    ## energy consumption per capita
+    ## energy consumption per capita.
     ##
     hp_cols = [col for col in merged5.columns if 'HP_' in col]
     hp_years = [int(x[-4:]) for x in hp_cols]
@@ -538,6 +545,7 @@ def export(infiles, band, country_file, npp, vsr, log, out):
 
     ##
     ## Read economic complexity index (ECI) data and add it to DF.
+    ## Source: https://atlas.media.mit.edu/en/
     ##
     cnames = cnames_df()
     eci = pd.read_csv(utils.eci_csv())

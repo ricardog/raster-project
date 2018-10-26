@@ -27,8 +27,15 @@ class YearRangeParamType(click.ParamType):
       try:
         return [int(value)]
       except ValueError:
-        low, high = value.split(':')
-        return range(int(low), int(high))
+        values = value.split(':')
+        if len(values) == 3:
+          low, high, inc = values
+        elif len(values) == 2:
+          low, high = values
+          inc = '1'
+        else:
+          raise ValueError
+        return range(int(low), int(high), int(inc))
     except ValueError:
       self.fail('%s is not a valid year range' % value, param, ctx)
 

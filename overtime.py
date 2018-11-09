@@ -33,26 +33,14 @@ class YearRangeParamType(click.ParamType):
 
 YEAR_RANGE = YearRangeParamType()
 
-
-def carea_f(bounds=None, height=None):
-  with rasterio.open(utils.luh2_static('carea')) as ds:
-    read_bounded(ds, bounds, height)
-
-def tarea(bounds=None, height=None):
-  with rasterio.open(utils.luh2_static('icwtr')) as ds:
-    ice = read_bounded(ds, bounds, height)
-  return (1 - ice) * carea(bounds, height)
-
 def sum_by(regions, data):
   data.mask = np.logical_or(data.mask, regions.mask)
   regions.mask = ma.getmask(data)
   regions_idx = regions.compressed().astype(int)
-  sums = np.bincount(regions_idx, data.compressed())
+  summ = np.bincount(regions_idx, data.compressed())
   ncells = np.bincount(regions_idx)
   idx = np.where(ncells > 0)
-  carea = ncells[idx]
-  #as_array = np.column_stack((idx[0].astype(int), sums[idx]))
-  return sums[idx]
+  return summ[idx]
 
 def get_ipbes_regions():
   with fiona.open(utils.outfn('vector', 'ipbes_land_shape',

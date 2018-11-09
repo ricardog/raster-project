@@ -48,8 +48,8 @@ def with_bokeh(scene, data):
     p.add_tools(HoverTool(tooltips=[('Year', '@year'),
                                             (indicator, '@data'),
                                             ('Region', '@name')]))
-            row.append(p)
-        plots.append(row)
+    row.append(p)
+    plots.append(row)
     grid = gridplot(plots, sizing_mode='scale_width')
     if out:
         output_file(out)

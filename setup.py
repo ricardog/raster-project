@@ -22,6 +22,7 @@ setup(
       'rpy2',
       'setuptools',
       'shapely',
+      'tqdm',
       'xlrd',
     ],
     entry_points='''

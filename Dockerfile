@@ -1,11 +1,13 @@
-FROM continuumio/miniconda3:latest
+FROM py-geospatial:latest
 
 MAINTAINER Ricardo E. Gonzalez <ricardog@ricardog.com>
 
-run pip install -U pip
-RUN conda install --quiet --yes r-base r-essentials r-lme4 gdal netcdf4 rpy2
 COPY reqs.txt /work/
-RUN cd /work && /opt/conda/bin/pip install -r reqs.txt
+RUN cd /work && \
+	/root/.pyenv/shims/pip install numpy && \
+	/root/.pyenv/shims/pip install cython && \
+	/root/.pyenv/shims/pip install gdal==2.1.3 --global-option "build_ext" --global-option="--include-dirs=/usr/include/gdal" && \
+	/root/.pyenv/shims/pip install -r reqs.txt
 
 COPY Abundance.ipynb \
      do-hist-one.sh \
@@ -25,7 +27,9 @@ COPY Abundance.ipynb \
      setup.py \
      /work/
 COPY projections /work/projections
-RUN cd /work && /opt/conda/bin/pip install -e .
+COPY user-scripts /work/user-scripts
+RUN cd /work && /root/.pyenv/shims/pip install -e .
 WORKDIR /work
+ENV LD_LIBRARY_PATH /usr/local/lib/R/lib/:${LD_LIBRARY_PATH}
 
 

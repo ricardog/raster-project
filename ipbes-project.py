@@ -8,8 +8,6 @@ import time
 
 import click
 import matplotlib.pyplot as plt
-import numpy as np
-import numpy.ma as ma
 import rasterio
 from rasterio.plot import show
 

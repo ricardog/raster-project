@@ -105,7 +105,7 @@ def sum_by(ccode, data):
                      'data': data.reshape(-1)}).dropna()
   agg = df.groupby(['idx'], sort=False).sum()
   return np.column_stack((agg.index.values.astype(int), agg.values))
-  
+
 def sum_by2(ccode, data, weights):
   dd = data * weights
   dd.mask = np.logical_or(data.mask, ccode.mask)
@@ -427,7 +427,7 @@ def export(infiles, band, country_file, npp, vsr, log, out):
     df = to_df(stacked, names)
     del df['percent']
     del df['ratio']
-    
+
     df.rename(columns=dict((x, metric + '_' + str(x)) for x in
                            filter(lambda x: isinstance(x, int), df.columns)),
               inplace=True)
@@ -660,6 +660,6 @@ def country_timeline(infiles, band, country_file, npp, out):
     if out:
       out.write(df.to_csv(index=False, encoding='utf-8').encode())
     print(df)
-  
+
 if __name__ == '__main__':
   cli()

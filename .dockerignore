@@ -1,0 +1,10 @@
+.git
+attic
+ds
+out
+**/__pycache__
+geospatial
+py-geospatial
+.RData
+india-states.json
+india-states2.json

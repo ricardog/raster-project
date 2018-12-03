@@ -54,8 +54,11 @@ def cnames_df():
   return cnames
 
 @lrudecorator(10)
-def gdp_df():
-  return pd.read_csv(utils.gdp_csv(), index_col=0).T
+def gdp_df(fname=None):
+  if fname is None:
+    fname = utils.gdp_csv()
+  return pd.read_csv(fname, index_col=0).T
+  
 
 def gdp(year, fips=None):
   if fips:
@@ -198,6 +201,42 @@ def to_df2(stacked, names):
     hs[names[idx]] = stacked[:, 1, idx]
   df = pd.DataFrame(hs, index=stacked[:, 0, 0].astype(int))
   return df
+
+
+def read_rasters(country_file, scale_ds, band, infiles):
+  stack = []
+  area = None
+  scale_res = None
+  with rasterio.open(country_file) as cc_ds:
+    for arg in infiles:
+      with rasterio.open(arg) as src:
+        win = cc_ds.window(*src.bounds)
+        if win.height > src.height:
+          win = ((win[0][0], win[0][0] + src.height), win[1])
+        ccode = cc_ds.read(1, masked=True, window=win)
+        ccode = ma.masked_equal(ccode, -99)
+        data = src.read(band, masked=True)
+        if scale_ds:
+          data *= scale_ds.read(1, masked=True,
+                                window=scale_ds.window(*src.bounds))
+        res = weighted_mean_by_country(ccode, data, carea(src.bounds))
+        if area is None:
+          ice_ds = rasterio.open(utils.luh2_static('icwtr'))
+          ice = ice_ds.read(1, window=ice_ds.window(*src.bounds))
+          area = ma.MaskedArray(carea(src.bounds) * (1 - ice))
+          area.mask = np.where(ice == 1, True, False)
+          if scale_ds:
+            scale_data = scale_ds.read(1, masked=True,
+                                       window=scale_ds.window(*src.bounds))
+            scale_res = weighted_mean_by_country(ccode, scale_data,
+                                                 carea(src.bounds))
+        stack.append(res)
+        print('%40s: %8.2f / %8.2f' % (os.path.basename(arg),
+                                       res[:, 2].max(), res[:, 2].min()))
+  stacked = np.dstack(stack)
+  names = tuple(map(parse_fname, infiles))
+  return to_df(stacked, names), scale_res
+
 
 @click.group(invoke_without_command=True)
 @click.pass_context
@@ -363,89 +402,45 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
               help='Weight the richness data with vertebrate richness per cell')
 @click.option('-b', '--band', type=click.INT, default=1,
               help='Index of band to process (default: 1)')
-@click.option('-l', '--log', is_flag=True, default=False,
-              help='When set the data is in log scale and must be ' +
-              'back-transformed to linear scale (default: False)')
 @click.option('-o', '--out', type=click.File('w'),
               help='A file to write the merged data to')
-def export(infiles, band, country_file, npp, vsr, log, out):
-  stack = []
-  maps = []
-  area = None
+def export(infiles, band, country_file, npp, vsr, out):
   if npp:
-    npp_ds = rasterio.open(npp)
-  if vsr:
-    vsr_ds = rasterio.open(vsr)
+    scale_ds = rasterio.open(npp)
+  elif vsr:
+    scale_ds = rasterio.open(vsr)
+  else:
+    scale_ds = None
   types = list(set((x[0], x[1]) for x in
                    map(parse_fname2, infiles)))
   assert len(types) == 1
   scenario = types[0][0]
   metric = types[0][1]
   print('%s -- %s' % (scenario, metric))
+  df, scale_res = read_rasters(country_file, scale_ds, band, infiles)
 
+  del df['percent']
+  del df['ratio']
+
+  df.rename(columns=dict((x, metric + '_' + str(x)) for x in
+                         filter(lambda x: isinstance(x, int), df.columns)),
+            inplace=True)
+  if npp:
+    df['npp_mean'] = scale_res[:, 2]
+  if vsr:
+    df['vsr_mean'] = scale_res[:, 2]
+
+  ##
+  ## Fix a few mising FIPS codes.
+  ##
+  df.loc[df.name == 'South Sudan', 'fips'] = 'OD'
+  df.loc[df.name == 'Curaçao', 'fips'] = 'UC'
+  df.loc[df.name == 'Åland Islands', 'fips'] = 'AX'  # ISO 3166 code
+
+  #
+  # Compute the fraction of land that was primary in 1950
+  #
   with rasterio.open(country_file) as cc_ds:
-    for arg in infiles:
-      with rasterio.open(arg) as src:
-        win = cc_ds.window(*src.bounds)
-        if win[1][1] - win[0][1] > src.height:
-          win = ((win[0][0], win[0][0] + src.height), win[1])
-        ccode = cc_ds.read(1, masked=True, window=win)
-        ccode = ma.masked_equal(ccode, -99)
-        data = src.read(band, masked=True)
-        if log:
-          data = ma.exp(data)
-        if npp:
-          npp_data = npp_ds.read(1, masked=True,
-                                 window=npp_ds.window(*src.bounds))
-          data *= npp_data
-        if vsr:
-          vsr_data = vsr_ds.read(1, masked=True,
-                                 window=vsr_ds.window(*src.bounds))
-          data *= vsr_data
-        res = weighted_mean_by_country(ccode, data, carea(src.bounds))
-        if area is None:
-          ice_ds = rasterio.open(utils.luh2_static('icwtr'))
-          ice = ice_ds.read(1, window=ice_ds.window(*src.bounds))
-          area = ma.MaskedArray(carea(src.bounds) * (1 - ice))
-          area.mask = np.where(ice == 1, True, False)
-          if npp:
-            npp_data = npp_ds.read(1, masked=True,
-                                   window=npp_ds.window(*src.bounds))
-            npp_res = weighted_mean_by_country(ccode, npp_data,
-                                               carea(src.bounds))
-          if vsr:
-            vsr_data = vsr_ds.read(1, masked=True,
-                                   window=vsr_ds.window(*src.bounds))
-            vsr_res = weighted_mean_by_country(ccode, vsr_data,
-                                               carea(src.bounds))
-        stack.append(res)
-        maps.append(data)
-        print('%40s: %8.2f / %8.2f' % (os.path.basename(arg),
-                                       res[:, 2].max(), res[:, 2].min()))
-    stacked = np.dstack(stack)
-    names = tuple(map(parse_fname, infiles))
-    df = to_df(stacked, names)
-    del df['percent']
-    del df['ratio']
-
-    df.rename(columns=dict((x, metric + '_' + str(x)) for x in
-                           filter(lambda x: isinstance(x, int), df.columns)),
-              inplace=True)
-    if npp:
-      df['npp_mean'] = npp_res[:, 2]
-    if vsr:
-      df['vsr_mean'] = vsr_res[:, 2]
-
-    ##
-    ## Fix a few mising FIPS codes.
-    ##
-    df.loc[df.name == 'South Sudan', 'fips'] = 'OD'
-    df.loc[df.name == 'Curaçao', 'fips'] = 'UC'
-    df.loc[df.name == 'Åland Islands', 'fips'] = 'AX'  # ISO 3166 code
-
-    #
-    # Compute the fraction of land that was primary in 1950
-    #
     prim_fn = os.path.join(utils.outdir(),
                            'luh2', 'historical-primary-1950.tif')
     with rasterio.open(prim_fn) as src:
@@ -466,40 +461,41 @@ def export(infiles, band, country_file, npp, vsr, log, out):
     merged = df.merge(prim_df, how='left', left_index=True,
                       right_index=True)
 
-    ##
-    ## Read GDP data.
-    ## Source: https://www.rug.nl/ggdc/historicaldevelopment/maddison/
-    ## For this source I had to slightly massage the data (see the
-    ## cleanup-maddison.py script) which extracts data since 1950 and
-    ## adds a FIPS attribute to each country.
-    ##
-    merged2 = merged.merge(gdp_df().add_prefix('GDP_'), how='left',
-                           left_on='fips', right_index=True)
+  ##
+  ## Read GDP data.
+  ## Source: https://www.rug.nl/ggdc/historicaldevelopment/maddison/
+  ## For this source I had to slightly massage the data (see the
+  ## cleanup-maddison.py script) which extracts data since 1950 and
+  ## adds a FIPS attribute to each country.
+  ##
+  merged2 = merged.merge(gdp_df().add_prefix('GDP_'), how='left',
+                         left_on='fips', right_index=True)
 
-    ##
-    ## Read Rule of Law data (World Justice Project).
-    ## Source: http://data.worldjusticeproject.org/#table
-    ##
-    wjp_attrs = ['WJP Rule of Law Index: Overall Score',
-                 'Factor 1: Constraints on Government Powers',
-                 'Factor 2: Absence of Corruption',
-                 'Factor 3: Open Government ',
-                 'Factor 4: Fundamental Rights',
-                 'Factor 5: Order and Security',
-                 'Factor 6: Regulatory Enforcement',
-                 'Factor 7: Civil Justice',
-                 'Factor 8: Criminal Justice']
-    wjp_data = wjp(wjp_attrs)
-    wjp_data[wjp_attrs] = wjp_data[wjp_attrs].apply(pd.to_numeric)
-    merged3 = merged2.merge(wjp_data, how='left',
-                            left_on='fips', right_index=True)
+  ##
+  ## Read Rule of Law data (World Justice Project).
+  ## Source: http://data.worldjusticeproject.org/#table
+  ##
+  wjp_attrs = ['WJP Rule of Law Index: Overall Score',
+               'Factor 1: Constraints on Government Powers',
+               'Factor 2: Absence of Corruption',
+               'Factor 3: Open Government ',
+               'Factor 4: Fundamental Rights',
+               'Factor 5: Order and Security',
+               'Factor 6: Regulatory Enforcement',
+               'Factor 7: Civil Justice',
+               'Factor 8: Criminal Justice']
+  wjp_data = wjp(wjp_attrs)
+  wjp_data[wjp_attrs] = wjp_data[wjp_attrs].apply(pd.to_numeric)
+  merged3 = merged2.merge(wjp_data, how='left',
+                          left_on='fips', right_index=True)
 
-    ##
-    ## Read human population density data and compute
-    ## human population (per year).
-    ## Source: projections
-    ##
-    hp_stk = []
+  ##
+  ## Read human population density data and compute
+  ## human population (per year).
+  ## Source: projections
+  ##
+  hp_stk = []
+  with rasterio.open(country_file) as cc_ds:
     for fname in infiles:
       fname = replacer(fname, metric, 'hpd', 1)
       year = parse_fname(fname)
@@ -516,53 +512,109 @@ def export(infiles, band, country_file, npp, vsr, log, out):
                             right_index=True)
     merged4['CID'] = merged4.index
 
-    ##
-    ## Read Energy consumption data.
-    ## Source: https://www.eia.gov/beta/international/
-    ##
-    energy = energy_c_df()
-    energy.rename(columns=dict((x, 'BTU_' + x) for x in
-                               energy.columns[2:]),
-                  inplace=True)
-    del energy['Units']
-    merged5 = merged4.merge(energy, how='left', left_on='name',
-                            right_on='Country')
+  ##
+  ## Read Energy consumption data.
+  ## Source: https://www.eia.gov/beta/international/
+  ##
+  energy = energy_c_df()
+  energy.rename(columns=dict((x, 'BTU_' + x) for x in
+                             energy.columns[2:]),
+                inplace=True)
+  del energy['Units']
+  merged5 = merged4.merge(energy, how='left', left_on='name',
+                          right_on='Country')
 
-    ##
-    ## Combine energy consumption and human population into
-    ## energy consumption per capita.
-    ##
-    hp_cols = [col for col in merged5.columns if 'HP_' in col]
-    hp_years = [int(x[-4:]) for x in hp_cols]
-    btu_cols = [col for col in merged5.columns if 'BTU_' in col]
-    btu_years = [int(x[-4:]) for x in btu_cols]
-    years = sorted(set(hp_years).intersection(set(btu_years)))
-    for year in years:
-      yy = str(year)
-      print('BTU / person: ' + yy)
-      merged5['BTU_PC_' + yy] = (merged5['BTU_' + yy].astype(float) * 1e6 /
-                                 merged5['HP_' + yy])
+  ##
+  ## Combine energy consumption and human population into
+  ## energy consumption per capita.
+  ##
+  hp_cols = [col for col in merged5.columns if 'HP_' in col]
+  hp_years = [int(x[-4:]) for x in hp_cols]
+  btu_cols = [col for col in merged5.columns if 'BTU_' in col]
+  btu_years = [int(x[-4:]) for x in btu_cols]
+  years = sorted(set(hp_years).intersection(set(btu_years)))
+  for year in years:
+    yy = str(year)
+    print('BTU / person: ' + yy)
+    merged5['BTU_PC_' + yy] = (merged5['BTU_' + yy].astype(float) * 1e6 /
+                               merged5['HP_' + yy])
 
-    ##
-    ## Read economic complexity index (ECI) data and add it to DF.
-    ## Source: https://atlas.media.mit.edu/en/
-    ##
-    cnames = cnames_df()
-    eci = pd.read_csv(utils.eci_csv())
-    eciw = eci.pivot(index='Country', values='ECI', columns='Year')
-    eciw = eciw.add_prefix('ECI_')
-    eci_plus = eciw.merge(cnames.loc[:, ['country.name.en', 'un']],
-                          how='inner', left_index=True,
-                          right_on='country.name.en')
-    eci_plus.index = eci_plus.un.astype(int)
-    eci_plus.index.name = None
-    del eci_plus['un']
-    del eci_plus['country.name.en']
-    merged6 = merged5.merge(eci_plus, how='left',
-                            left_on='CID', right_index=True)
+  ##
+  ## Read economic complexity index (ECI) data and add it to DF.
+  ## Source: https://atlas.media.mit.edu/en/
+  ##
+  cnames = cnames_df()
+  eci = pd.read_csv(utils.eci_csv())
+  eciw = eci.pivot(index='Country', values='ECI', columns='Year')
+  eciw = eciw.add_prefix('ECI_')
+  eci_plus = eciw.merge(cnames.loc[:, ['country.name.en', 'un']],
+                        how='inner', left_index=True,
+                        right_on='country.name.en')
+  eci_plus.index = eci_plus.un.astype(int)
+  eci_plus.index.name = None
+  del eci_plus['un']
+  del eci_plus['country.name.en']
+  merged6 = merged5.merge(eci_plus, how='left',
+                          left_on='CID', right_index=True)
 
-    if out:
-      merged6.to_csv(out, index=False, encoding='utf-8')
+  if out:
+    merged6.to_csv(out, index=False, encoding='utf-8')
+
+@cli.command()
+@click.argument('country-file', type=click.Path(dir_okay=False))
+@click.argument('infiles', nargs=-1, type=click.Path(dir_okay=False))
+@click.option('--gdp', type=click.Path(dir_okay=False),
+              default=utils.gdp_csv(),
+              help='CSV file with [er capital GDP data.')
+@click.option('--scale', type=click.Path(dir_okay=False),
+              help='Weight the metric values with a per cell factor, '
+              'e.g. NPP na dvertebrate species richness.')
+@click.option('-b', '--band', type=click.INT, default=1,
+              help='Index of band to process (default: 1)')
+@click.option('-o', '--out', type=click.File('w'),
+              help='A file to write the merged data to')
+def export2(infiles, band, country_file, gdp, scale, out):
+  if scale:
+    scale_ds = rasterio.open(scale)
+  else:
+    scale_ds = None
+  types = list(set((x[0], x[1]) for x in
+                   map(parse_fname2, infiles)))
+  assert len(types) == 1
+  scenario = types[0][0]
+  metric = types[0][1]
+  print('%s -- %s' % (scenario, metric))
+  df, scale_res = read_rasters(country_file, scale_ds, band, infiles)
+
+  del df['percent']
+  del df['ratio']
+
+  df.rename(columns=dict((x, metric + '_' + str(x)) for x in
+                         filter(lambda x: isinstance(x, int), df.columns)),
+            inplace=True)
+  if scale and 'npp' in scale:
+    df['npp_mean'] = scale_res[:, 2]
+  if scale and 'vsr' in scale:
+    df['vsr_mean'] = scale_res[:, 2]
+
+  ##
+  ## Fix a few mising FIPS codes.
+  ##
+  df.loc[df.name == 'South Sudan', 'fips'] = 'OD'
+  df.loc[df.name == 'Curaçao', 'fips'] = 'UC'
+  df.loc[df.name == 'Åland Islands', 'fips'] = 'AX'  # ISO 3166 code
+
+  ##
+  ## Read GDP data.
+  ## Source: https://www.rug.nl/ggdc/historicaldevelopment/maddison/
+  ## For this source I had to slightly massage the data (see the
+  ## cleanup-maddison.py script) which extracts data since 1950 and
+  ## adds a FIPS attribute to each country.
+  ##
+  merged = df.merge(gdp_df(gdp).add_prefix('GDP_'),
+                         how='inner', left_on='fips', right_index=True)
+  if out:
+    merged.to_csv(out, index=False, encoding='utf-8')
 
 @cli.command()
 @click.argument('infiles', nargs=-1, type=click.Path(dir_okay=False))

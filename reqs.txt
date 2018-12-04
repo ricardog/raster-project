@@ -1,9 +1,11 @@
+bokeh
 Click
 cython
 gdal==2.1.3
 fiona
 geopy
 joblib
+jupyter
 matplotlib
 netCDF4
 numba
@@ -13,6 +15,7 @@ pylru
 pyparsing
 rasterio --no-binary rasterio
 rpy2
+seaborn
 setuptools
 shapely
 tqdm

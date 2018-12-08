@@ -7,6 +7,8 @@
 .DS_Store
 .RData
 .Rhistory
+.AppleDouble
+.DS_Store
 .vagrant
 .dir-locals.el
 __pycache__

@@ -42,11 +42,11 @@ args = parser.parse_args()
 if args.mainland:
   ISLMAIN = 1
   mask_file = os.path.join(utils.data_root(),
-                           '1km/mainland-from-igor-edited.tif')
+                           '1km/mainland-from-igor-edited-at.tif')
 else:
   ISLMAIN = 0
   mask_file = os.path.join(utils.data_root(),
-                         '1km/islands-from-igor-edited.tif')
+                         '1km/islands-from-igor-edited-at.tif')
 
 # Open the mask raster file (Mainlands)
 mask_ds = rasterio.open(mask_file)

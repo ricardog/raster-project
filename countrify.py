@@ -601,6 +601,65 @@ def timeline(infiles, npp, band):
         out[jj]['data'][ii] /= ref
   print(json.dumps({'years': yy, 'data': out}))
   print('')
+
+@cli.command()
+@click.argument('country-file', type=click.Path(dir_okay=False))
+@click.argument('infiles', nargs=-1, type=click.Path(dir_okay=False))
+@click.option('--npp', type=click.Path(dir_okay=False),
+              help='Weight the abundance data with NPP per cell')
+@click.option('-b', '--band', type=click.INT, default=1,
+              help='Index of band to process (default: 1)')
+@click.option('-o', '--out', type=click.File('wb'))
+def country_timeline(infiles, band, country_file, npp, out):
+  stack = []
+  maps = []
+  extent = None
+  extent_inset = None
+  area = None
+  if npp:
+    npp_ds = rasterio.open(npp)
+  with rasterio.open(country_file) as cc_ds:
+    for arg in infiles:
+      with rasterio.open(arg) as src:
+        win = cc_ds.window(*src.bounds)
+        if win[1][1] - win[0][1] > src.height:
+          win = ((win[0][0], win[0][0] + src.height), win[1])
+        ccode = cc_ds.read(1, masked=True, window=win)
+        ccode = ma.masked_equal(ccode, -99)
+        if extent is None:
+          extent = (src.bounds.left, src.bounds.right,
+                    src.bounds.bottom, src.bounds.top)
+        data = src.read(band, masked=True)
+        if npp:
+          npp_data = npp_ds.read(1, masked=True,
+                                 window=npp_ds.window(*src.bounds))
+          if npp_data.shape != data.shape:
+            import pdb; pdb.set_trace()
+          data *= npp_data
+        res = weighted_mean_by_country(ccode, data, carea(src.bounds,
+                                                          src.height))
+        if area is None:
+          ice_ds = rasterio.open(utils.luh2_static('icwtr'))
+          ice = ice_ds.read(1, window=ice_ds.window(*src.bounds))
+          area = ma.MaskedArray(carea(src.bounds, src.height))
+          area.mask = np.where(ice == 1, True, False)
+          intercept = np.exp(4.63955498) * area
+          if npp:
+            npp_data = npp_ds.read(1, masked=True,
+                                   window=npp_ds.window(*src.bounds))
+            intercept *= npp_data
+
+        #res = weighted_mean_by_country(ccode, data, 1)
+        stack.append(res)
+        maps.append(data)
+        print('%40s: %8.2f / %8.2f' % (os.path.basename(arg),
+                                       res[2, :].max(), res[2, :].min()))
+    stacked = np.dstack(stack)
+    names = tuple(map(parse_fname, infiles))
+    df = to_df(stacked, names)
+    if out:
+      out.write(df.to_csv(index=False, encoding='utf-8').encode())
+    print(df)
   
 if __name__ == '__main__':
   cli()

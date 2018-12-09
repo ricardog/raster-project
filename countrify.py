@@ -611,8 +611,10 @@ def export2(infiles, band, country_file, gdp, scale, out):
   ## cleanup-maddison.py script) which extracts data since 1950 and
   ## adds a FIPS attribute to each country.
   ##
-  merged = df.merge(gdp_df(gdp).add_prefix('GDP_'),
-                         how='inner', left_on='fips', right_index=True)
+  my_gdp = gdp_df(gdp).add_prefix('GDP_')
+  my_gdp = my_gdp.rolling(5, min_periods=1, axis=1).mean()
+  merged = df.merge(my_gdp,
+                    how='inner', left_on='fips', right_index=True)
   if out:
     merged.to_csv(out, index=False, encoding='utf-8')
 

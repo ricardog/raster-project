@@ -1,27 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
-import time
-
-import fiona
-import multiprocessing
-from rasterio.plot import show
-import math
-import os
-
-import click
-#import matlibplot.pyplot as plt
-import numpy as np
-import numpy.ma as ma
-import rasterio
-from rasterio.plot import show, show_hist
 
 from projections.rasterset import RasterSet, Raster
-from projections.simpleexpr import SimpleExpr
-import projections.predicts as predicts
-import projections.r2py.modelr as modelr
 import projections.utils as utils
-import projections.raster_utils as ru
 
 parser = argparse.ArgumentParser(description="bii.py -- BII projections")
 parser.add_argument('--mainland', '-m', dest='mainland', default=False,
@@ -53,11 +35,9 @@ bii_rs = RasterSet({'abundance': Raster('abundance',
                     'comp_sim': Raster('comp_sim',
                                        utils.outfn('katia',
                                                    'ab-cs-%s.tif' % suffix)),
-                    'clip_ab': SimpleExpr('clip_ab',
-                                          'clip(abundance, 0, %f)' % ab_max),
-                    'bii_ab': SimpleExpr('bii_ab', 'abundance * comp_sim'),
-                    'bii_ab2': SimpleExpr('bii_ab2', 'clip_ab * comp_sim'),
-})
+                    'clip_ab': 'clip(abundance, 0, %f)' % ab_max,
+                    'bii_ab': 'abundance * comp_sim',
+                    'bii_ab2': 'clip_ab * comp_sim'})
 
 # write out bii raster
 bii_rs.write('bii_ab' if args.clip else 'bii_ab2',
@@ -73,10 +53,9 @@ bii_rs = RasterSet({'sp_rich': Raster('sp_rich',
                     'comp_sim': Raster('comp_sim',
                                        utils.outfn('katia',
                                                    'sr-cs-%s.tif' % suffix)),
-                    'clip_sr': SimpleExpr('clip_sr',
-                                          'clip(sp_rich, 0, %f)' % sr_max),
-                    'bii_sr': SimpleExpr('bii_sr', 'sp_rich * comp_sim'),
-                    'bii_sr2': SimpleExpr('bii_sr2', 'clip_sr * comp_sim')})
+                    'clip_sr': 'clip(sp_rich, 0, %f)' % sr_max,
+                    'bii_sr': 'sp_rich * comp_sim',
+                    'bii_sr2': 'clip_sr * comp_sim'})
 
 # write out bii raster
 bii_rs.write('bii_sr' if args.clip else 'bii_sr2',

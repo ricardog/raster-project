@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import click
 import pandas as pd
@@ -16,7 +16,7 @@ def cname_to_fips(name, df):
       return row.values
     return row.values[0]
 
-  if not isinstance(name, (str, unicode)):
+  if not isinstance(name, str):
     return None
   index = df['cow.name'] == name
   if index.any():
@@ -32,17 +32,20 @@ def cname_to_fips(name, df):
 @click.command()
 @click.argument('infile', type=click.Path(dir_okay=False))
 @click.argument('outfile', type=click.Path(dir_okay=False))
-def main(infile, outfile):
+@click.option('--start-year', '-s', type=int, default=1950)
+def main(infile, outfile, start_year):
   xls = pd.read_excel(infile)
   cnames = xls.iloc[1, :]
   clist = cnames.tolist()
-  ccodes = pd.DataFrame.from_csv('../../data/ssp-data/country-names.csv')
-  cfips = map(lambda cc: cname_to_fips(cc, ccodes), clist)
+  ccodes = pd.read_csv('/data/ssp-data/country-names.csv')
+  cfips = tuple(map(lambda cc: cname_to_fips(cc, ccodes), clist))
   csel = map(lambda cc: True if (isinstance(cc, str) and len(cc) == 2) else False, cfips)
-  cint_name = filter(lambda cc: (isinstance(cc, str) and len(cc) == 2), cfips)
-  cinterest = xls.loc[170:230, csel]
+  cint_name = tuple(filter(lambda cc: (isinstance(cc, str) and len(cc) == 2), cfips))
+  start_row = xls.loc[xls['GDP per capita'] == start_year, ].index.values[0]
+  cinterest = xls.loc[start_row:230, csel]
   cinterest.columns = cint_name
-  cinterest.index = range(1950, 2011)
+  cinterest.index = range(start_year, 2011)
+  cinterest.index.name = 'Year'
   cinterest.to_csv(outfile)
 
 

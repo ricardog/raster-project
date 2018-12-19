@@ -45,14 +45,75 @@ for version in fldr:
     # for each year
     for year in range(2001, 2013):
         
-        # Import standard PREDICTS rasters
-        rasters = predicts.rasterset('1km', 'version3.3', year, 'medium')
+        # This line imports standard PREDICTS rasters
+        #rasters = predicts.rasterset('1km', 'version3.3', year, 'medium')
+        # we don't need this anymore as we're importing our own data
+
+        # so set up an empty rasters object
+        rasters = dict()
 
         # update the land-use classes that we need for the model
+        rasters['cropland_minimal'] = Raster('cropland_minimal',
+                                             'C:/ds/adrid/cropland_minimal-%d.tif' % year)
+        rasters['cropland_light'] = Raster('cropland_light',
+                                           'C:/ds/adrid/cropland_light-%d.tif' % year)
+        rasters['cropland_intense'] = Raster('cropland_intense',
+                                             'C:/ds/adrid/cropland_intense-%d.tif' % year)
+        rasters['cropland'] = SimpleExpr('cropland',
+                                         'cropland_minimal + cropland_light + cropland_intense')
+
+
+        rasters['pasture_minimal'] = Raster('pasture_minimal',
+                                            'C:/ds/adrid/pasture_minimal-%d.tif' % year)
+        rasters['pasture_light'] = Raster('pasture_light',
+                                          'C:/ds/adrid/pasture_light-%d.tif' % year)
+        rasters['pasture_intense'] = Raster('pasture_intense',
+                                            'C:/ds/adrid/pasture_intense-%d.tif' % year)
+        rasters['pasture'] = SimpleExpr('pasture',
+                                        'pasture_minimal + pasture_light + pasture_intense')
+        
+
+        rasters['primary_minimal'] = Raster('primary_minimal',
+                                            'C:/ds/adrid/primary_minimal-%d.tif' % year)
+        rasters['primary_light'] = Raster('primary_light',
+                                          'C:/ds/adrid/primary_light-%d.tif' % year)
+        rasters['primary_intense'] = Raster('primary_intense',
+                                            'C:/ds/adrid/primary_intense-%d.tif' % year)
+        rasters['primary'] = SimpleExpr('primary',
+                                        'primary_minimal + primary_light + primary_intense')
+        
+
+        rasters['secondary_minimal'] = Raster('secondary_minimal',
+                                              'C:/ds/adrid/secondary_minimal-%d.tif' % year)
+        rasters['secondary_light'] = Raster('secondary_light',
+                                            'C:/ds/adrid/secondary_light-%d.tif' % year)
+        rasters['secondary_intense'] = Raster('secondary_intense',
+                                              'C:/ds/adrid/secondary_intense-%d.tif' % year)
+        rasters['secondary'] = SimpleExpr('secondary',
+                                          'secondary_minimal + secondary_light + secondary_intense')
+                
+
+        rasters['urban_minimal'] = Raster('urban_minimal',
+                                          'C:/ds/adrid/urban_minimal-%d.tif' % year)
+        rasters['urban_light'] = Raster('urban_light',
+                                        'C:/ds/adrid/urban_light-%d.tif' % year)
+        rasters['urban_intense'] = Raster('urban_intense',
+                                          'C:/ds/adrid/urban_intense-%d.tif' % year)
+        rasters['urban'] = SimpleExpr('urban',
+                                      'urban_minimal + urban_light + urban_intense')
+
+
+
         rasters['cropland_lightintense'] = SimpleExpr('cropland_lightintense',
                                                     'cropland_light + cropland_intense')
         rasters['pasture_lightintense'] = SimpleExpr('pasture_lightintense',
                                                 'pasture_light + pasture_intense')
+
+        # plantation_pri is what the code takes to be plantation forest
+        # we have no layers for this so make it 0
+        rasters['plantation_pri'] = SimpleExpr('plantation_pri', 0)
+
+        
         # read in the interpolated HPD
         rasters['hpd'] = Raster('hpd', 'C:/data/from-adriana/DataForProjections/HPD/yr%d/hdr.adf' % year)
         # extract the maximum value
@@ -100,7 +161,7 @@ for version in fldr:
         rs['output'] = SimpleExpr('output', '(pow(%s, 2) / pow(%f, 2))' % (mod.output, ref))
         rs.write('output', utils.outfn('temporal-bii/' + version, 'bii-ab-%d.tif' % year))
 
-        # if you're on the final version 1 (i.e. the last time you're going round)
+        # if you're on the final version (i.e. the last time you're going round)
         # write out the pressure data
         if version == 'v3':
             rs.write('primary', utils.outfn('temporal-bii/primary', 'primary-%d.tif' % year))

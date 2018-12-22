@@ -103,6 +103,9 @@ def cid_to_name(cid):
 def cid_to_ar5(cid):
   return cid_to_x(cid, 'ar5')
 
+def cid_to_iso3(cid):
+  return cid_to_x(cid, 'iso3c')
+
 def sum_by(ccode, data):
   df = pd.DataFrame({'idx': ccode.reshape(-1),
                      'data': data.reshape(-1)}).dropna()
@@ -183,6 +186,7 @@ def to_df(stacked, names):
   hs = {'fips': tuple(map(cid_to_fips, stacked[:, 0, 0])),
         'name': tuple(map(cid_to_name, stacked[:, 0, 0])),
         'ar5': tuple(map(cid_to_ar5, stacked[:, 0, 0])),
+        'iso3': tuple(map(cid_to_iso3, stacked[:, 0, 0])),
         'ratio': stacked[:, 2, -1] / stacked[:, 2, 0],
         'percent': (stacked[:, 2, -1] - stacked[:, 2, 0]) / stacked[:, 2, 0],
         'cells': stacked[:, 1, 0].astype(int)}

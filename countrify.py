@@ -26,8 +26,6 @@ def carea(bounds=None, height=None):
     if bounds is None:
       return ds.read(1, masked=True)
     win = ds.window(*bounds)
-    if win[1][1] - win[0][1] > height:
-      win = ((win[0][0], win[0][0] + height), win[1])
     return ds.read(1, masked=True, window=win)
 
 @lrudecorator(5)
@@ -38,8 +36,6 @@ def tarea(bounds=None, height=None):
     ice = ice_ds.read(1, masked=True)
   else:
     win = ice_ds.window(*bounds)
-    if win[1][1] - win[0][1] > height:
-      win = ((win[0][0], win[0][0] + height), win[1])
     ice = ice_ds.read(1, masked=True, window=win)
   return area * (1 - ice)
 
@@ -198,8 +194,6 @@ def countrify(infiles, band, country_file, npp, mp4, log):
     for arg in infiles:
       with rasterio.open(arg) as src:
         win = cc_ds.window(*src.bounds)
-        if win[1][1] - win[0][1] > src.height:
-          win = ((win[0][0], win[0][0] + src.height), win[1])
         ccode = cc_ds.read(1, masked=True, window=win)
         if extent is None:
           extent = (src.bounds.left, src.bounds.right,
@@ -384,6 +378,6 @@ def timeline(infiles, npp, band):
         out[jj]['data'][ii] /= ref
   print(json.dumps({'years': yy, 'data': out}))
   print('')
-  
+
 if __name__ == '__main__':
   cli()

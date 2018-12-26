@@ -42,8 +42,6 @@ def tarea(bounds=None, height=None):
     ice = ice_ds.read(1, masked=True)
   else:
     win = ice_ds.window(*bounds)
-    if win[1][1] - win[0][1] > height:
-      win = ((win[0][0], win[0][0] + height), win[1])
     ice = ice_ds.read(1, masked=True, window=win)
   return area * (1 - ice)
 
@@ -214,8 +212,6 @@ def read_rasters(country_file, scale_ds, band, infiles):
     for arg in infiles:
       with rasterio.open(arg) as src:
         win = cc_ds.window(*src.bounds)
-        if win.height > src.height:
-          win = ((win[0][0], win[0][0] + src.height), win[1])
         ccode = cc_ds.read(1, masked=True, window=win)
         ccode = ma.masked_equal(ccode, -99)
         data = src.read(band, masked=True)
@@ -275,8 +271,6 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
     for arg in infiles:
       with rasterio.open(arg) as src:
         win = cc_ds.window(*src.bounds)
-        if win[1][1] - win[0][1] > src.height:
-          win = ((win[0][0], win[0][0] + src.height), win[1])
         ccode = cc_ds.read(1, masked=True, window=win)
         ccode = ma.masked_equal(ccode, -99)
         if extent is None:
@@ -678,10 +672,7 @@ def country_timeline(infiles, band, country_file, npp, out):
   with rasterio.open(country_file) as cc_ds:
     for arg in infiles:
       with rasterio.open(arg) as src:
-        win = cc_ds.window(*src.bounds)
-        if win[1][1] - win[0][1] > src.height:
-          win = ((win[0][0], win[0][0] + src.height), win[1])
-        ccode = cc_ds.read(1, masked=True, window=win)
+        ccode = cc_ds.read(1, masked=True, window=cc_ds.window(*src.bounds))
         ccode = ma.masked_equal(ccode, -99)
         if extent is None:
           extent = (src.bounds.left, src.bounds.right,

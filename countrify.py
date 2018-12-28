@@ -492,10 +492,12 @@ def export(infiles, band, country_file, npp, vsr, out):
   ## Source: projections
   ##
   hp_stk = []
+  years = []
   with rasterio.open(country_file) as cc_ds:
     for fname in infiles:
       fname = replacer(fname, metric, 'hpd', 1)
       year = parse_fname(fname)
+      years.append(year)
       print('hpd: ', year)
       with rasterio.open(fname) as src:
         hpd = src.read(1, masked=True)
@@ -503,7 +505,7 @@ def export(infiles, band, country_file, npp, vsr, out):
         ccode = cc_ds.read(1, masked=True, window=cc_ds.window(*src.bounds))
         ccode = ma.masked_equal(ccode, -99)
         hp_stk.append(sum_by(ccode, hp))
-    hp_df = to_df2(np.dstack(hp_stk), ['HP_' + str(x) for x in names])
+    hp_df = to_df2(np.dstack(hp_stk), ['HP_' + str(yy) for yy in years])
     del hp_df['fips'], hp_df['name'], hp_df['ar5']
     merged4 = merged3.merge(hp_df,  how='left', left_index=True,
                             right_index=True)

@@ -16,9 +16,7 @@ geogSystem = "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',63781
 print("Projecting main LBII results")
 
 #fldr = ["v1", "v2", "v3", "hpd", "primary", "secondary", "urban", "pasture", "cropland"]
-#fldr = ["primary", "secondary", "urban", "pasture", "cropland"]
-fldr = ["hpd"]
-
+fldr = ["v1", "v2", "v3", "primary", "secondary", "urban", "pasture", "cropland"]
 
 for year in range(2001, 2013):
     print("Working on year " + str(year))

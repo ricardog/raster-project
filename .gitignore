@@ -24,4 +24,5 @@ TAGS
 data/
 venv/
 ipbes-upload/
+summary-data/
 ~$*

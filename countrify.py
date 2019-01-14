@@ -562,7 +562,7 @@ def export(infiles, band, country_file, npp, vsr, log, out):
                             left_on='CID', right_index=True)
 
     if out:
-      merged6.to_csv(out, index=False, encoding='utf-8')
+      merged6.to_csv(out.name, index=False, encoding='utf-8')
 
 @cli.command()
 @click.argument('infiles', nargs=-1, type=click.Path(dir_okay=False))

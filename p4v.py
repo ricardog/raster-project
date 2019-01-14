@@ -249,7 +249,13 @@ def read_hpd_rasters(years, regions):
       hpop[idx, 0] = hp.sum()
       cids, hpop[idx, 1:] = sum_by(regions, hp)
   fips = list(map(cid_to_fips, cids))
-  return pd.DataFrame(hpop, index=years, columns=['Global'] + fips)
+  hpd = pd.DataFrame(hpop, index=years, columns=['Global'] + fips)
+  hpd = hpd.T
+  hpd['fips'] = hpd.index
+  hpd = hpd.melt(id_vars='fips', value_vars=range(1950, 2011, 10),
+                 var_name='year', value_name='HPD')
+  hpd.year = hpd.year.astype(int)
+  return hpd
 
 def read_data():
   print('Cleaning up WB area')
@@ -265,8 +271,7 @@ def read_data():
   hpop = read_hpd_rasters(tuple(range(1800, 2000, 10)) +
                           tuple(range(2000, 2015, 1)),
                           utils.outfn('luh2', 'un_codes-full.tif'))
-  pdb.set_trace()
-  return language, p4v, area
+  return area, language, p4v, wid, hpop
 
 def swarm_plot(data, labels):
   g = sns.FacetGrid(data, col='ar5', col_wrap=3, hue='area_q')
@@ -276,8 +281,11 @@ def swarm_plot(data, labels):
   plt.show()
 
 if __name__ == '__main__':
-  language, p4v, area = read_data()
+  area, language, p4v, wid, hpop = read_data()
+  area.to_csv('summary-data/wb-area.csv', index=False)
   language.to_csv('summary-data/language-distance.csv', index=False)
   p4v.to_csv('summary-data/polityv4.csv', index=False)
-  area.to_csv('summary-data/wb-area.csv', index=False)
+  for metric in wid.keys():
+    wid[metric].to_csv('summary-data/%s.csv' % metric, index=False)
+  hpop.to_csv('summary-data/hpop.csv', index=False)
 

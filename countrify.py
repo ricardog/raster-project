@@ -557,7 +557,7 @@ def export(infiles, band, country_file, npp, vsr, out):
                           left_on='CID', right_index=True)
 
   if out:
-    merged6.to_csv(out, index=False, encoding='utf-8')
+    merged6.to_csv(out.name, index=False, encoding='utf-8')
 
 @cli.command()
 @click.argument('country-file', type=click.Path(dir_okay=False))
@@ -615,7 +615,7 @@ def export2(infiles, band, country_file, gdp, scale, out):
   merged = df.merge(my_gdp,
                     how='inner', left_on='fips', right_index=True)
   if out:
-    merged.to_csv(out, index=False, encoding='utf-8')
+    merged.to_csv(out.name, index=False, encoding='utf-8')
 
 @cli.command()
 @click.argument('infiles', nargs=-1, type=click.Path(dir_okay=False))

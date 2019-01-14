@@ -74,6 +74,24 @@ def project(dst_crs, src, src_data, src_bounds):
 @click.option('--out', '-o', type=click.File(mode='wb'))
 @click.option('--dst_crs', '-d', type=str)
 def main(metric, scenario, start, limit, out, dst_crs):
+  """Generate a raster of how much we can turn back the clock for a SSP
+scenario.
+
+  metric   -- Which metric to use for the calculation.
+
+  scenario -- Which scenario to use.
+
+  start    -- The year at which to start the comparison.
+
+  limit    -- Mask cells where the metric is > limit at both the start
+              and end of the sequence.
+
+  out      -- Name of the output file.  The script save the data as a 
+              GeoTIFF (raw) and a rendered PNG.
+
+  dst-crs  -- Use the specified CRS for projecting the rendered raster.
+
+  """
   palette = copy(plt.cm.viridis_r)
   palette.set_under('y', 1.0)
   palette.set_over('r', 1.0)
@@ -144,9 +162,6 @@ def main(metric, scenario, start, limit, out, dst_crs):
     fig.savefig(out.name.replace('.tif', '.png'), transparent=False)
   plt.show()
   
-  #show(years2, cmap=palette, vmin=start, vmax=2100)
-  #pdb.set_trace()
-  pass
 
 if __name__ == '__main__':
   main()

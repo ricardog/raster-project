@@ -1,17 +1,38 @@
 #!/usr/bin/env python3
 
+import glob
 import os
 import re
 
 import matplotlib.pyplot as plt
+from netCDF4 import Dataset
+import numpy as np
+import numpy.ma as ma
 import pandas as pd
 import projections.utils as utils
+from pylru import lrudecorator
+import rasterio
 import seaborn as sns
-from wid_data import get_bii_data
 
 import pdb
 
-def cname_to_fips(name, df):
+def sum_by(regions, data):
+  mask = np.logical_or(data.mask, regions.mask)
+  #regions.mask = ma.getmask(data)
+  #regions_idx = regions.compressed().astype(int)
+  mask_idx = np.where(mask == False)
+  regions_idx = regions[mask_idx]
+  summ = np.bincount(regions_idx, data[mask_idx])
+  ncells = np.bincount(regions_idx)
+  idx = np.where(ncells > 0)
+  return idx[0], summ[idx]
+
+@lrudecorator(10)
+def cnames_df():
+  return pd.read_csv(utils.cnames_csv())
+
+@lrudecorator(300)
+def cname_to_fips(name):
   def rematch(regexp, name):
     if isinstance(regexp, str):
       return re.search(regexp, name, re.I) != None
@@ -25,6 +46,8 @@ def cname_to_fips(name, df):
 
   if not isinstance(name, (str)):
     return None
+
+  df = cnames_df()
   index = df['cow.name'] == name
   if index.any():
     return cleanup(index)
@@ -50,15 +73,57 @@ def iso3_to_fips(iso3, df):
     return None
   return rows[fips].values[0]
 
+@lrudecorator(10)
+def cnames_df():
+  cnames = pd.read_csv(os.path.join(utils.data_root(), 'ssp-data',
+                                    'country-names.csv'))
+  return cnames
+
+def cid_to_x(cid, x):
+  if cid == 736:
+    cid = 729
+  df = cnames_df()
+  row = df[df.un == cid]
+  if not row.empty:
+    return row[x].values[0]
+  return str(int(cid))
+
+def cid_to_fips(cid):
+  return cid_to_x(cid, 'fips')
+
+def cid_to_iso3(cid):
+  return cid_to_x(cid, 'iso3c')
+
+def iso2_to_cid(iso2):
+  df = cnames_df()
+  row = df.un[df.iso2c == iso2.upper()]
+  if row.empty or np.isnan(row).any():
+    return -1
+  return int(row.values[0])
+
+def fips_to_cid(fips):
+  df = cnames_df()
+  row = df.un[df.fips == fips.upper()]
+  if row.empty or np.isnan(row).any():
+    return -1
+  return int(row.values[0])
+
+def fips_to_iso3(fips):
+  return cid_to_iso3(fips_to_cid(fips))
+
+def cid_to_name(cid):
+  return cid_to_x(cid, 'country.name.en')
+
+def iso2_to_fips(iso2):
+  return cid_to_x(iso2_to_cid(iso2), 'fips')
+
 def cleanup_p4v(fname, avg=True):
   bins = [-100, -10, -6, 6, 10]
   labels = ['Other', 'Autocracy', 'Anocracy', 'Democracy']
-  cnames_fname = utils.data_file('ssp-data', 'country-names.csv')
-  ccodes = pd.read_csv(cnames_fname)
   p4 = pd.read_excel(fname)
   p4s = p4.loc[:, ['scode', 'country', 'year', 'polity', 'polity2']]
   # Select countries we find a name match for
-  cfips = map(lambda cc: cname_to_fips(cc, ccodes), p4s.country.tolist())
+  cfips = map(lambda cc: cname_to_fips(cc), p4s.country.tolist())
   csel = map(lambda cc: cc if (isinstance(cc, str) and
                                len(cc) == 2) else False, cfips)
   p4s2 = p4s.assign(fips=tuple(csel))
@@ -77,8 +142,7 @@ def cleanup_language():
                      index_col=0)
   lang.drop(['USSR', 'Gran Colombia', 'Montenegro'], axis=0, inplace=True)
   lang.drop(['USSR', 'Gran Colombia', 'Montenegro'], axis=1, inplace=True)
-  ccodes = pd.read_csv(utils.data_file('ssp-data', 'country-names.csv'))
-  cfips = map(lambda cc: cname_to_fips(cc, ccodes), lang.index.tolist())
+  cfips = map(lambda cc: cname_to_fips(cc), lang.index.tolist())
   csel = map(lambda cc: cc if (isinstance(cc, str) and
                                len(cc) == 2) else False, cfips)
   fips=tuple(csel)
@@ -100,11 +164,108 @@ def cleanup_wb_area(fname):
                                                   'V. Large']))
   return wb_area.dropna()
 
+def read_wid_csvs():
+  data = dict()
+  for fname in glob.glob(os.path.join(utils.data_root(), 'wid', 'Data',
+                                      'WID_*_InequalityData.csv')):
+    bname = os.path.basename(fname)
+    _, iso2, _ = bname.split('_', 3)
+    iso2 = iso2.lower()
+    df = pd.read_csv(fname, sep=';', encoding='latin1', low_memory=False)
+    df.columns = df.iloc[6, :]
+    data[iso2] = df
+  return data
+
+def get_var(vname, data):
+  countries = tuple(filter(lambda cc: vname in data[cc].columns,
+                           data.keys()))
+  return dict((cc, data[cc]) for cc in countries)
+  
+def get_wid_data(vname, perc, data, min_len=0):
+  rdata = None
+  for cc in data.keys():
+    cid = iso2_to_cid(cc)
+    if cid == '-1':
+      continue
+    fips = cid_to_fips(cid)
+    iso3 = cid_to_iso3(cid)
+    df = data[cc].loc[:, ['year', 'perc', vname]][data[cc].perc == perc]
+    df.dropna(inplace=True)
+    if len(df) > min_len:
+      df['fips'] = fips
+      df['iso3'] = iso3
+      df['country'] = cid_to_name(iso2_to_cid(cc))
+      df['variable'] = vname
+      df.rename(columns={vname: perc}, inplace=True)
+      df[perc] = df[perc].astype(float)
+      df.year = df.year.astype(int)
+      del df['perc']
+      if rdata is None:
+        rdata = df
+      else:
+        rdata = rdata.append(df, ignore_index=True)
+  return rdata
+
+def cleanup_wid_data():
+  perc = 'p90p100'
+  data = dict()
+  raw_data = read_wid_csvs()
+  if raw_data == {}:
+    return raw_data
+  for vname in ['sfiinc992j']:
+    data[vname] = get_wid_data(vname, perc, get_var(vname, raw_data))
+  for vname in ['afiinc992i', 'afiinc992j', 'afiinc992t']:
+    vdata = get_var(vname, raw_data)
+    p90 = get_wid_data(vname, perc, vdata)
+    p0 = get_wid_data(vname, 'p0p100', vdata)
+    del p0['variable']
+    del p0['country']
+    del p0['iso3']
+    vv = p90.merge(p0, how='inner', left_on=['year', 'fips'],
+                   right_on=['year', 'fips'])
+    vv['ratio'] = vv.p90p100 / vv.p0p100
+    data[vname] = vv
+  return data
+
+def read_hpd_rasters(years, regions):
+  if regions:
+    with rasterio.open(regions) as regions_ds:
+      # Adjust read area so raster is the full 1440x720 resolution
+      regions = regions_ds.read(1, masked=True, boundless=True,
+                                window=regions_ds.window(*(-180, -90,
+                                                           180, 90)))
+      regions = ma.masked_equal(regions, -99)
+      regions = ma.masked_equal(regions, regions_ds.nodata)
+  with Dataset(utils.luh2_static()) as static:
+    carea = static.variables['carea'][:]
+  #hpop = np.zeros((len(years), len(np.unique(regions.compressed())) + 1))
+  hpop = np.zeros((len(years), 196))
+  for idx, year in enumerate(years):
+    with rasterio.open(utils.outfn('luh2',
+                                   'historical-hpd-%d.tif' % year)) as ds:
+      hpd = ds.read(1, masked=True, boundless=True,
+                    window=ds.window(*(-180, -90, 180, 90)))
+      hp = carea * hpd
+      hpop[idx, 0] = hp.sum()
+      cids, hpop[idx, 1:] = sum_by(regions, hp)
+  fips = list(map(cid_to_fips, cids))
+  return pd.DataFrame(hpop, index=years, columns=['Global'] + fips)
+
 def read_data():
+  print('Cleaning up WB area')
   area = cleanup_wb_area(utils.data_file('area',
                                          'API_AG.LND.TOTL.K2_DS2_en_csv_v2_10181480.csv'))
+  print('Cleaning up language distance matrix')
   language = cleanup_language()
+  print('Cleaning up polity v4 data')
   p4v = cleanup_p4v(utils.data_file('policy', 'p4v2017.xls'), False)
+  print('Cleaning up world inequality database data')
+  wid = cleanup_wid_data()
+  print('Summarizing human population data')
+  hpop = read_hpd_rasters(tuple(range(1800, 2000, 10)) +
+                          tuple(range(2000, 2015, 1)),
+                          utils.outfn('luh2', 'un_codes-full.tif'))
+  pdb.set_trace()
   return language, p4v, area
 
 def swarm_plot(data, labels):

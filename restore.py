@@ -98,7 +98,7 @@ def main(metric, scenario, start, limit, out, dst_crs):
     with rasterio.open(out.name, 'w', **meta_out) as dst:
       dst.write(years2.filled(meta_out['nodata']).astype(np.int32),
                 indexes=1)
-  title = None #'Abundance-based BII recovery year (%s)' % scenario
+  title = 'Year to which BII recovers by 2100'
   vmin = start - 2
   vmax = 2015
   dpi = 100.0
@@ -130,7 +130,7 @@ def main(metric, scenario, start, limit, out, dst_crs):
                                       norm=plt.Normalize(1900, 2015))
     sm._A = []
     cb = plt.colorbar(sm, orientation='vertical')
-    cb.set_label('Year to which BII recovers by 2100')
+    cb.set_label(title)
   else:
     ax = plt.gca()
     show(years2, ax=ax, cmap=palette, title=title, vmin=vmin, vmax=vmax,

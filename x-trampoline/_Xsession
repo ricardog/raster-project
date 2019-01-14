@@ -1,0 +1,4 @@
+#!/bin/sh
+exec twm -display :0
+
+

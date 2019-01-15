@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+import re
+
 import click
 import pandas as pd
-import re
 
 def cname_to_fips(name, df):
   def rematch(regexp, name):
@@ -33,7 +34,8 @@ def cname_to_fips(name, df):
 @click.argument('infile', type=click.Path(dir_okay=False))
 @click.argument('outfile', type=click.Path(dir_okay=False))
 @click.option('--start-year', '-s', type=int, default=1950)
-def main(infile, outfile, start_year):
+@click.option('--long-form', '-l', is_flag=True, default=False)
+def main(infile, outfile, start_year, long_form):
   xls = pd.read_excel(infile)
   cnames = xls.iloc[1, :]
   clist = cnames.tolist()
@@ -46,7 +48,17 @@ def main(infile, outfile, start_year):
   cinterest.columns = cint_name
   cinterest.index = range(start_year, 2011)
   cinterest.index.name = 'Year'
-  cinterest.to_csv(outfile)
+  if long_form:
+    years = cinterest.index
+    by_fips = cinterest.T
+    by_fips.columns = cinterest.index
+    by_fips['fips'] = by_fips.index
+    gdp = by_fips.melt(id_vars='fips', value_vars=years,
+                       var_name='year', value_name='GDP').dropna()
+    gdp.to_csv(outfile, index=False, encoding='utf-8')
+    return
+  cinterest['year'] = cinterest.index
+  cinterest.to_csv(outfile, index=False, encoding='utf-8')
 
 
 if __name__ == '__main__':

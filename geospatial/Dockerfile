@@ -30,7 +30,9 @@ RUN install2.r --error \
     RandomFields \
     RNetCDF \
     classInt \
+    crayon \
     deldir \
+    devtools \
     gstat \
     ggplot2 \
     hdf5r \
@@ -39,6 +41,7 @@ RUN install2.r --error \
     maptools \
     mapview \
     ncdf4 \
+    pbdZMQ \
     proj4 \
     raster \
     rgdal \
@@ -51,6 +54,7 @@ RUN install2.r --error \
     spdep \
     tmap \
     geoR \
-    geosphere #\
+    geosphere \
+    && R -e "devtools::install_github(paste0('IRkernel/', c('repr', 'IRdisplay', 'IRkernel')))"
     ## from bioconductor
     ## && R -e "BiocManager::install('rhdf5')"

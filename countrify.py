@@ -9,6 +9,7 @@ import os
 import re
 import sys
 
+import fiona
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
@@ -181,7 +182,8 @@ def printit(stacked):
                                         stacked[idx, 2, 0])))
 
 def to_df(stacked, names):
-  hs = {'fips': tuple(map(cid_to_fips, stacked[:, 0, 0])),
+  hs = {'id': stacked[:, 0, 0].astype(int),
+        'fips': tuple(map(cid_to_fips, stacked[:, 0, 0])),
         'name': tuple(map(cid_to_name, stacked[:, 0, 0])),
         'ar5': tuple(map(cid_to_ar5, stacked[:, 0, 0])),
         'iso3': tuple(map(cid_to_iso3, stacked[:, 0, 0])),
@@ -710,6 +712,60 @@ def country_timeline(infiles, band, country_file, npp, out):
     if out:
       out.write(df.to_csv(index=False, encoding='utf-8').encode())
     print(df)
+
+@cli.command()
+@click.argument('biomes-file', type=click.Path(dir_okay=False))
+@click.argument('biomes-shapes', type=click.Path(dir_okay=False))
+@click.argument('infiles', nargs=-1, type=click.Path(dir_okay=False))
+@click.option('--npp', type=click.Path(dir_okay=False),
+              help='Weight the abundance data with NPP per cell')
+@click.option('--vsr', type=click.Path(dir_okay=False),
+              help='Weight the richness data with vertebrate richness per cell')
+@click.option('-b', '--band', type=click.INT, default=1,
+              help='Index of band to process (default: 1)')
+@click.option('-o', '--out', type=click.File('w'),
+              help='A file to write the merged data to')
+def biomes(infiles, band, biomes_file, biomes_shapes, npp, vsr, out):
+  if npp:
+    scale_ds = rasterio.open(npp)
+  elif vsr:
+    scale_ds = rasterio.open(vsr)
+  else:
+    scale_ds = None
+  types = list(set((x[0], x[1]) for x in
+                   map(parse_fname2, infiles)))
+  assert len(types) == 1
+  scenario = types[0][0]
+  metric = types[0][1]
+  print('%s -- %s' % (scenario, metric))
+  df, scale_res = read_rasters(biomes_file, scale_ds, band, infiles)
+
+  del df['percent']
+  del df['ratio']
+  del df['ar5']
+  del df['iso3']
+  del df['fips']
+  del df['cells']
+
+  df.rename(columns=dict((x, metric + '_' + str(x)) for x in
+                         filter(lambda x: isinstance(x, int), df.columns)),
+            inplace=True)
+  if npp:
+    df['npp_mean'] = scale_res[:, 2]
+  if vsr:
+    df['vsr_mean'] = scale_res[:, 2]
+
+  with fiona.open(biomes_shapes) as src:
+    biome_names = dict(((shp['properties']['WWF_MHTNUM'],
+                         shp['properties']['WWF_MHTNAM']) for shp in src))
+  df = df.assign(name=df.id.apply(lambda cc: biome_names[int(cc)]))
+  cols = tuple(filter(lambda col: col[0:6] == 'BIIAb_', df.columns))
+  for col in df.loc[:, cols].columns:
+    df.insert(5, col.replace('Ab_', 'Ab2_'), df[col].div(df.npp_mean))
+  data = pd.wide_to_long(df, ['BIIAb', 'BIIAb2'], i=['name'],
+                         j='year', sep='_').reset_index()
+  if out:
+    data.to_csv(out, index=False)
 
 if __name__ == '__main__':
   cli()

@@ -119,33 +119,28 @@ def gdp_tresholds(df):
   return df
 
 def gdp_tresholds_plot():
-  bii = gdp_tresholds(get_bii_data(False))
-  biit = bii[bii.threshold == True]
+  def set_alpha(ax,a):
+    for art in ax.get_children():
+      if isinstance(art, PolyCollection):
+        art.set_alpha(a)
+
+  bii5 = gdp_tresholds(get_bii_data(False))
+  bii5 = bii5[bii5.threshold == True]
   biit = biit.assign(Decade=(biit.Year / 10).astype(int) * 10)
   bii = bii.assign(Decade=(bii.Year / 10).astype(int) * 10)
 
-  hue_order = reversed(sorted(biit.Decade.unique()))
-  g = sns.catplot(x='GDPq', y='BIIAb2', data=biit, col='ar5', col_wrap=3,  hue='Decade', hue_order=hue_order,
-                  #palette=sns.color_palette(n_colors=15),
-                  #palette='tab20c',
-                  palette=sns.color_palette("coolwarm", 15),
-                  sharey=True, kind='violin', inner='point',
-                  dodge=False, scale='count', cut=0)
-  g.set_xlabels('Quantixed GDP per capita (log-scale)')
-  g.set_ylabels('NPP-weighted Abundance-based BII (fraction)')
-  for ax in g.fig.get_axes():
-      set_alpha(ax, 0.8)
-
-  hue_order = reversed(sorted(biit.Decade.unique()))
-  g = sns.catplot(x='GDPq', y='BIIAb', data=biit, col='ar5', col_wrap=3,  hue='Decade', hue_order=hue_order,
-                  #palette=sns.color_palette(n_colors=15),
-                  #palette='tab20c',
-                  palette=sns.color_palette("coolwarm", 15),
-                  sharey=True, kind='violin', inner='point',
-                  dodge=False, scale='count', cut=0)
-  g.set_xlabels('Quantixed GDP per capita (log-scale)')
-  g.set_ylabels('NPP-weighted bundance-based BII')
-  for ax in g.fig.get_axes():
+  hue_order = tuple(reversed(sorted(biit.Decade.unique())))
+  for metric in ('BIIAb2', 'BIIAb'):
+    g = sns.catplot(x='GDPq', y=metric, data=biit,
+                    col='ar5', col_wrap=3,  hue='Decade', hue_order=hue_order,
+                    #palette=sns.color_palette(n_colors=15),
+                    #palette='tab20c',
+                    palette=sns.color_palette("coolwarm", 15),
+                    sharey=True, kind='violin', inner='point',
+                    dodge=False, scale='count', cut=0)
+    g.set_xlabels('Quantized GDP per capita (log-scale)')
+    g.set_ylabels('Mean NPP-weighted BII (fraction)')
+    for ax in g.fig.get_axes():
       set_alpha(ax, 0.8)
 
 if __name__ == '__main__':

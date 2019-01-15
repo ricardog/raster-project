@@ -48,6 +48,7 @@ RUN install2.r --error \
     rgeos \
     rlas \
     sf \
+    sjPlot \
     sp \
     spacetime \
     spatstat \

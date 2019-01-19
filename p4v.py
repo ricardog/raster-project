@@ -59,7 +59,8 @@ def cname_to_fips(name):
     return cleanup(index)
   return name
 
-def iso3_to_fips(iso3, df):
+@lrudecorator(300)
+def iso3_to_fips(iso3):
   def cleanup(index):
     row = df[index]['fips']
     if len(row) > 1:
@@ -68,10 +69,27 @@ def iso3_to_fips(iso3, df):
 
   if not isinstance(iso3, (str)):
     return None
+  df = cnames_df()
   rows = df[df.iso3c == iso3.upper()]
   if rows.empty:
     return None
-  return rows[fips].values[0]
+  return rows['fips'].values[0]
+
+@lrudecorator(300)
+def wb3_to_cid(wb3):
+  def cleanup(index):
+    row = df[index]['fips']
+    if len(row) > 1:
+      return row.values
+    return row.values[0]
+
+  if not isinstance(wb3, (str)):
+    return None
+  df = cnames_df()
+  rows = df[df.wb_api3c == wb3.upper()]
+  if rows.empty:
+    return None
+  return rows['un'].values[0]
 
 @lrudecorator(10)
 def cnames_df():
@@ -80,13 +98,21 @@ def cnames_df():
   return cnames
 
 def cid_to_x(cid, x):
+  if cid is None:
+    return None
+  if np.isnan(cid):
+    return cid
   if cid == 736:
     cid = 729
   df = cnames_df()
   row = df[df.un == cid]
   if not row.empty:
     return row[x].values[0]
-  return str(int(cid))
+  try:
+    return str(int(cid))
+  except ValueError:
+    pdb.set_trace()
+    pass
 
 def cid_to_fips(cid):
   return cid_to_x(cid, 'fips')
@@ -116,6 +142,9 @@ def cid_to_name(cid):
 
 def iso2_to_fips(iso2):
   return cid_to_x(iso2_to_cid(iso2), 'fips')
+
+def wb3_to_fips(wb3):
+  return cid_to_x(wb3_to_cid(wb3), 'fips')
 
 def cleanup_p4v(fname, avg=True):
   bins = [-100, -10, -6, 6, 10]
@@ -227,6 +256,22 @@ def cleanup_wid_data():
     data[vname] = vv
   return data
 
+def cleanup_wgi_data():
+  wgi = pd.read_excel(utils.data_file('policy', 'wgidataset.xlsx'),
+                      'RuleofLaw')
+  wgi.loc[12, 'Rule of Law':'Unnamed: 1'] = ['name', 'wb_api3c']
+  wgi2 = wgi.iloc[12:, :]
+  wgi3 = wgi2.loc[:, wgi2.loc[13, :].isin(['Country/Territory', 'WBCode',
+                                           'Estimate'])]
+  wgi3.columns = wgi3.loc[12, :].astype(str)
+  wgi4 = wgi3.loc[14:, :]
+  wgi4 = wgi4.assign(fips=wgi4.wb_api3c.apply(wb3_to_fips))
+  wgi5 = wgi4[~wgi4.fips.isna()]
+  wgi_long = pd.melt(wgi5, value_vars=wgi4.columns[2:-1],
+                     id_vars=['name', 'fips'],
+                     value_name='RoLI', var_name='year')
+  return wgi_long
+
 def read_hpd_rasters(years, regions):
   if regions:
     with rasterio.open(regions) as regions_ds:
@@ -267,11 +312,13 @@ def read_data():
   p4v = cleanup_p4v(utils.data_file('policy', 'p4v2017.xls'), False)
   print('Cleaning up world inequality database data')
   wid = cleanup_wid_data()
+  print('Cleaning up world governance index data')
+  wgi = cleanup_wgi_data()
   print('Summarizing human population data')
   hpop = read_hpd_rasters(tuple(range(1800, 2000, 10)) +
                           tuple(range(2000, 2015, 1)),
                           utils.outfn('luh2', 'un_codes-full.tif'))
-  return area, language, p4v, wid, hpop
+  return area, language, p4v, wid, wgi, hpop
 
 def swarm_plot(data, labels):
   g = sns.FacetGrid(data, col='ar5', col_wrap=3, hue='area_q')
@@ -281,11 +328,12 @@ def swarm_plot(data, labels):
   plt.show()
 
 if __name__ == '__main__':
-  area, language, p4v, wid, hpop = read_data()
+  area, language, p4v, wid, wgi, hpop = read_data()
   area.to_csv('summary-data/wb-area.csv', index=False)
   language.to_csv('summary-data/language-distance.csv', index=False)
   p4v.to_csv('summary-data/polityv4.csv', index=False)
   for metric in wid.keys():
     wid[metric].to_csv('summary-data/%s.csv' % metric, index=False)
+  wgi.to_csv('summary-data/wgi.csv', index=False)
   hpop.to_csv('summary-data/hpop.csv', index=False)
 

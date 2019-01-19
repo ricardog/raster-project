@@ -2,6 +2,7 @@
 
 import pdb
 
+import numpy as np
 import pandas as pd
 from pylru import lrudecorator
 import seaborn as sns
@@ -12,6 +13,10 @@ BII_URL = 'http://ipbes.s3.amazonaws.com/weighted/' \
 @lrudecorator(10)
 def get_raw_bii_data():
   return pd.read_csv(BII_URL)
+
+@lrudecorator(20)
+def read_remote_csv(url, **kwargs):
+  return pd.read_csv(url, **kwargs)
 
 def findt(ss):
   rval = [None] * len(ss)
@@ -74,7 +79,12 @@ def get_rol_data(dropna=False):
     bii2.dropna(inplace=True)
   bii2.rename(columns=cols, inplace=True)
   return bii2
-  
+
+def get_wgi_data():
+  url = 'http://ipbes.s3.amazonaws.com/by-country/wgi.csv'
+  wgi = read_remote_csv(url)
+  return wgi
+
 def get_language_data():
   url = 'http://ipbes.s3.amazonaws.com/by-country/language-distance.csv'
   return pd.read_csv(url, encoding='utf-8')
@@ -87,13 +97,24 @@ def area_order():
   return ('V. Small', 'Small', 'Medium', 'Large', 'V. Large')
 
 def get_p4_data(avg=False):
+  bins = [-100, -10, -6, 6, 10]
+  labels = ['Other', 'Autocracy', 'Anocracy', 'Democracy']
+  
   url = 'http://ipbes.s3.amazonaws.com/by-country/polityv4.csv'
-  p4v = pd.read_csv(url, encoding='utf-8')
+  p4v = read_remote_csv(url, encoding='utf-8')
   if avg:
-    df = p4v.loc[:, ['fips', 'polity', 'polity2']].groupby('fips').\
-      rolling(window=5, fill_method='bfill').mean().reset_index()
-    p4v['polity'] = df.polity.values
-    p4v['polity2'] = df.polity2.values
+    grouped = p4v.sort_values(['year']).groupby('fips')
+    window = grouped.rolling(window=5, min_periods=5)
+    df = window.agg({'polity': np.mean, 'polity2': np.mean,
+                     'year': np.min})
+    df.reset_index(inplace=True)
+    p4v = pd.merge(p4v, df[['fips', 'year', 'polity', 'polity2']],
+                   on=['fips', 'year'], suffixes=['_old', ''])
+    del p4v['polity_old']
+    del p4v['polity2_old']
+  p4v = p4v.assign(government=pd.cut(p4v.polity, right=True,
+                                     bins=bins, labels=labels))
+
   return p4v
 
 def gov_order():

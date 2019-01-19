@@ -7,7 +7,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 USER rstudio
 RUN mkdir -p ~/work
 COPY --chown=rstudio:rstudio reqs.txt /home/rstudio/work/
-COPY --chown=root:root jupyter /usr/local/bin/jupyter
+COPY --chown=root:root attic/jupyter /usr/local/bin/jupyter
 RUN cd /home/rstudio/work && \
 	whoami && \
 	. ~/.bashrc && \

@@ -33,6 +33,7 @@ def csv2df(url, stype, syear, eyear):
         s = req.text
         fd = io.StringIO(s)
     df = pd.read_csv(fd)
+    df = df[df.Name != 'Excluded']
     subset = df.loc[:, syear:eyear].T.reset_index()
     subset.columns = ['Year'] + df['Name'].values.tolist()
     return subset
@@ -74,7 +75,7 @@ def indicators(merged, local, out):
                  'ssp5_rcp8.5_remind-magpie')
     plots = []
 
-    base_url = "http://ipbes.s3.amazonaws.com/summary/" + \
+    base_url = "http://ipbes.s3.amazonaws.com/weighted/" + \
                "%s-%s-%s-%%s-%%04d-%%04d.csv"
     if local:
         print('Using local summary files')
@@ -99,7 +100,6 @@ def indicators(merged, local, out):
                 eyear = '2100'
             subset = csv2df(url, 'subreg', syear, eyear)
             glob = csv2df(url, 'global', syear, eyear)
-            #pdb.set_trace()
             if merged:
                 if scenario == 'historical':
                     hsubset[indicator] = subset
@@ -127,6 +127,7 @@ def indicators(merged, local, out):
     if out:
         output_file(out)
     save(grid)
+    show(grid)
 
 @cli.command()
 def landuse():
@@ -180,7 +181,114 @@ def landuse():
 @cli.command()
 @click.option('-l', '--local', is_flag=True, default=False)
 @click.option('--out', type=click.Path(dir_okay=False))
-def deltas(local, out):
+@click.option('-s', '--subregions', is_flag=True, default=False)
+def deltas(local, out, subregions):
+    scenarios = ('ssp1_rcp2.6_image',
+                 'ssp2_rcp4.5_message-globiom',
+                 'ssp3_rcp7.0_aim',
+                 'ssp4_rcp3.4_gcam',
+                 'ssp4_rcp6.0_gcam',
+                 'ssp5_rcp8.5_remind-magpie')
+    names = []
+    for s in scenarios:
+        ssp, rcp = s.split('_')[0:2]
+        name = '%s / %s' % (ssp, rcp)
+        names.append(name)
+
+    base_url = "http://ipbes.s3.amazonaws.com/weighted/" + \
+               "%s-%s-%s-%%s-%%04d-%%04d.csv"
+    if local:
+        print('Using local summary files')
+        if subregions:
+            base_url = "file://ipbes-sub-weighted/%s-%s-%s-%%s-%%04d-%%04d.csv"
+        else:
+            base_url = "file://ipbes-weighted/%s-%s-%s-%%s-%%04d-%%04d.csv"
+
+    data = None
+    delta = None
+    plots = []
+    row = []
+    syear = '2015'
+    eyear = '2100'
+    for indicator in ('BIIAb', 'BIISR'):
+        title = 'Change in %s per IPBES %sregion' % (indicator,
+                                                     'sub' if subregions
+                                                     else '')
+        weight = 'npp' if indicator == 'BIIAb' else 'vsr'
+        for name, scenario in zip(names, scenarios):
+            print(scenario, name)
+            url = base_url % (scenario, indicator, weight)
+            subset = csv2df(url, 'subreg', syear, eyear)
+            glob = csv2df(url, 'global', syear, eyear)
+            if delta is None:
+                cols = ['Global'] + subset.columns[1:].values.tolist()
+                delta = pd.DataFrame(columns=cols, index=names)
+            delta.loc[name, cols[1]:] = \
+                subset.loc[85, cols[1]:] - \
+                subset.loc[0, cols[1]:]
+            delta.loc[name, 'Global'] = glob.loc[85, 'Global'] - \
+                                            glob.loc[0, 'Global']
+            
+        df2 = delta.transpose().stack().reset_index()
+        df2.columns=['Subregion', 'Scenario', 'value']
+        df2['Indicator']= indicator
+        if data is None:
+            data = df2
+        else:
+            data = pd.concat([data, df2])
+
+        dlow = delta.loc[:, delta.min() < 0.0]
+        dhigh = delta.loc[:, delta.max() > 0.0]
+        barsl = ColumnDataSource(data=dict(regions=dlow.columns,
+                                           bottom=dlow.min(),
+                                           top=dlow.max().clip(upper=0.0)))
+        barsh = ColumnDataSource(data=dict(regions=dhigh.columns,
+                                           bottom=dhigh.min().clip(lower=0.0),
+                                           top=dhigh.max()))
+        points = ColumnDataSource(df2)
+        plt = figure(title=None, x_range=cols, toolbar_location="above")
+        plt.y_range = Range1d(delta.min().min() * 1.1,
+                              delta.max().max() * 1.1)
+        plt.xaxis.major_label_orientation = pi/4
+
+        r1 = plt.vbar(x='regions', width=0.9, source=barsl, top='top',
+                      bottom='bottom', fill_color="#D5E1DD",
+                      line_color="black")
+        r2 = plt.vbar(x='regions', width=0.9, source=barsh, top='top',
+                      bottom='bottom', fill_color="#ccebc5",
+                      line_color="black")
+        r3 = plt.circle(x='Subregion', y='value', source=points,
+                        legend='Scenario',
+                        size=8,
+                        fill_color=factor_cmap('Scenario',
+                                               palette=Spectral6,
+                                               factors=names))
+        plt.add_tools(HoverTool(renderers=[r3],
+                                tooltips=[('Subregion', '@Subregion'),
+                                          ('BII delta', '$y'),
+                                          ('Scenario', '@Scenario')]))
+        plt.legend.location = 'bottom_right'
+        #plt.title.text_font_size = '18pt'
+        plt.xaxis.axis_label_text_font_size = '14pt'
+        plt.xaxis.major_label_text_font_size = '12pt'
+        plt.yaxis.axis_label_text_font_size = '14pt'
+        plt.yaxis.major_label_text_font_size = '12pt'
+        plt.yaxis.axis_label = 'Change in mean BII'
+        plt.legend.label_text_font_size = '14pt'
+        row.append(plt)
+
+    data.to_csv('data.csv', index=False)
+    grid = gridplot([row], sizing_mode='scale_width')
+    show(grid)
+    if out:
+        output_file(out)
+    save(grid)
+
+@cli.command()
+@click.option('-l', '--local', is_flag=True, default=False)
+@click.option('--out', type=click.Path(dir_okay=False))
+def violin(local, out):
+    import seaborn as sns
     scenarios = ('ssp1_rcp2.6_image',
                  'ssp2_rcp4.5_message-globiom',
                  'ssp3_rcp7.0_aim',
@@ -199,7 +307,7 @@ def deltas(local, out):
         print('Using local summary files')
         base_url = "file://ipbes-weighted/%s-%s-%s-%%s-%%04d-%%04d.csv"
 
-    delta = None
+    data = None
     plots = []
     row = []
     syear = '2015'
@@ -207,53 +315,40 @@ def deltas(local, out):
     for indicator in ('BIIAb', 'BIISR'):
         title = 'Change in %s per IPBES subregion' % indicator
         weight = 'npp' if indicator == 'BIIAb' else 'vsr'
+        delta = None
         for name, scenario in zip(names, scenarios):
             print(scenario, name)
             url = base_url % (scenario, indicator, weight)
             subset = csv2df(url, 'subreg', syear, eyear)
             glob = csv2df(url, 'global', syear, eyear)
             if delta is None:
-                cols = ['Global'] + subset.columns[1:-1].values.tolist()
+                cols = ['Global'] + subset.columns[1:].values.tolist()
                 delta = pd.DataFrame(columns=cols, index=names)
-            delta.loc[name, cols[1]:cols[-1]] = \
-                subset.loc[85, cols[1]:cols[-1]] - \
-                subset.loc[0, cols[1]:cols[-1]]
+            delta.loc[name, cols[1]:] = \
+                subset.loc[85, cols[1]:] - \
+                subset.loc[0, cols[1]:]
             delta.loc[name, 'Global'] = glob.loc[85, 'Global'] - \
                                             glob.loc[0, 'Global']
-            
-        df2 = delta.transpose().stack().reset_index()
-        df2.columns=['Subregion', 'Scenario', 'value']
-
-        bars = ColumnDataSource(data=dict(regions=cols,
-                                          bottom=delta.min(),
-                                          top=delta.max()))
-        points = ColumnDataSource(df2)
-        plt = figure(title=title, x_range=cols, toolbar_location="above")
-        plt.y_range = Range1d(delta.min().min() * 1.1,
-                              delta.max().max() * 1.1)
-        plt.xaxis.major_label_orientation = pi/4
-
-        r1 = plt.vbar(x='regions', width=0.9, source=bars, top='top',
-                      bottom='bottom', fill_color="#D5E1DD",
-                      line_color="black")
-        r2 = plt.circle(x='Subregion', y='value', source=points,
-                        legend='Scenario',
-                        size=8,
-                        fill_color=factor_cmap('Scenario',
-                                               palette=Spectral6,
-                                               factors=names))
-        plt.add_tools(HoverTool(renderers=[r2],
-                                tooltips=[('Subregion', '@Subregion'),
-                                          ('BII delta', '$y'),
-                                          ('Scenario', '@Scenario')]))
-        plt.legend.location = 'bottom_right'
-        row.append(plt)
-
-    grid = gridplot([row], sizing_mode='scale_width')
-    show(grid)
+        delta = delta.T
+        delta['Region'] = delta.index
+        ldf = pd.melt(delta, value_vars=delta.columns[0:-1],
+                      id_vars='Region', value_name='value',
+                      var_name='Scenario')
+        #ldf = pd.melt(subset, value_vars=subset.columns[1:],
+        #              id_vars=subset.columns[0], value_name='value',
+        #              var_name='Region')
+        #ldf['Scenario'] = scenario
+        ldf['Indicator'] = indicator
+        if data is None:
+            data = ldf
+        else:
+            data = pd.concat([data, ldf])
+    pdb.set_trace()
+    g = sns.catplot(x='Region', y='value', hue='Scenario', kind='violin',
+                    data=data, col='Indicator', sharey=True,
+                    bw=0.2, cut=True, scale='area', inner='point', orient='v')
     if out:
-        output_file(out)
-    save(grid)
+        g.savefig(out)
 
 if __name__ == '__main__':
     cli()

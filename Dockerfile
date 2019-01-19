@@ -2,14 +2,20 @@ FROM py-geospatial:latest
 
 MAINTAINER Ricardo E. Gonzalez <ricardog@ricardog.com>
 
-COPY reqs.txt /work/
-RUN cd /work && \
-	/root/.pyenv/shims/pip install numpy && \
-	/root/.pyenv/shims/pip install cython && \
-	/root/.pyenv/shims/pip install gdal==2.1.3 --global-option "build_ext" --global-option="--include-dirs=/usr/include/gdal" && \
-	/root/.pyenv/shims/pip install -r reqs.txt
+SHELL ["/bin/bash", "--login", "-c"]
 
-COPY Abundance.ipynb \
+USER rstudio
+RUN mkdir -p ~/work
+COPY --chown=rstudio:rstudio reqs.txt /home/rstudio/work/
+COPY --chown=root:root jupyter /usr/local/bin/jupyter
+RUN cd /home/rstudio/work && \
+	whoami && \
+	. ~/.bashrc && \
+	which pip && \
+	pip install -r reqs.txt && \
+	R -e "IRkernel::installspec()"
+
+COPY --chown=rstudio:rstudio Abundance.ipynb \
      do-hist-one.sh \
      do-hist2.sh \
      doit2.sh \
@@ -25,11 +31,13 @@ COPY Abundance.ipynb \
      requirements.txt \
      secd-dist.py \
      setup.py \
-     /work/
-COPY projections /work/projections
-COPY user-scripts /work/user-scripts
-RUN cd /work && /root/.pyenv/shims/pip install -e .
-WORKDIR /work
+     /home/rstudio/work/
+COPY --chown=rstudio:rstudio projections /home/rstudio/work/projections
+COPY --chown=rstudio:rstudio user-scripts /home/rstudio/work/user-scripts
+RUN source ~/.bashrc && \
+	cd /home/rstudio/work && \
+	pip install -e .
+
+USER root
+WORKDIR /home/rstudio/work
 ENV LD_LIBRARY_PATH /usr/local/lib/R/lib/:${LD_LIBRARY_PATH}
-
-

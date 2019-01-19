@@ -25,4 +25,5 @@ data/
 venv/
 ipbes-upload/
 summary-data/
+obipy-resources
 ~$*

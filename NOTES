@@ -1,0 +1,37 @@
+- To start a comntainer image
+  docker run -it --rm -v /home/ricardog/src/eec/predicts/data:/data:ro -v predicts-data:/out predicts:latest
+
+- Compute area of raster grid:
+https://gis.stackexchange.com/questions/127165/more-accurate-way-to-calculate-area-of-rasters#127327
+
+- Compare FP numbers:
+https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+
+- Income & welath inequality
+https://www.chartbookofeconomicinequality.com
+
+https://wid.world/data/
+
+https://www.cbpp.org/research/poverty-and-inequality/a-guide-to-statistics-on-historical-trends-in-income-inequality#_ftn23
+
+- Polity Project
+http://www.systemicpeace.org/polityproject.html
+
+- Cultural Proximity
+https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0152979
+
+- Moran's I test
+https://mgimond.github.io/Spatial/spatial-autocorrelation-in-r.html
+
+https://cran.r-project.org/web/packages/spdep/vignettes/nb_igraph.html
+
+- Ecological Land Units
+https://rmgsc.cr.usgs.gov/ecosystems/
+
+  Similar to http://maps.tnc.org/gis_data.html with higher level of detail.
+
+- World Governance Indicators
+  http://info.worldbank.org/governance/wgi/index.aspx#home
+
+  wgidataset.xls
+

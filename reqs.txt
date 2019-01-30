@@ -4,6 +4,7 @@ Click
 cython
 descartes
 gdal==2.1.3
+geopandas
 fiona --no-binary fiona
 geopy
 joblib
@@ -15,6 +16,7 @@ numpy
 pandas
 pylru
 pyparsing
+pysal
 rasterio --no-binary rasterio
 requests
 rpy2

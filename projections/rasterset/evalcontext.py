@@ -97,11 +97,13 @@ class EvalContext(object):
 
   @staticmethod
   def find_bounds(sources):
-    bounds = (-180.0, -90.0, 180.0, 90)
+    bounds = None
 
     for src in sources:
       src_bounds = src.reader.bounds
-      if rasterio.coords.disjoint_bounds(bounds, src_bounds):
+      if bounds is None:
+        bounds = src_bounds
+      elif rasterio.coords.disjoint_bounds(bounds, src_bounds):
         raise ValueError("rasters do not intersect")
       bounds = (max(bounds[0], src_bounds[0]),
                 max(bounds[1], src_bounds[1]),

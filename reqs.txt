@@ -16,7 +16,7 @@ numpy
 pandas
 pylru
 pyparsing
-pysal
+PySAL
 rasterio --no-binary rasterio
 requests
 rpy2

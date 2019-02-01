@@ -31,6 +31,7 @@ COPY --chown=rstudio:rstudio Abundance.ipynb \
      requirements.txt \
      secd-dist.py \
      setup.py \
+     wid_data.py \
      /home/rstudio/work/
 COPY --chown=rstudio:rstudio projections /home/rstudio/work/projections
 COPY --chown=rstudio:rstudio user-scripts /home/rstudio/work/user-scripts

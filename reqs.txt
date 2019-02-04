@@ -24,6 +24,8 @@ rpy2
 seaborn
 setuptools
 shapely
+simplegeneric
+statsmodels
 tqdm
 tzlocal
 xlrd

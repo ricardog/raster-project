@@ -5,6 +5,7 @@ cython
 descartes
 gdal==2.1.3
 geopandas
+geoplot
 fiona --no-binary fiona
 geopy
 joblib

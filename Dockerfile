@@ -13,7 +13,8 @@ RUN cd /home/rstudio/work && \
 	. ~/.bashrc && \
 	which pip && \
 	pip install -r reqs.txt && \
-	R -e "IRkernel::installspec()"
+	R -e "IRkernel::installspec()" && \
+	sed -i.orig -e 's/from pysal.esda.mapclassify import/from pysal.viz.mapclassify import/' /home/rstudio/.pyenv/versions/3.6.3/lib/python3.6/site-packages/geopandas/plotting.py
 
 COPY --chown=rstudio:rstudio Abundance.ipynb \
      do-hist-one.sh \

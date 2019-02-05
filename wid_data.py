@@ -42,6 +42,20 @@ def get_bii_data(dropna=True):
   del t7['Year']
   return t7
 
+def get_bii_summary():
+  def cleanup(df):
+    df = df.iloc[0:16, 1:]
+    df = pd.melt(df, value_vars=df.columns[3:], id_vars='Name',
+                 value_name='BIIAb', var_name='Year')
+    df = df.assign(Year=df.Year.astype(int))
+    df.columns = ['name', 'year', 'BIIAb']
+    return df
+
+  url = 'http://ipbes.s3.amazonaws.com/weighted/historical-BIIAb-npp-%s-0900-2014.csv'
+  subreg = cleanup(read_remote_csv(url % 'subreg'))
+  glob = cleanup(read_remote_csv(url % 'global'))
+  return pd.concat([glob, subreg])
+  
 def get_wid_data():
   url_temp = 'http://ipbes.s3.amazonaws.com/by-country/%s.csv'
   metrics = ('sfiinc992j', 'afiinc992t', 'afiinc992j', 'afiinc992i')

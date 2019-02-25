@@ -21,6 +21,7 @@ PySAL
 rasterio --no-binary rasterio
 requests
 rpy2
+rtree
 seaborn
 setuptools
 shapely

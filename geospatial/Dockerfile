@@ -17,6 +17,7 @@ RUN apt-get update \
     libproj-dev \
     libprotobuf-dev \
     libnetcdf-dev \
+    libspatialindex-dev \
     libsqlite3-dev \
     libssl-dev \
     libudunits2-dev \

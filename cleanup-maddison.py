@@ -58,7 +58,7 @@ def main(infile, outfile, start_year, long_form):
     gdp.to_csv(outfile, index=False, encoding='utf-8')
     return
   cinterest['year'] = cinterest.index
-  cinterest.to_csv(outfile, index=False, encoding='utf-8')
+  cinterest.to_csv(outfile, index=(not long_form), encoding='utf-8')
 
 
 if __name__ == '__main__':

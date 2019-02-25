@@ -10,10 +10,6 @@ import seaborn as sns
 BII_URL = 'http://ipbes.s3.amazonaws.com/weighted/' \
   'historical-BIIAb-npp-country-1880-2014.csv'
 
-@lrudecorator(10)
-def get_raw_bii_data():
-  return pd.read_csv(BII_URL)
-
 @lrudecorator(20)
 def read_remote_csv(url, **kwargs):
   return pd.read_csv(url, **kwargs)
@@ -26,7 +22,7 @@ def findt(ss):
   return pd.Series(rval)
 
 def get_bii_data(dropna=True):
-  bii = get_raw_bii_data()
+  bii = read_remote_csv(BII_URL)
   cols = list(filter(lambda nn: nn[0:6] == 'BIIAb_' or nn[0:4] == 'GDP_',
                      bii.columns))
   bii2 = bii.loc[:, ['fips', 'ar5', 'name', 'iso3', 'npp_mean'] + cols]
@@ -61,11 +57,11 @@ def get_wid_data():
   metrics = ('sfiinc992j', 'afiinc992t', 'afiinc992j', 'afiinc992i')
   data = dict()
   for metric in metrics:
-    data[metric] = pd.read_csv(url_temp % metric, encoding='utf-8')
+    data[metric] = read_remote_csv(url_temp % metric, encoding='utf-8')
   return data
 
 def get_eci_data(dropna=False):
-  bii = get_raw_bii_data()
+  bii = read_remote_csv(BII_URL)
   cols = list(filter(lambda nn:  nn[0:4] == 'ECI_', bii.columns))
   bii2 = bii.loc[:, ['fips', 'ar5', 'name', 'iso3',] + cols]
   if dropna:
@@ -77,7 +73,7 @@ def get_eci_data(dropna=False):
   return t7
 
 def get_rol_data(dropna=False):
-  bii = get_raw_bii_data()
+  bii = read_remote_csv(BII_URL)
   cols = {'WJP Rule of Law Index: Overall Score': 'ROLI',
           'Factor 1: Constraints on Government Powers': 'ROLI_1',
           'Factor 2: Absence of Corruption': 'ROLI_2',
@@ -101,11 +97,11 @@ def get_wgi_data():
 
 def get_language_data():
   url = 'http://ipbes.s3.amazonaws.com/by-country/language-distance.csv'
-  return pd.read_csv(url, encoding='utf-8')
+  return read_remote_csv(url, encoding='utf-8')
 
 def get_area_data():
   url = 'http://ipbes.s3.amazonaws.com/by-country/wb-area.csv'
-  return pd.read_csv(url, encoding='utf-8')
+  return read_remote_csv(url, encoding='utf-8')
 
 def area_order():
   return ('V. Small', 'Small', 'Medium', 'Large', 'V. Large')
@@ -136,20 +132,20 @@ def gov_order():
 
 def get_hpop_data():
   url = 'http://ipbes.s3.amazonaws.com/by-country/hpop.csv'
-  hpop = pd.read_csv(url)
+  hpop = read_remote_csv(url)
   return hpop[hpop.fips != 'Global']
 
 def get_gdp_data():
   url = 'http://ipbes.s3.amazonaws.com/by-country/gdp-1800.csv'
-  gdp= pd.read_csv(url)
+  gdp= read_remote_csv(url)
   return gdp
 
 def gdp_tresholds(df):
   bins = [0, 500, 1000, 2000, 4000, 8000, 16000, 32000]
-  labels = ['0.5k', '1k', '2k', '4k', '8k', '16k', '32k']
+  labels = ['0', '0.5k', '1k', '2k', '4k', '8k', '16k']
 
   df['GDPq'] = pd.cut(df.GDP, right=False, bins=bins, labels=labels)
-  grouped = df.sort_values(['name', 'year']).groupby('name')
+  grouped = df.sort_values(['fips', 'year']).groupby('fips')
   df['threshold'] = grouped['GDPq'].transform(findt)
   return df
 

@@ -1,6 +1,12 @@
 - To start a comntainer image
   docker run -it --rm -v /home/ricardog/src/eec/predicts/data:/data:ro -v predicts-data:/out predicts:latest
 
+- Start the postgis container
+  docker run --rm -p 5432:5432 -e POSTGRESS_PASSWORD=postgis -e POSTGRES_USER=postgis -e PGDATA=/var/lib/postgresql/data/pgdata -e POSTGIS_ENABLE_OUTDB_RASTERS=1 -e POSTGIS_GDAL_ENABLED_DRIVERS=ENABLE_ALL -v /home/ricardog/data/pgdata:/var/lib/postgresql/data/pgdata -v predicts-data:/out -v /home/ricardog/src/eec/predicts/data:/data -d postgis:latest
+
+- Start jupyter notebook server on bonobo
+  jupyter notebook --ip 192.168.0.46 --no-browser --ConnectionFileMixin.ip=192.168.0.46
+
 - Compute area of raster grid:
 https://gis.stackexchange.com/questions/127165/more-accurate-way-to-calculate-area-of-rasters#127327
 

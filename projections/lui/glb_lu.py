@@ -46,7 +46,6 @@ class GLB_LU(object):
       self._pkg_inputs = getattr(self._pkg, 'inputs')()
       self._inputs += [name if x == mod_name else x for x in self._pkg_inputs]
       self._finputs = copy(self._inputs)
-      self._inputs += [name + '_' + intensity + '_ref']
       def myfunc(df):
         args = [df[arg] for arg in self._finputs]
         return self._pkg_func(*args)
@@ -92,6 +91,13 @@ class GLB_LU(object):
       res = np.where(intense + res > 1, 1 - intense, res)
     res *= df[self._name]
     return res
+
+  def __repr__(self):
+    if self.intensity == 'minimal':
+      return "%s - %s - %s" % (self._name, self.as_intense, self.as_light)
+    if self.intensity == 'light':
+      return "clip(ui_%s(%s), 0, 1)" % (model(self._name), self._name)
+    return "clip(ui_%s(%s), 0, 1)" % (model(self._name), self._name)
 
 def _predictify(sym, prefix):
   newr = sym.replace(prefix, '')

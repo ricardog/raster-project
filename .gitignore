@@ -27,3 +27,4 @@ ipbes-upload/
 summary-data/
 obipy-resources
 ~$*
+packrat/lib*/

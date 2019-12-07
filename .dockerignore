@@ -2,6 +2,7 @@
 attic
 ds
 out
+docs
 **/__pycache__
 geospatial
 py-geospatial

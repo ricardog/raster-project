@@ -1,0 +1,13 @@
+WITH temp_grid AS
+  (SELECT *
+   FROM ST_CreateGrid(%(width)s, %(height)s, %(xres)s, %(yres)s, %(xoff)s, %(yoff)s, %(srid)s))
+SELECT a.row,
+       a.col,
+       sum(ST_Area(ST_Intersection(a.geom, b.geom)) / ST_Area(a.geom)) AS fraction
+FROM temp_grid a,
+     (SELECT * FROM {table} {clause}) b
+WHERE ST_Intersects(a.geom, b.geom)
+GROUP BY a.row,
+         a.col
+ORDER BY a.row,
+         a.col;

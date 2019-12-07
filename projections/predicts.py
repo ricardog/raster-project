@@ -275,14 +275,14 @@ def glb_lu(year, hpd_trend):
   rasters['unSub'] = Raster('unSub', outfn('1km', 'un_subregions.tif'))
   rasters['un_code'] = Raster('un_codes', outfn('1km', 'un_codes.tif'))
   if hpd_trend == 'wpp':
-    rasters['hpd_ref'] = Raster('hpd_ref', outfn('luh2', 'gluds00ag.tif'))
+    rasters['hpd_ref'] = Raster('hpd_ref', outfn('1km', 'gluds00ag.tif'))
     rasters['hpd'] = hpd.WPP('historical', year, utils.wpp_xls())
   else:
     rasters.update(hpd.hyde.scale_grumps(year))
 
   ## Agricultural suitability
-  #rasters['ag_suit'] = Raster('ag_suit', outfn('luh2', 'ag-suit-zero.tif'))
-  rasters['ag_suit'] = Raster('ag_suit', outfn('luh2', 'ag-suit-0.tif'))
+  #rasters['ag_suit'] = Raster('ag_suit', outfn('1km', 'ag-suit-zero.tif'))
+  rasters['ag_suit'] = Raster('ag_suit', outfn('1km', 'ag-suit-0.tif'))
   rasters['ag_suit_rs'] = SimpleExpr('ag_suit_rs', 'ag_suit')
   rasters['studymean_logHPD_rs'] = SimpleExpr('studymean_logHPD_rs', '0')
 
@@ -316,14 +316,11 @@ def glb_lu(year, hpd_trend):
 
   for band, intensity in enumerate(lui.intensities()):
     n = 'urban_' + intensity
-    rasters[n] = lui.LUH2('urban', intensity)
+    rasters[n] = lui.GLB_LU('urban', intensity)
 
   for klu in ('annual', 'pasture'):
     name = '%s_minimal_and_light' % klu
     rasters[name] = SimpleExpr(name, '%s_minimal + %s_light' % (klu, klu))
-  rasters['mature_secondary_intense_and_light'] = \
-    SimpleExpr('mature_secondary_intense_and_light',
-               'mature_secondary_light_and_intense')
   
   for klu in ('nitrogen', 'rangelands', 'urban'):
     name = '%s_light_and_intense' % klu

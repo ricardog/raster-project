@@ -24,7 +24,8 @@ ADD --chown=rstudio:rstudio \
 	/tmp/
 RUN usermod --shell /bin/bash rstudio
 USER rstudio
-RUN cat /tmp/pyenv-installer | /bin/bash && \
+RUN export CONFIGURE_OPTS=--enable-shared && \
+	cat /tmp/pyenv-installer | /bin/bash && \
 	echo 'export PATH="${HOME}/.pyenv/bin:$PATH"' >> ~/.bashrc && \
 	echo 'eval "$(pyenv init -)"' >> ~/.bashrc && \
 	echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bashrc && \

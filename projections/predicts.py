@@ -2,7 +2,6 @@
 from functools import reduce
 import netCDF4
 import os
-import sys
 
 from .rasterset import Raster
 from .simpleexpr import SimpleExpr
@@ -11,7 +10,7 @@ from . import lu
 from . import lui
 from . import ui
 from . import utils
-from .utils import outfn
+from .utils import data_file, outfn
 
 def rcp(scenario, year, hpd_trend):
   rasters = {}
@@ -259,6 +258,80 @@ def luh2(scenario, year, hpd_trend):
   return rasters
 
 
+def glb_lu(year, hpd_trend):
+  rasters = {}
+  
+  lus = [SimpleExpr('annual', 'c3ann + c4ann'),
+         SimpleExpr('nitrogen', 'c3nfx'),
+         SimpleExpr('cropland', 'c3ann + c4ann + c3nfx'),
+         SimpleExpr('pasture', 'pastr'),
+         SimpleExpr('perennial', 'c3per + c4per'),
+         SimpleExpr('primary', 'primf + primn'),
+         SimpleExpr('rangelands', 'range'),
+         SimpleExpr('secondary', 'secdf + secdn'),
+  ]
+ 
+  ## Human population density and UN subregions
+  rasters['unSub'] = Raster('unSub', outfn('1km', 'un_subregions.tif'))
+  rasters['un_code'] = Raster('un_codes', outfn('1km', 'un_codes.tif'))
+  if hpd_trend == 'wpp':
+    rasters['hpd_ref'] = Raster('hpd_ref', outfn('luh2', 'gluds00ag.tif'))
+    rasters['hpd'] = hpd.WPP('historical', year, utils.wpp_xls())
+  else:
+    rasters.update(hpd.hyde.scale_grumps(year))
+
+  ## Agricultural suitability
+  #rasters['ag_suit'] = Raster('ag_suit', outfn('luh2', 'ag-suit-zero.tif'))
+  rasters['ag_suit'] = Raster('ag_suit', outfn('luh2', 'ag-suit-0.tif'))
+  rasters['ag_suit_rs'] = SimpleExpr('ag_suit_rs', 'ag_suit')
+  rasters['studymean_logHPD_rs'] = SimpleExpr('studymean_logHPD_rs', '0')
+
+  ## NOTE: Pass max & min of log(HPD) so hi-res rasters can be processed
+  ## incrementally.  Recording the max value here for when I create
+  ## other functions for other resolutions.
+  ## 0.50 =>  20511.541 / 9.92874298232494
+  ## 0.25 =>  41335.645 / 10.62948048177454 (10.02 for Sam)
+  ## 1km  => 872073.500 / 13.678628988329825
+  maxHPD = 10.02083
+  rasters['logHPD_rs'] = SimpleExpr('logHPD_rs',
+                                    'scale(log(hpd + 1), 0.0, 1.0, 0.0, %f)' %
+                                    maxHPD)
+  rasters['logHPD_s2'] = SimpleExpr('LogHPD_s2', 'log(hpd + 1)')
+  rasters['logHPD_diff'] = SimpleExpr('logHPD_diff', '0 - logHPD_s2')
+
+  names = set(reduce(lambda x,y: x + y, [list(lu.syms) for lu in lus], ['urban']))
+  for name in names:
+    rasters[name] = Raster(name, data_file('luh2_1km',
+                                           'LUH2_%s_%4d_1KM.tif' % (name,
+                                                                    year)))
+
+  for name in lu.luh2_2.TREES:
+    rasters[name] = Raster(name, data_file('trees-db', '%s-full.tif' % name))
+
+  for klu in lus:
+    rasters[klu.name] = klu
+    for band, intensity in enumerate(lui.intensities()):
+      n = klu.name + '_' + intensity
+      rasters[n] = lui.GLB_LU(klu.name, intensity)
+
+  for band, intensity in enumerate(lui.intensities()):
+    n = 'urban_' + intensity
+    rasters[n] = lui.LUH2('urban', intensity)
+
+  for klu in ('annual', 'pasture'):
+    name = '%s_minimal_and_light' % klu
+    rasters[name] = SimpleExpr(name, '%s_minimal + %s_light' % (klu, klu))
+  rasters['mature_secondary_intense_and_light'] = \
+    SimpleExpr('mature_secondary_intense_and_light',
+               'mature_secondary_light_and_intense')
+  
+  for klu in ('nitrogen', 'rangelands', 'urban'):
+    name = '%s_light_and_intense' % klu
+    rasters[name] = SimpleExpr(name, '%s_light + %s_intense' % (klu, klu))
+
+  return rasters
+
+
 def oneKm(year, scenario, hpd_trend):
   rasters = {}
   if scenario == 'version3.3':
@@ -317,6 +390,9 @@ def rasterset(lu_src, scenario, year, hpd_trend='medium'):
   if lu_src == 'luh2':
     assert hpd_trend in ('wpp', 'medium')
     return luh2(scenario, year, hpd_trend)
+  if lu_src == 'glb_lu':
+    assert hpd_trend in ('wpp', 'medium')
+    return glb_lu(year, hpd_trend)
   if lu_src == '1km':
     return oneKm(year, scenario, hpd_trend)
 
@@ -338,7 +414,7 @@ def predictify(mod):
     f = lambda x: ui.predictify(x, 'UseIntensity')
     mod.equation.transform(f)
     
-  for prefix in ('UI', 'UImin'):
+  for prefix in ('UI', 'UImin', 'GLB_LU'):
     if prefix in syms:
       if False and lui.luh5.is_luh5(syms[prefix], prefix):
         print('predictify %s as luh5' % prefix)
@@ -346,21 +422,28 @@ def predictify(mod):
       elif lui.luh2.is_luh2(syms[prefix], prefix):
         print('predictify %s as luh2' % prefix)
         f = lambda x: lui.luh2.predictify(x, prefix)
+      elif lui.glb_lu.matches(syms[prefix], prefix):
+        print('predictify %s as glb_lu' % prefix)
+        f = lambda x: lui.glb_lu.predictify(x, prefix)
       else:
         print('predictify %s as rcp' % prefix)
         f = lambda x: lui.rcp.predictify(x, prefix)
       mod.equation.transform(f)
-  if 'LandUse' in syms:
-    if lu.luh5.is_luh5(syms['LandUse'], 'LandUse'):
-      print('predictify LandUse as luh5')
-      f = lambda x: lu.luh5.predictify(x, 'LandUse')
-    elif lu.luh2.is_luh2(syms['LandUse'], 'LandUse'):
-      print('predictify LandUse as luh2')
-      f = lambda x: lu.luh2.predictify(x, 'LandUse')
-    else:
-      print('predictify LandUse as rcp')
-      f = lambda x: lu.rcp.predictify(x, 'LandUse')
-    mod.equation.transform(f)
+  for prefix in ('LandUse', 'LU2'):
+    if prefix in syms:
+      if lu.luh5.is_luh5(syms[prefix], prefix):
+        print('predictify LandUse as luh5')
+        f = lambda x: lu.luh5.predictify(x, prefix)
+      elif lu.luh2_2.matches(syms[prefix], prefix):
+        print('predictify LandUse as luh2_2')
+        f = lambda x: lu.luh2_2.predictify(x, prefix)
+      elif lu.luh2.is_luh2(syms[prefix], prefix):
+        print('predictify LandUse as luh2')
+        f = lambda x: lu.luh2.predictify(x, prefix)
+      else:
+        print('predictify LandUse as rcp')
+        f = lambda x: lu.rcp.predictify(x, 'LandUse')
+      mod.equation.transform(f)
   if 'Contrast' in syms:
     if lui.luh5.is_luh5(syms['Contrast'], 'Contrast'):
       print('predictify Contrasts as lui.luh5')

@@ -566,7 +566,7 @@ def export(infiles, band, country_file, npp, vsr, out):
 @click.argument('infiles', nargs=-1, type=click.Path(dir_okay=False))
 @click.option('--gdp', type=click.Path(dir_okay=False),
               default=utils.gdp_csv(),
-              help='CSV file with [er capital GDP data.')
+              help='CSV file with per capital GDP data.')
 @click.option('--scale', type=click.Path(dir_okay=False),
               help='Weight the metric values with a per cell factor, '
               'e.g. NPP na dvertebrate species richness.')

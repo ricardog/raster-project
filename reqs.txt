@@ -3,7 +3,7 @@ cartopy
 Click
 cython
 descartes
-gdal==2.1.3
+gdal
 geopandas
 geoplot
 fiona --no-binary fiona

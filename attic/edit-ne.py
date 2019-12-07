@@ -25,6 +25,12 @@ def doit():
         if shp['properties']['NAME'] == 'Åland':
           print('4')
           shp['properties']['FIPS_10_'] = 'AX'
+        if shp['properties']['NAME'] == 'Israel':
+          print('5')
+          shp['properties']['FIPS_10_'] = 'IS'
+        if shp['properties']['NAME'] == 'Palestine':
+          print('6')
+          shp['properties']['FIPS_10_'] = 'WE'
         dst.write(shp)
 
     

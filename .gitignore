@@ -28,3 +28,5 @@ summary-data/
 obipy-resources
 ~$*
 packrat/lib*/
+/attic/plant-db-rasters
+/weighted/

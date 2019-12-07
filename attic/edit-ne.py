@@ -3,7 +3,6 @@
 
 import os
 import fiona
-import pdb
 
 def doit():
   name = 'ne_10m_admin_0_countries'
@@ -31,6 +30,10 @@ def doit():
         if shp['properties']['NAME'] == 'Palestine':
           print('6')
           shp['properties']['FIPS_10_'] = 'WE'
+        if shp['properties']['NAME'] == 'Somaliland':
+          print('7')
+          shp['properties']['FIPS_10_'] = 'SO'
+          shp['properties']['UN_A3'] = '706'
         dst.write(shp)
 
     

@@ -1,4 +1,4 @@
-FROM rocker/tidyverse:3.5.1
+FROM rocker/tidyverse:3.5.3
 MAINTAINER "Carl Boettiger" cboettig@ropensci.org
 
 RUN apt-get update \

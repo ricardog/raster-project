@@ -299,14 +299,19 @@ def glb_lu(year, hpd_trend):
   rasters['logHPD_s2'] = SimpleExpr('LogHPD_s2', 'log(hpd + 1)')
   rasters['logHPD_diff'] = SimpleExpr('logHPD_diff', '0 - logHPD_s2')
 
+  rasters['sum'] = Raster('sum', data_file('sdpt', 'sum-full.tif'))
+  rasters['fraction'] = SimpleExpr('fraction', '1 - clip(sum, 0, 1)')
+  
   names = set(reduce(lambda x,y: x + y, [list(lu.syms) for lu in lus], ['urban']))
   for name in names:
-    rasters[name] = Raster(name, data_file('luh2_1km',
-                                           'LUH2_%s_%4d_1KM.tif' % (name,
-                                                                    year)))
+    raw = '%s_raw' % name
+    rasters[raw] = Raster(raw, data_file('luh2_1km',
+                                         'LUH2_%s_%4d_1KM.tif' % (name,
+                                                                  year)))
+    rasters[name] = SimpleExpr(name, '%s_raw * fraction' % name)
 
   for name in lu.luh2_2.TREES:
-    rasters[name] = Raster(name, data_file('trees-db', '%s-full.tif' % name))
+    rasters[name] = Raster(name, data_file('sdpt', '%s-full.tif' % name))
 
   for klu in lus:
     rasters[klu.name] = klu

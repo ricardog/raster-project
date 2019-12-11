@@ -282,17 +282,12 @@ def glb_lu(year, hpd_trend):
 
   ## Agricultural suitability
   #rasters['ag_suit'] = Raster('ag_suit', outfn('1km', 'ag-suit-zero.tif'))
-  rasters['ag_suit'] = Raster('ag_suit', outfn('1km', 'ag-suit-0.tif'))
+  #rasters['ag_suit'] = Raster('ag_suit', outfn('1km', 'ag-suit-0.tif'))
+  rasters['ag_suit'] = SimpleExpr('ag_suit', 0)
   rasters['ag_suit_rs'] = SimpleExpr('ag_suit_rs', 'ag_suit')
   rasters['studymean_logHPD_rs'] = SimpleExpr('studymean_logHPD_rs', '0')
 
-  ## NOTE: Pass max & min of log(HPD) so hi-res rasters can be processed
-  ## incrementally.  Recording the max value here for when I create
-  ## other functions for other resolutions.
-  ## 0.50 =>  20511.541 / 9.92874298232494
-  ## 0.25 =>  41335.645 / 10.62948048177454 (10.02 for Sam)
-  ## 1km  => 872073.500 / 13.678628988329825
-  maxHPD = 10.02083
+  maxHPD = 10.02087
   rasters['logHPD_rs'] = SimpleExpr('logHPD_rs',
                                     'scale(log(hpd + 1), 0.0, 1.0, 0.0, %f)' %
                                     maxHPD)
@@ -318,6 +313,7 @@ def glb_lu(year, hpd_trend):
     for band, intensity in enumerate(lui.intensities()):
       n = klu.name + '_' + intensity
       rasters[n] = lui.GLB_LU(klu.name, intensity)
+  rasters['plantation'] = SimpleExpr('plantation', 0)
 
   for band, intensity in enumerate(lui.intensities()):
     n = 'urban_' + intensity

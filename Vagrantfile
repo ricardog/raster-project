@@ -6,7 +6,7 @@ Vagrant.configure("2") do |config|
       d.build_args = ['-t', 'predicts:latest']
       d.env = {PASSWORD: 'browsesafely'}
       d.ports = ['8787:8787']
-      d.volumes = ["/home/ricardog/src/eec/predicts/data:/data:ro",
+      d.volumes = ["/gorilla/old/src/eec/predicts/data:/data:ro",
                    "predicts-data:/out"
                   ]
       if false

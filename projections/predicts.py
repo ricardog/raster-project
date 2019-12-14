@@ -285,14 +285,16 @@ def glb_lu(year, hpd_trend):
   #rasters['ag_suit'] = Raster('ag_suit', outfn('1km', 'ag-suit-0.tif'))
   rasters['ag_suit'] = SimpleExpr('ag_suit', 0)
   rasters['ag_suit_rs'] = SimpleExpr('ag_suit_rs', 'ag_suit')
+  rasters['logAdjDist'] = SimpleExpr('logAdjDist', '0')
+  rasters['cubrtEnvDist'] = SimpleExpr('cubrtEnvDist', '0')
   rasters['studymean_logHPD_rs'] = SimpleExpr('studymean_logHPD_rs', '0')
 
   maxHPD = 10.02087
   rasters['logHPD_rs'] = SimpleExpr('logHPD_rs',
                                     'scale(log(hpd + 1), 0.0, 1.0, 0.0, %f)' %
                                     maxHPD)
-  rasters['logHPD_s2'] = SimpleExpr('LogHPD_s2', 'log(hpd + 1)')
-  rasters['logHPD_diff'] = SimpleExpr('logHPD_diff', '0 - logHPD_s2')
+  rasters['logHPD_rs_s2'] = SimpleExpr('LogHPD_s2', 'log(hpd + 1)')
+  rasters['logHPD_rs_diff'] = SimpleExpr('logHPD_diff', '0 - logHPD_rs_s2')
 
   rasters['sum'] = Raster('sum', data_file('sdpt', 'sum-full.tif'))
   rasters['fraction'] = SimpleExpr('fraction', '1 - clip(sum, 0, 1)')
@@ -313,7 +315,7 @@ def glb_lu(year, hpd_trend):
     for band, intensity in enumerate(lui.intensities()):
       n = klu.name + '_' + intensity
       rasters[n] = lui.GLB_LU(klu.name, intensity)
-  rasters['plantation'] = SimpleExpr('plantation', 0)
+  rasters['plantation'] = SimpleExpr('plantation', 'unknown')
 
   for band, intensity in enumerate(lui.intensities()):
     n = 'urban_' + intensity
@@ -446,6 +448,9 @@ def predictify(mod):
     if lui.luh5.is_luh5(syms['Contrast'], 'Contrast'):
       print('predictify Contrasts as lui.luh5')
       f = lambda x: lui.luh5.as_contrast(x, 'Contrast')
+    elif lu.luh2_2.matches(syms['Contrast'], 'Contrast'):
+      print('predictify Contrasts as lu.luh2_2')
+      f = lambda x: lu.luh2_2.as_contrast(x, 'Contrast')
     else:
       print('predictify Contrasts as lu.luh2')
       f = lambda x: lu.luh2.as_contrast(x, 'Contrast')

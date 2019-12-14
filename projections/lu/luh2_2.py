@@ -58,7 +58,6 @@ def _predictify(sym, prefix):
   newr = newr.lower()
   name = newr.split(' ')[0]
   newr = newr.replace(' ', '_')
-  print(sym, prefix, name, newr)
   assert name in types(), 'unknown land use type %s' % sym
   return newr
 
@@ -71,6 +70,15 @@ def matches(syms, prefix):
       import pdb; pdb.set_trace()
       return False
   return True
+
+def as_contrast(root, prefix):
+  if isinstance(root, str) and re.match(prefix, root):
+    newr = root.replace(prefix, '')
+    newr = re.sub(r'^.*-', '', newr)
+    newr = newr.replace('Managed ', '')
+    newr = newr.replace(' Minimal', '')
+    return _predictify(newr, '')
+  return root
 
 def predictify(root, prefix):
   if isinstance(root, str) and re.match(prefix, root):

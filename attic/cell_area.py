@@ -7,8 +7,8 @@ R_MINOR = 6356752.3142
 
 def band_area(lats):
   rlats = np.radians(lats)
-  a = 6378137.0000
-  b = 6356752.3142
+  a = R_MAJOR #6378137.0000
+  b = R_MINOR #6356752.3142
   e = math.sqrt(1 - (b / a)**2)
   zm = 1 - e * np.sin(rlats)
   zp = 1 + e * np.sin(rlats)

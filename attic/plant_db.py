@@ -240,7 +240,7 @@ def generate(table, clause, ref_raster, path, num_workers,
   if isinstance(password, HiddenPassword):
     password = password.password
   pg_url = "postgresql://{user}:{password}@{host}/{db}".format(
-    user = user, password = password, host = host, db = db)
+    user=user, password=password, host=host, db=db)
   with rasterio.open(ref_raster) as src:
     dtype = 'float32'
     nodata = -9999

@@ -24,6 +24,7 @@ def main(output, input, reference):
                      'predictor': 2, 'nodata': src.nodata})
         src_data = src.read(1, masked=True)
         src_bounds = src.bounds
+        out.set_fill_value(src.nodata)
     with rasterio.open(output, 'w', **meta) as dst:
         if dst.crs is None or dst.crs == {}:
             dst.crs = rasterio.crs.CRS(init='epsg:4326')

@@ -47,3 +47,5 @@ for name in "${SIMPLE[@]}"; do
 			 ${outdir}/${fname}.tif "${ICEWTR}"
 done
 
+# To generate the sum raster use
+# rio calc --masked --overwrite --co COMPRESS=lzw --co PREDICTOR=2 "(+ (read 1 1) (read 2 1) (read 3 1) (read 4 1) (read 5 1) (read 6 1) (read 7 1) (read 8 1) (read 9 1) (read 10 1) (read 11 1))" *-full.tif sum-full.tif

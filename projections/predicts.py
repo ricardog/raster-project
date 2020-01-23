@@ -296,19 +296,42 @@ def glb_lu(year, hpd_trend):
   rasters['logHPD_rs_s2'] = SimpleExpr('LogHPD_s2', 'log(hpd + 1)')
   rasters['logHPD_rs_diff'] = SimpleExpr('logHPD_diff', '0 - logHPD_rs_s2')
 
-  rasters['sum'] = Raster('sum', data_file('sdpt', 'sum-full.tif'))
-  rasters['fraction'] = SimpleExpr('fraction', '1 - clip(sum, 0, 1)')
+  rasters['sum'] = Raster('sum', data_file('sdpt_1km', 'sum-full.tif'))
+  rasters['fraction1'] = SimpleExpr('fraction', '1 - clip(sum, 0, 1)')
+  rasters['sum_delta'] = Raster('sum_delta', outfn('glb-lu',
+                                                   'LUH2_sum_delta_1KM.tif'))
+  scale = (2014 - year) / 14
+  rasters['delta'] = SimpleExpr('delta', f'sum_delta * {scale}')
+  rasters['fraction3'] = SimpleExpr('fraction3', '1 - clip((delta / (sum + 1e-5)), 0, 1)')
   
+  modified = ('primf', 'primn', 'secdf', 'secdn')
+  prev = ['0']
+  for layer in modified:
+    name = f'{layer}_delta'
+    raw = f'{name}_raw'
+    subs = ' - '.join(prev)
+    rasters[raw] = Raster(raw, outfn('glb-lu',
+                                     f'LUH2_{layer}_delta_1KM.tif'))
+    rasters[name] = SimpleExpr(name, f'clip(min({raw}, delta - {subs}), 0, 1)')
+    prev.append(name)
+
+
   names = set(reduce(lambda x,y: x + y, [list(lu.syms) for lu in lus], ['urban']))
   for name in names:
     raw = '%s_raw' % name
     rasters[raw] = Raster(raw, data_file('luh2_1km',
                                          'LUH2_%s_%4d_1KM.tif' % (name,
-                                                                  year)))
-    rasters[name] = SimpleExpr(name, '%s_raw * fraction' % name)
+                                                                  2014)))
+                                                                  #year)))
+    if name in modified:
+      rasters[name] = SimpleExpr(name, f'{raw} - {name}_delta')
+    else:
+      rasters[name] = SimpleExpr(name, f'{raw} * fraction1')
 
   for name in lu.luh2_2.TREES:
-    rasters[name] = Raster(name, data_file('sdpt', '%s-full.tif' % name))
+    raw = '%s_raw' % name
+    rasters[raw] = Raster(raw, data_file('sdpt_1km', '%s-full.tif' % name))
+    rasters[name] = SimpleExpr(name, f'{raw} * fraction3')
 
   for klu in lus:
     rasters[klu.name] = klu

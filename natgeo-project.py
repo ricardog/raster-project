@@ -6,7 +6,7 @@ import time
 
 import click
 
-from projections.rasterset import RasterSet
+from projections.rasterset import RasterSet, Raster
 from projections.simpleexpr import SimpleExpr
 import projections.r2py.modelr as modelr
 import projections.predicts as predicts
@@ -61,6 +61,30 @@ compositional similarity depending on what the user wants to project.
     #raise RuntimeError('Unknown model type %s' % model)
   return out, None if mod is None else os.path.join(model_dir, mod)
 
+def project_bii_year(what, year):
+  """Generate a BII raster by combining the indicator and compositional
+similarity rasters.
+
+  """
+  if what == 'bii-ab':
+    indicator = 'Abundance'
+    suffix = 'Ab'
+  else:
+    indicator = 'Richness'
+    suffix = 'SR'
+    
+  ind = Raster('ind', utils.outfn('glb-lu', f'{indicator}-{year}.tif'))
+  cs = Raster('cs', utils.outfn('glb-lu', f'CompSim{suffix}-{year}.tif'))
+  rs = RasterSet({'ind': ind,
+                  'cs': cs,
+                  'bii': SimpleExpr('bii', 'ind * cs')})
+  stime = time.time()
+  rs.write('bii', utils.outfn('glb-lu', f'BII{suffix}-{year}.tif'))
+  etime = time.time()
+  print("executed in %6.2fs" % (etime - stime))
+  return
+
+
 def project_year(model, model_dir, scenario, year):
   """Run a projection for a single year.  Can be called in parallel when
 projecting a range of years.
@@ -68,6 +92,9 @@ projecting a range of years.
   """
 
   print("projecting %s for %d using %s" % (model, year, scenario))
+  if model in ('bii-ab', 'bii-sr'):
+    project_bii_year(model, year)
+    return
 
   # Import standard PREDICTS rasters
   rasters = predicts.rasterset('glb_lu', None, year, 'wpp')
@@ -101,7 +128,7 @@ projecting a range of years.
 
 @click.command()
 @click.argument('what', type=click.Choice(['ab', 'sr', 'cs-ab', 'cs-sr',
-                                           'hpd']))
+                                           'bii-ab', 'bii-sr', 'hpd']))
 @click.argument('years', type=YEAR_RANGE)
 @click.option('--model-dir', '-m', type=click.Path(file_okay=False),
               default=os.path.abspath('.'),

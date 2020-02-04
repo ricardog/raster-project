@@ -259,6 +259,10 @@ def luh2(scenario, year, hpd_trend):
 
 
 def glb_lu(year, hpd_trend):
+  year_ref = 2015
+  year_start = 2000
+  nyears = year_ref - year_start
+
   rasters = {}
   
   lus = [SimpleExpr('annual', 'c3ann + c4ann'),
@@ -300,7 +304,7 @@ def glb_lu(year, hpd_trend):
   rasters['fraction1'] = SimpleExpr('fraction', '1 - clip(sum, 0, 1)')
   rasters['sum_delta'] = Raster('sum_delta', outfn('glb-lu',
                                                    'LUH2_sum_delta_1KM.tif'))
-  scale = (2014 - year) / 14
+  scale = (year_ref - year) / nyears
   rasters['delta'] = SimpleExpr('delta', f'sum_delta * {scale}')
   rasters['fraction3'] = SimpleExpr('fraction3', '1 - clip((delta / (sum + 1e-5)), 0, 1)')
   
@@ -321,7 +325,7 @@ def glb_lu(year, hpd_trend):
     raw = '%s_raw' % name
     rasters[raw] = Raster(raw, data_file('luh2_1km',
                                          'LUH2_%s_%4d_1KM.tif' % (name,
-                                                                  2014)))
+                                                                  year_ref)))
                                                                   #year)))
     if name in modified:
       rasters[name] = SimpleExpr(name, f'{raw} - {name}_delta')

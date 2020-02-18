@@ -40,7 +40,7 @@ def csv2df(url, stype, syear, eyear):
 
 def pline(p, df, column, color='black', line_width=6):
     src = ColumnDataSource(data={
-        'year': df.Year,
+        'year': df.index.values,
         'data': df[column],
         'name': [column for n in range(len(df))]
     })

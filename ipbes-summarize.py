@@ -31,7 +31,7 @@ def read_bounded(ds, bounds=None, height=None):
   if bounds is None:
     return ds.read(1, masked=True)
   win = ds.window(*bounds)
-  if height and win[0][1] - win[0][0] > height:
+  if height and round(win.height) > height:
     win = ((win[0][0], win[0][0] + height), win[1])
   return ds.read(1, masked=True, window=win)
 
@@ -70,17 +70,25 @@ def find_bounds(sources):
     height = max(height, src.height)
   for src in sources:
     win = src.window(*bounds)
-    width = min(width, win[1][1] - win[1][0])
-    height = min(height, win[0][1] - win[0][0])
+    width = min(width, round(win.width))
+    height = min(height, round(win.height))
   return bounds, width, height
 
-def get_ipbes_regions():
+def get_ipbes_regions(subregions=True):
   with fiona.open(utils.outfn('vector', 'ipbes_land_shape',
                               'ipbes_land.shp')) as shapes:
     props = tuple(filter(lambda x: x.get('type') == 'Land',
                          (s['properties'] for s in shapes)))
-    return pd.DataFrame({'ID': tuple(int(s.get('OBJECTID')) for s in props),
-                         'Name': tuple(s.get('IPBES_sub') for s in props)})
+    df = pd.DataFrame({'ID': tuple(int(s.get('OBJECTID')) for s in props),
+                       'Name': tuple(s.get('IPBES_sub') for s in props),
+                       'Region': tuple(s.get('IPBES_regi') for s in props)})
+    if not subregions:
+      df['ID'] = df.Region.astype('category').cat.codes
+      df = df[['ID', 'Region']].drop_duplicates()
+      df.columns = ['ID', 'Name']
+      df.index = df.ID.values
+      df = df.drop('ID', axis=1).drop(4, axis=0)
+    return df
 
 @click.group(invoke_without_command=True)
 @click.pass_context
@@ -97,7 +105,8 @@ def cli(ctx):
 @click.argument('years', type=YEAR_RANGE)
 @click.option('--npp', type=click.Path(dir_okay=False))
 @click.option('--vsr', type=click.Path(dir_okay=False))
-def summary(what, scenario, years, npp, vsr):
+@click.option('--regions', is_flag=True, default=False)
+def summary(what, scenario, years, npp, vsr, regions):
   """Generate a per-year and per-IPBES region summary of a diversity metric.
 
   Diversity metric supported are
@@ -118,7 +127,7 @@ def summary(what, scenario, years, npp, vsr):
   if npp and vsr:
     raise RuntimeError('Please specify --npp or --vsr, not both')
 
-  df = get_ipbes_regions()
+  df = get_ipbes_regions(not regions)
   df_global = pd.DataFrame({'ID': [-1], 'Name': ['Global']},
                            columns=('ID', 'Name'))
   vname =  'Abundance' if what == 'ab' \
@@ -145,7 +154,10 @@ def summary(what, scenario, years, npp, vsr):
       fnames.append(npp)
     if vsr:
       fnames.append(vsr)
-    fnames.append(utils.outfn('luh2', 'ipbes-subs.tif'))
+    if regions:
+      fnames.append(utils.outfn('luh2', 'ipbes-region.tif'))
+    else:
+      fnames.append(utils.outfn('luh2', 'ipbes-subs.tif'))
 
     sources = [rasterio.open(src) for src in fnames]
     bounds, width, height = find_bounds(sources)
@@ -172,10 +184,14 @@ def summary(what, scenario, years, npp, vsr):
   if len(years) < 10:
     print(df)
   weight = "-npp" if npp else "-vsr" if vsr else ""
-  df.to_csv('%s-%s%s-subreg-%04d-%04d.csv' % (scenario, vname, weight,
-                                              years[0], years[-1]))
+  area = 'reg' if regions else 'subreg'
+  df.to_csv('%s-%s%s-%s-%04d-%04d.csv' % (scenario, vname, weight,
+                                          area,
+                                          years[0], years[-1]),
+            index=False)
   df_global.to_csv('%s-%s%s-global-%04d-%04d.csv' % (scenario, vname, weight,
-                                                     years[0], years[-1]))
+                                                     years[0], years[-1]),
+                   index=False)
 @cli.command()
 @click.argument('what', type=click.Choice(['ab', 'sr']))
 @click.argument('scenario', type=click.Choice(utils.luh2_scenarios()))

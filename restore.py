@@ -16,11 +16,8 @@ from rasterio.warp import Resampling, calculate_default_transform, reproject
 #from descartes import PolygonPatch
 #from fiona import collection
 import cartopy.crs as ccrs
-from affine import Affine
 
 import projections.utils as utils
-
-import pdb
 
 def read_historical(start, end, bounds, metric):
   path = '/out/luh2/historical-%s-%%d.tif' % metric

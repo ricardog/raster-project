@@ -7,14 +7,25 @@ from bokeh.palettes import Category20, brewer, viridis
 from bokeh.plotting import figure
 
 import click
+import fiona
 import matplotlib.pyplot as plt
 import joblib
 import numpy as np
 import pandas as pd
 
+import projections.utils as utils
+
 import pdb
 
-def  stacked(df):
+def get_ipbes_regions():
+  with fiona.open(utils.outfn('vector', 'ipbes_land_shape',
+                              'ipbes_land.shp')) as shapes:
+    props = tuple(filter(lambda x: x.get('type') == 'Land',
+                         (s['properties'] for s in shapes)))
+    return pd.DataFrame({'ID': tuple(int(s.get('OBJECTID')) for s in props),
+                         'Name': tuple(s.get('IPBES_sub') for s in props)})
+
+def stacked(df):
     '''Convert a Pandas df to a stacked structure suitable for plotting.'''
     df_top = df.cumsum(axis=1)
     df_bottom = df_top.shift(axis=1).fillna(0)[::-1]
@@ -67,8 +78,12 @@ def with_bokeh(scene, data):
     if add_legend:
         ax.legend(loc='center left')
         add_legend = False
-    
-@click.command()
+
+@click.group()
+def cli():
+    pass
+
+@cli.command()
 @click.option('--data-file', '-d', type=click.Path(dir_okay=False),
               default='overtime.dat')
 @click.option('--use_bokeh', '-b', is_flag=True, default=False)
@@ -105,8 +120,28 @@ def overplot(data_file, use_bokeh):
     for ax in all_axes:
         fig.delaxes(ax)
     plt.show()
+
+@cli.command()
+@click.option('--data-file', '-d', type=click.Path(dir_okay=False),
+              default='overtime.dat')
+def to_csv(data_file):
+  df = get_ipbes_regions()
+  columns = ['Global'] + df.Name.values.tolist()
+  storage = joblib.load(data_file)
+  historical = storage['historical'].T
+  del storage['historical']
     
+  #pdb.set_trace()
+  for scene in sorted(storage.keys()):
+      #arr = np.vstack((historical, storage[scene].T))
+      arr = storage[scene]
+      years = arr[0, :, 0].astype(int)
+      for idx, name in enumerate(('Cropland', 'Pasture', 'Primary',
+                                'Secondary', 'Urban')):
+          data = arr[idx + 1, :, :]
+          lu = pd.DataFrame(arr[idx +1, :, :], index=years, columns=columns)
+          lu.to_csv('%s-%s.csv' % (scene, name))
 
 if __name__ == '__main__':
-    overplot()
+    cli()
 

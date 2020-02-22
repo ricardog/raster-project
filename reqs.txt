@@ -15,6 +15,7 @@ netCDF4
 numba
 numpy
 pandas
+pyepsg
 pylru
 pyparsing
 PySAL

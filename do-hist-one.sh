@@ -28,7 +28,7 @@ for what in sr ab; do
 	--like ${OUTDIR}/luh2/${scenario}-${v1}-${oyear}.tif \
 	--output ${OUTDIR}/luh2/${scenario}-CompSim${v2}-${oyear}.tif
 
-    rio calc --co "COMPRESS=lzw" --co "PREDICTOR=2" --masked \
+    rio calc --co "COMPRESS=lzw" --co "PREDICTOR=3" --masked \
 	-t float32 "(* (read 1 1) (read 2 1))" \
 	-o ${OUTDIR}/luh2/${scenario}-BII${v2}-${oyear}.tif \
 	${OUTDIR}/luh2/${scenario}-${v1}-${oyear}.tif \

@@ -92,4 +92,4 @@ masked <- raster::mask(stack(out), icew, maskvalue=1.0)
 writeRaster(masked, argv$output, format='GTiff', NAflag=-9999,
             overwrite=TRUE, datatype = 'FLT4S')
 ## Setting the following options causes writeRaster() to fail
-## options=c("COMPRESS=lzw", "PREDICTOR=2"))
+## options=c("COMPRESS=lzw", "PREDICTOR=3"))

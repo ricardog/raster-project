@@ -22,7 +22,7 @@ endef
 
 define rasterize
 	@echo gdal_rasterize ${2} ${3}
-	@gdal_rasterize -q -a_nodata -9999 -init -9999 -a ${1} -ot Float32 -tr 0.5 0.5 -te -180 -90 180 90 -co "COMPRESS=lzw" -co "PREDICTOR=2" ${2} ${3}
+	@gdal_rasterize -q -a_nodata -9999 -init -9999 -a ${1} -ot Float32 -tr 0.5 0.5 -te -180 -90 180 90 -co "COMPRESS=lzw" -co "PREDICTOR=3" ${2} ${3}
 endef
 
 #LU_TYPES := $(notdir $(basename $(wildcard ${SRCDIR}/*.vrt)))
@@ -53,7 +53,7 @@ all: $(addsuffix .tif, ${LU_TYPES}) $(addsuffix -recal.tif, ${LU_TYPES})
 
 %.tif: %-minimal.tif %-light.tif %-intense.tif
 	@echo gdal_merge.py -o $@ $^
-	@gdal_merge.py -q -o $@ -of GTiff -co "COMPRESS=lzw" -co "PREDICTOR=2"\
+	@gdal_merge.py -q -o $@ -of GTiff -co "COMPRESS=lzw" -co "PREDICTOR=3"\
 		-separate -a_nodata -9999 -init -9999 -n -9999 $^
 
 %-recal.tif: %.tif

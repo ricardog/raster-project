@@ -9,12 +9,12 @@ mainland=KS_layers/Mainland_fromIgor_edited.shp
 
 gdal_rasterize -tap -init 0 -burn 1 -a FID_1 ${at} \
 	       -ot Byte -tr 0.008333333333333 0.008333333333333 \
-	       -co "COMPRESS=lzw" -co "PREDICTOR=2" \
+	       -co "COMPRESS=lzw" -co "PREDICTOR=3" \
 	       "${dir}/${islands}" islands-from-igor-edited${at}.tif
 
 
 gdal_rasterize -tap -init 0 -burn 1 -a FID_1 ${at} \
 	       -ot Byte -tr 0.008333333333333 0.008333333333333 \
-	       -co "COMPRESS=lzw" -co "PREDICTOR=2" \
+	       -co "COMPRESS=lzw" -co "PREDICTOR=3" \
 	       "${dir}/${mainland}" mainland-from-igor-edited${at}.tif
 

@@ -36,7 +36,7 @@ for dname in /data/luh2_v2/LUH2_v2f_SSP[0-9]_*; do
 	    echo "-o /out/luh2/${scenario}-BII${v2}-${year}.tif /out/luh2/${scenario}-${v1}-${year}.tif /out/luh2/${scenario}-CompSim${v2}-${year}.tif"
 	done
     done | xargs -P ${num_jobs} -n 1 -l1 rio calc \
-		 --co "COMPRESS=lzw" --co "PREDICTOR=2" --masked \
+		 --co "COMPRESS=lzw" --co "PREDICTOR=3" --masked \
 		 -t float32 \
 		 "(* (read 1 1) (read 2 1))"
 done

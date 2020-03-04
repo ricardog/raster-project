@@ -14,7 +14,7 @@ define rasterize
 	@echo gdal_rasterize ${4} ${5}
 	gdal_rasterize -tap -at -a_nodata -9999 -init -9999 -a ${1} \
 		-ot ${2} -tr ${3} ${3} -co "COMPRESS=lzw" \
-		-co "PREDICTOR=2" ${4} ${5}
+		-co "PREDICTOR=3" ${4} ${5}
 	@echo done
 endef
 
@@ -32,7 +32,7 @@ endef
 define resize
 # $(call resize resolution src dst)
 	gdalwarp -tap -overwrite -tr ${1} ${1} -dstnodata -9999 -of GTiff \
-		-co COMPRESS=lzw -co PREDICTOR=2 ${2} ${3}
+		-co COMPRESS=lzw -co PREDICTOR=3 ${2} ${3}
 endef
 
 WORLD_BORDERS := ${DATA_ROOT}/from-sam/world-countries/TM_WORLD_BORDERS-0.3.shp
@@ -68,7 +68,7 @@ luh: $(addsuffix .tif, $(addprefix luh2/, ${RASTERS} un_codes-full un_subregions
 1km/un_codes-full.tif: ${NE_10M_COUNTRIES}
 	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN_A3 -ot Int16 \
 		-tr ${OneKm} ${OneKm} -te -180 -90 180 90 \
-		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
+		-co "COMPRESS=lzw" -co "PREDICTOR=3" $< $@
 
 luh2/un_codes.tif: ${NE_10M_COUNTRIES}
 	$(call rasterize, UN_A3, Int16, ${QD}, $<, $@)
@@ -76,7 +76,7 @@ luh2/un_codes.tif: ${NE_10M_COUNTRIES}
 luh2/un_codes-full.tif: ${NE_10M_COUNTRIES}
 	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN_A3 -ot Int16 \
 		-tr ${QD} ${QD} -te -180 -90 180 90 \
-		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
+		-co "COMPRESS=lzw" -co "PREDICTOR=3" $< $@
 
 rcp/un_codes.tif: ${NE_10M_COUNTRIES}
 	$(call rasterize, UN_A3, Int16, ${HD}, $<, $@)
@@ -84,7 +84,7 @@ rcp/un_codes.tif: ${NE_10M_COUNTRIES}
 rcp/un_codes-full.tif: ${NE_10M_COUNTRIES}
 	gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a UN_A3 -ot Int16 \
 		-tr ${HD} ${HD} -te -180 -90 180 90 \
-		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
+		-co "COMPRESS=lzw" -co "PREDICTOR=3" $< $@
 
 ### un_subregions
 1km/un_subregions.tif: ${WORLD_BORDERS}
@@ -93,7 +93,7 @@ rcp/un_codes-full.tif: ${NE_10M_COUNTRIES}
 1km/un_subregions-full.tif: ${WORLD_BORDERS}
 	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a SUBREGION -ot Int16 \
 		-tr ${OneKm} ${OneKm} -te -180 -90 180 90 \
-		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
+		-co "COMPRESS=lzw" -co "PREDICTOR=3" $< $@
 
 luh2/un_subregions.tif: ${WORLD_BORDERS}
 	$(call rasterize, SUBREGION, Int16, ${QD}, $<, $@)
@@ -101,7 +101,7 @@ luh2/un_subregions.tif: ${WORLD_BORDERS}
 luh2/un_subregions-full.tif: ${WORLD_BORDERS}
 	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a SUBREGION -ot Int16 \
 		-tr ${QD} ${QD} -te -180 -90 180 90 \
-		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
+		-co "COMPRESS=lzw" -co "PREDICTOR=3" $< $@
 
 rcp/un_subregions.tif: ${WORLD_BORDERS}
 	$(call rasterize, SUBREGION, Int16, ${HD}, $<, $@)
@@ -109,7 +109,7 @@ rcp/un_subregions.tif: ${WORLD_BORDERS}
 rcp/un_subregions-full.tif: ${WORLD_BORDERS}
 	@gdal_rasterize -q -at -a_nodata -9999 -init -9999 -a SUBREGION -ot Int16 \
 		-tr ${HD} ${HD} -te -180 -90 180 90 \
-		-co "COMPRESS=lzw" -co "PREDICTOR=2" $< $@
+		-co "COMPRESS=lzw" -co "PREDICTOR=3" $< $@
 
 ### Net Primary Productivity (NPP)
 1km/npp.tif: ${NPP}
@@ -171,7 +171,7 @@ luh2/gluds00ag.tif: ${GRUMPS}
 luh2/gluds00ag-full.tif: ${GRUMPS}
 	gdalwarp -overwrite -tr ${QD} ${QD} -dstnodata -9999 -of GTiff \
 		-te -180 -90 180 90 -r bilinear -co COMPRESS=lzw \
-		-co PREDICTOR=2 $< $@
+		-co PREDICTOR=3 $< $@
 
 rcp/gluds00ag.tif: ${GRUMPS}
 	$(call resize, ${HD}, $<, $@)

@@ -1,7 +1,8 @@
-FROM rocker/tidyverse:3.5.3
-MAINTAINER "Carl Boettiger" cboettig@ropensci.org
+FROM rocker/tidyverse:3.6.2
+MAINTAINER Ricardo E. Gonzalez <ricardog@ricardog.com>
 
-RUN apt-get update \
+RUN apt-get update -y \
+	&& apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
     lbzip2 \
     libfftw3-dev \

@@ -1,6 +1,6 @@
 FROM geospatial:latest
-
 MAINTAINER Ricardo E. Gonzalez <ricardog@ricardog.com>
+
 RUN apt-get -y install python-pip \
 	make \
 	build-essential \
@@ -29,6 +29,7 @@ RUN export CONFIGURE_OPTS=--enable-shared && \
 	echo 'export PATH="${HOME}/.pyenv/bin:$PATH"' >> ~/.bashrc && \
 	echo 'eval "$(pyenv init -)"' >> ~/.bashrc && \
 	echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bashrc && \
+	echo 'source "${HOME}/.bashrc"' >> ~/.bash_profile && \
 	export PATH="${HOME}/.pyenv/bin:$PATH" && \
 	eval "$(pyenv init -)" && \
 	eval "$(pyenv virtualenv-init -)" && \

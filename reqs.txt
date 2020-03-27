@@ -1,3 +1,4 @@
+asciitree
 bokeh
 cartopy
 Click
@@ -10,6 +11,7 @@ fiona --no-binary fiona
 geopy
 joblib
 jupyter
+inflection
 matplotlib
 netCDF4
 numba

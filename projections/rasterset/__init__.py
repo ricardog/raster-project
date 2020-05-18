@@ -1,5 +1,7 @@
 
+import asciitree
 import click
+from collections import OrderedDict
 import concurrent.futures
 from functools import reduce
 import math
@@ -267,3 +269,20 @@ class RasterSet(object):
             out = future.result()
             dst.write(out.filled(meta['nodata']), window = win, indexes = 1)
     bar.close()
+
+  def tree(self, what):
+    def dfs(me):
+      ret = OrderedDict()
+      for sym in sorted(me.inputs):
+        if sym in self and self[sym].inputs:
+          ret[sym] = dfs(self[sym])
+        elif sym in self and self[sym].is_raster:
+          ret[sym] = {self[sym].source.__str__(): {}}
+        else:
+          #import pdb; pdb.set_trace()
+          ret[sym] = {}
+      return ret
+
+    deps = {what: dfs(self[what])}
+    tr = asciitree.LeftAligned()
+    return tr(deps)

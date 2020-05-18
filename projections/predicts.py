@@ -281,6 +281,8 @@ def glb_lu(year, hpd_trend):
   if hpd_trend == 'wpp':
     rasters['hpd_ref'] = Raster('hpd_ref', outfn('1km', 'gluds00ag.tif'))
     rasters['hpd'] = hpd.WPP('historical', year, utils.wpp_xls())
+  elif hpd_trend == 'worldpop':
+    rasters.update(hpd.worldpop.raster(year))
   else:
     rasters.update(hpd.hyde.scale_grumps(year))
 
@@ -418,7 +420,7 @@ def rasterset(lu_src, scenario, year, hpd_trend='medium'):
     assert hpd_trend in ('wpp', 'medium')
     return luh2(scenario, year, hpd_trend)
   if lu_src == 'glb_lu':
-    assert hpd_trend in ('wpp', 'medium')
+    assert hpd_trend in ('wpp', 'medium', 'worldpop')
     return glb_lu(year, hpd_trend)
   if lu_src == '1km':
     return oneKm(year, scenario, hpd_trend)

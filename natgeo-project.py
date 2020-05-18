@@ -97,7 +97,7 @@ projecting a range of years.
     return
 
   # Import standard PREDICTS rasters
-  rasters = predicts.rasterset('glb_lu', None, year, 'wpp')
+  rasters = predicts.rasterset('glb_lu', None, year, 'worldpop')
   rs = RasterSet(rasters)
 
   what, model = select_model(model, model_dir)

@@ -331,6 +331,14 @@ def do_forested(what, ssp, scenario, year, model, tree):
 
 def do_non_forested(what, ssp, scenario, year, model, tree):
     rs = RasterSet(rasters(ssp, scenario, year))
+
+    pre = 'magpie_baseline_pas_contrast_primary_minimal'
+    rs[f'{pre}_managed_forest'] = 'forestry'
+    rs[f'{pre}_secondary_forest'] = 'secdforest'
+    base = 'magpie_baseline_pas'
+    rs[f'{base}_secondary_forest'] = 'secdforest'
+    rs[f'{base}_managed_forest'] = 'forestry'
+
     rs[model.output] = model
     intercept = model.intercept
     print('%s non-forest intercept: %6.4f' % (what, intercept))

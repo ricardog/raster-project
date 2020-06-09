@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 scenario="$1"
-indir=$DATA_ROOT/vivid/${scenario}/spatial_files
+indir=${DATA_ROOT:-/data}/vivid/${scenario}/spatial_files
 
 for land in crop past forestry primforest secdforest urban other; do
     gdal_translate -of GTiff -a_nodata -9999.0 -co COMPRESS=lzw -co \

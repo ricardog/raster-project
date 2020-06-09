@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-MODEL_DIR=$HOME/src/eec/predicts/models/dasgupta/2020-05-05
+MODEL_DIR=$HOME/src/eec/predicts/models/dasgupta/2020-05-17
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 YEARS=2020:2061:5
 for scene in early late base; do

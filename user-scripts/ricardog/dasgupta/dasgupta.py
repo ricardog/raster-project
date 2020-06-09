@@ -247,6 +247,37 @@ def inv_transform(what, output, intercept):
     return oname, expr
 
 
+def do_forested_mask(what, ssp, year, model):
+    pname = 'forested_tropic_temperate_tropical_forest'
+    pname2 = 'tropic_temperate_tropical_forest_tropical_forest'
+    rs = RasterSet(rasters(ssp, year))
+    rs[model.output] = model
+    rs[pname] = 0
+    rs[pname2] = 0
+    for kind in ('temperate', 'tropical'):
+        if kind == 'tropical':
+            intercept = model.partial({pname: 1,
+                                       'tropic_temperate_tropical_forest': 1})
+            rs[pname] = 1
+            rs[pname2] = 1
+        else:
+            intercept = model.intercept
+
+        print('%s forest intercept: %6.4f' % (kind, intercept))
+        rs[kind] = SimpleExpr(kind, f'{model.output} * {kind}_mask')
+        data, meta = rs.eval(kind)
+        data2 = ma.where(data < model.output_range[0], 1,
+                         ma.where(data > model.output_range[1], 1, 0))
+        pdb.set_trace()
+        from rasterio.plot import show
+        show(data)
+        suf = 'te' if kind == 'temperate' else 'tr'
+        #with rasterio.open(outfn('rcp', f'dasgupta-{oname}-{suf}-{year}.tif'),
+        #                   'w', **meta) as dst:
+        #    dst.write(data.filled(), indexes=1)
+    return
+
+
 def do_forested(what, ssp, year, model):
     pname = 'forested_tropic_temperate_tropical_forest'
     pname2 = 'tropic_temperate_tropical_forest_tropical_forest'
@@ -283,13 +314,30 @@ def do_non_forested(what, ssp, year, model):
     print('non-forest intercept: %6.4f' % intercept)
     oname, expr = inv_transform(what, model.output, intercept)
     rs[oname] = expr
-    #rs['newout'] = SimpleExpr('newout', f'{oname} * nonforested_mask')
-    print(rs.tree(oname))
-    #data, meta = rs.eval('newout')
-    data, meta = rs.eval(oname)
+    rs['newout'] = SimpleExpr('newout', f'{oname} * nonforested_mask')
+    print(rs.tree(newout))
+    data, meta = rs.eval('newout')
     with rasterio.open(outfn('rcp', f'dasgupta-{oname}-nf-{year}.tif'), 'w',
                        **meta) as dst:
         dst.write(data.filled(), indexes=1)
+    return
+
+
+def do_non_forested_mask(what, ssp, year, model):
+    rs = RasterSet(rasters(ssp, year))
+    rs[model.output] = model
+    intercept = model.intercept
+    print('non-forest intercept: %6.4f' % intercept)
+    rs['masked'] = SimpleExpr('masked', f'{model.output} * nonforested_mask')
+    data, meta = rs.eval('masked')
+    data2 = ma.where(data < model.output_range[0], 1,
+                     ma.where(data > model.output_range[1], 1, 0))
+    pdb.set_trace()
+    from rasterio.plot import show
+    show(data2)
+    #with rasterio.open(outfn('rcp', f'dasgupta-{oname}-nf-{year}.tif'), 'w',
+    #                   **meta) as dst:
+    #    dst.write(data.filled(), indexes=1)
     return
 
 
@@ -397,6 +445,26 @@ def combine(what, years):
         do_combine('Abundance', years)
     else:
         do_combine('CompSimAb', years)
+    return
+
+
+@cli.command()
+@click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))
+@click.argument('years', type=YEAR_RANGE)
+@click.option('-f', '--forested', is_flag=True, default=False,
+              help='Use forested models for projection')
+@click.option('-m', '--model-dir', type=click.Path(file_okay=False),
+              default=os.path.abspath('.'),
+              help='Directory where to find the models ' +
+              '(default: ./models)')
+def mask(what, years, forested, model_dir):
+    ssp = 'ssp2'
+    for year in years:
+        model = get_model(what, forested, model_dir)
+        if not forested:
+            do_non_forested_mask(what, ssp, year, model)
+        else:
+            do_forested_mask(what, ssp, year, model)
     return
 
 

@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
-from collections import OrderedDict
 import fiona
-from shapely.geometry import shape, mapping
-from shapely.ops import unary_union
+import os
+from pathlib import Path
 
 TEMPERATE = ("Boreal Forests/Taiga",
               "Temperate Conifer Forests",
-              "Temperate Broadleaf & Mixed Forests",
-              "Mediterranean Forests, Woodlands & Scrub")
+              "Temperate Broadleaf and Mixed Forests",
+              "Mediterranean Forests, Woodlands and Scrub")
 
 TROPICAL = ("Tropical and Subtropical Coniferous Forests",
             "Tropical and Subtropical Dry Broadleaf Forests",
@@ -24,15 +23,17 @@ def is_tropical(eco):
     return eco['properties']['WWF_MHTNAM'] in TROPICAL
     
 def main():
-    fname = '/Users/ricardog/src/eec/data/tnc_terr_ecoregions/' \
-        'tnc_terr_ecoregions.shp'
+    fname = Path(os.getenv('DATA_ROOT', '/data'), 'tnc_terr_ecoregions/' \
+                'tnc_terr_ecoregions.shp')
     with fiona.open(fname) as src:
         meta = src.meta.copy()
         meta['schema']['properties'].update({'forest': 'bool',
                                              'nonforest': 'bool',
                                              'tropical': 'bool',
                                              'temperate': 'bool'})
-        with fiona.open('forested/forested.shp', 'w', **meta) as dst:
+        with fiona.open(Path(os.getenv('OUTDIR', '/out'),
+                             'vector', 'forested', 'forested.shp'),
+                        'w', **meta) as dst:
             for eco in src:
                 props = eco['properties']
                 props['forest'] = is_forested(eco)
@@ -46,5 +47,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-                              

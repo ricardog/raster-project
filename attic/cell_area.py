@@ -1,19 +1,20 @@
+#!/usr/bin/env python3
 
+import click
 import math
 import numpy as np
+import rasterio
 
 R_MAJOR = 6378137.0000
 R_MINOR = 6356752.3142
 
 def band_area(lats):
   rlats = np.radians(lats)
-  a = R_MAJOR #6378137.0000
-  b = R_MINOR #6356752.3142
-  e = math.sqrt(1 - (b / a)**2)
+  e = math.sqrt(1 - (R_MINOR / R_MAJOR)**2)
   zm = 1 - e * np.sin(rlats)
   zp = 1 + e * np.sin(rlats)
   c = 2 * np.arctanh(e * np.sin(rlats))
-  area = np.pi * b**2 * (c / (2 * e) + np.sin(rlats) / (zp*zm))
+  area = np.pi * R_MINOR**2 * (c / (2 * e) + np.sin(rlats) / (zp*zm))
   return area
 
 def slice_area(lats):
@@ -32,8 +33,20 @@ def raster_cell_area(src, full=False):
   if full:
     lons = np.linspace(left, right, src.width + 1)
   else:
-    lons = np.linspace(left, left + src.affine[0], 2)
+    lons = np.linspace(left, left + src.transform[0], 2)
   return cell_area(lats, lons)
 
+@click.command()
+@click.argument('source', type=click.Path(dir_okay=False))
+@click.argument('output', type=click.Path(dir_okay=False))
+def generate(source, output):
+  with rasterio.open(source) as src:
+    meta = src.meta.copy()
+    meta.update({'driver': 'GTiff', 'dtype': 'float32', 'nodata': -9999.0,
+                 'compress': 'lzw', 'predictpr': 3})
+    with rasterio.open(output, 'w', **meta) as dst:
+      dst.write(raster_cell_area(src).astype('float32'), indexes=1)
     
-                     
+if __name__ == '__main__':
+  generate()
+

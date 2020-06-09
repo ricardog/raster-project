@@ -14,8 +14,8 @@ usage() {
 }
 
 JOBS=4
-MODELS="base ageclass nohpd nohpd-ageclass"
-SCENARIOS="base early late_125 late_15 late_175 late_20 late_23 late_26 late_29"
+MODELS="base ageclass2"
+SCENARIOS="base early early_075 early_10 early_125 late_125 late_15 late_175 late_20 late_23 late_26 late_29"
 YEARS=2020:2061:5
 ODIR=${OUTDIR:-/out}
 
@@ -52,11 +52,6 @@ done
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 for model in ${MODELS}; do
     einfo ${model}
-    if [[ -d /out ]]; then
-	model_dir=/out/models/dasgupta/2020-05-26/${model}
-    else
-	model_dir=$HOME/src/eec/predicts/models/dasgupta/2020-05-26/${model}
-    fi
     for scene in ${SCENARIOS} ; do
 	printf "%s %s\n" "${scene}" "${YEARS} ${model}"
     done | xargs -P ${JOBS} -n 1 -L 1 ${DIR}/run.sh

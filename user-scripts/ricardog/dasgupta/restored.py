@@ -7,6 +7,9 @@ import rasterio
 from projections.utils import data_file
 
 from attic.cell_area import raster_cell_area
+SCENARIOS = ('sample', 'early', 'late', 'early_075', 'early_10', 'early_125',
+             'late_125', 'late_15', 'late_175', 'late_20', 'late_23',
+             'late_26', 'late_29', 'base')
 
 def downsample(in1, src, dst):
     # Convert the data from Mha to cell grid fraction (and cell area is
@@ -18,15 +21,15 @@ def downsample(in1, src, dst):
     return out
 
 
-@click.command()
-@click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
-                                               'late_125', 'late_15',
-                                               'late_175', 'late_20',
-                                               'late_23', 'late_26',
-                                               'late_29', 'base')))
-def doit(scenario):
+def do_one(scenario):
     if scenario == 'early':
         dirname = 'HMT_Early_Action_v3'
+    elif scenario == 'early_075':
+        dirname = 'HMT_Early_Action_c075'
+    elif scenario == 'early_10':
+        dirname = 'HMT_Early_Action_c10'
+    elif scenario == 'early_125':
+        dirname = 'HMT_Early_Action_c125'
     elif scenario == 'late':
         dirname = 'HMT_Late_Action_v3'
     elif scenario == 'late_125':
@@ -69,6 +72,17 @@ def doit(scenario):
                         data *= forest_frac
                     #import pdb; pdb.set_trace()
                     dst.write(downsample(data, src, dst), indexes=idx + 1)
+    return
+
+    
+@click.command()
+@click.argument('scenario', type=click.Choice(SCENARIOS + ('all',)))
+def doit(scenario):
+    if scenario == 'all':
+        for scene in SCENARIOS:
+            do_one(scene)
+    else:
+        do_one(scenario)
     return
 
 

@@ -11,6 +11,12 @@ import pdb
 def vivid_dir(scenario):
     if scenario == 'early':
         return 'HMT_Early_Action_v3'
+    if scenario == 'early_075':
+        return 'HMT_Early_Action_c075'
+    if scenario == 'early_10':
+        return 'HMT_Early_Action_c10'
+    if scenario == 'early_125':
+        return 'HMT_Early_Action_c125'
     if scenario == 'late':
         return 'HMT_Late_Action_v3'
     if scenario == 'late_125':

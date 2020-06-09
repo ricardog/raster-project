@@ -104,15 +104,21 @@ def luh2(scenario):
 def vivid(scenario, scene):
     if scene == 'early':
         dirname = 'HMT_Early_Action_v3'
+    elif scene == 'early_075':
+        dirname = 'HMT_Early_Action_c075'
+    elif scene == 'early_10':
+        dirname = 'HMT_Early_Action_c10'
+    elif scene == 'early_125':
+        dirname = 'HMT_Early_Action_c125'
     elif scene == 'late':
         dirname = 'HMT_Late_Action_v3'
-    elif scenario == 'late_125':
+    elif scene == 'late_125':
         dirname = 'HMT_Late_Action_c125_v5'
-    elif scenario == 'late_15':
+    elif scene == 'late_15':
         dirname = 'HMT_Late_Action_c15_v5'
-    elif scenario == 'late_175':
+    elif scene == 'late_175':
         dirname = 'HMT_Late_Action_c175_v5'
-    elif scenario == 'late_20':
+    elif scene == 'late_20':
         dirname = 'HMT_Late_Action_c2_v5'
     elif scene == 'late_23':
         dirname = 'HMT_Late_Action_c23_v4'
@@ -180,6 +186,9 @@ if __name__ == '__main__':
 
     vivid('ssp2_rcp4.5_message-globiom', 'base')
     vivid('ssp2_rcp4.5_message-globiom', 'early')
+    vivid('ssp2_rcp4.5_message-globiom', 'early_075')
+    vivid('ssp2_rcp4.5_message-globiom', 'early_10')
+    vivid('ssp2_rcp4.5_message-globiom', 'early_125')
     vivid('ssp2_rcp4.5_message-globiom', 'late_125')
     vivid('ssp2_rcp4.5_message-globiom', 'late_15')
     vivid('ssp2_rcp4.5_message-globiom', 'late_175')

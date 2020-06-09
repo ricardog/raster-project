@@ -62,6 +62,12 @@ def get_model(what, forested, model_dir):
 def vivid_dirname(scenario):
     if scenario == 'early':
         return 'HMT_Early_Action_v3'
+    if scenario == 'early_075':
+        return 'HMT_Early_Action_c075'
+    if scenario == 'early_10':
+        return 'HMT_Early_Action_c10'
+    if scenario == 'early_125':
+        return 'HMT_Early_Action_c125'
     if scenario == 'late':
         return 'HMT_Late_Action_v3'
     if scenario == 'late_125':
@@ -453,6 +459,8 @@ def cli(ctx):
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'early_075', 'early_10',
+                                               'early_125',
                                                'late_125', 'late_15',
                                                'late_175', 'late_20',
                                                'late_23', 'late_26',
@@ -488,6 +496,8 @@ def project(what, scenario, years, forested, model_dir, vname, tree):
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'bii')))
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'early_075', 'early_10',
+                                               'early_125',
                                                'late_125', 'late_15',
                                                'late_175', 'late_20',
                                                'late_23', 'late_26',
@@ -506,6 +516,8 @@ def combine(what, scenario, years):
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'early_075', 'early_10',
+                                               'early_125',
                                                'late_125', 'late_15',
                                                'late_175', 'late_20',
                                                'late_23', 'late_26',

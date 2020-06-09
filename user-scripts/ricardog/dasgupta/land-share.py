@@ -6,20 +6,27 @@ import numpy.ma as ma
 import pandas as pd
 import rasterio
 
-import cell_area
+from attic.cell_area import raster_cell_area
+from projections.utils import data_file
 
-icew_ds = rasterio.open('/data/rcp1.1/gicew.1700.txt')
+icew_ds = rasterio.open(data_file('rcp1.1', 'gicew.1700.txt'))
 icew = icew_ds.read(1)
 land = 1 - icew
 
-src = rasterio.open('netcdf:cell.land_0.5_share.nc:crop')
+fname = data_file('vivid', 'HMT_Early_Action', 'spatial_files',
+                  'cell.land_0.5.nc')
+fname = data_file('vivid', 'HMT_Late_Action', 'spatial_files',
+                  'cell.land_0.5.nc')
+fname = data_file('vivid', 'sample', 'spatial_files',
+                  'cell.land_0.5.nc')
+src = rasterio.open(f'netcdf:{fname}:crop')
 
-ds = Dataset('cell.land_0.5.nc')
+ds = Dataset(fname)
 
 df = pd.DataFrame(columns=['crop', 'past', 'forestry', 'primforest',
                            'secdforest', 'urban', 'other'],
                   index=ds.variables['time'][:])
-carea = cell_area.raster_cell_area(src, full=True) / 1e6
+carea = raster_cell_area(src, full=True) / 1e6
 carea = ma.masked_array(carea)
 carea.mask = ds.variables['crop'][0, ::-1, :].mask
 

@@ -21,11 +21,11 @@ def downsample(in1, src, dst):
                                                'base')))
 def doit(scenario):
     if scenario == 'early':
-        dirname = 'HMT_Early_Action_v2'
+        dirname = 'HMT_Early_Action_v3'
     elif scenario == 'late':
-        dirname = 'HMT_Late_Action_v2'
+        dirname = 'HMT_Late_Action_v3'
     elif scenario == 'base':
-        dirname = 'HMT_Baseline_v2'
+        dirname = 'HMT_Baseline_v3'
     else:
         dirname = 'sample'
 

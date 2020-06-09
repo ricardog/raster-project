@@ -61,11 +61,11 @@ def get_model(what, forested, model_dir):
 
 def vivid_dirname(scenario):
     if scenario == 'early':
-        return 'HMT_Early_Action_v2'
+        return 'HMT_Early_Action_v3'
     elif scenario == 'late':
-        return 'HMT_Late_Action_v2'
+        return 'HMT_Late_Action_v3'
     elif scenario == 'base':
-        return 'HMT_Baseline_v2'
+        return 'HMT_Baseline_v3'
     else:
         return 'sample'
     
@@ -442,7 +442,7 @@ def project(what, scenario, years, forested, model_dir, vname, tree):
 
     for year in years:
         if what == 'other':
-            do_other(vname, ssp, year, scenario, tree)
+            do_other(vname, ssp, scenario, year, tree)
         else:
             model = get_model(what, forested, model_dir)
             if not forested:

@@ -80,7 +80,9 @@ def vivid_crop(scenario):
 
 
 def vivid_layer(layer, scenario):
-    return ':'.join(('netcdf', vivid_land(scenario), layer))
+    #return ':'.join(('netcdf', vivid_land(scenario), layer))
+    return data_file('vivid', vivid_dirname(scenario),
+                     'spatial_files', f'{layer}.tif')
 
 
 def vivid_crop_layer(layer, scenario):

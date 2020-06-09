@@ -12,7 +12,7 @@ from projections.utils import data_file
 
 def vivid_dirname(scenario):
     if scenario == 'early':
-        return 'HMT_Early_Action_v2\3'
+        return 'HMT_Early_Action_v3'
     if scenario == 'late':
         return 'HMT_Late_Action_v3'
     if scenario == 'late-23':

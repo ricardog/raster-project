@@ -13,6 +13,14 @@ def vivid_dir(scenario):
         return 'HMT_Early_Action_v3'
     if scenario == 'late':
         return 'HMT_Late_Action_v3'
+    if scenario == 'late_125':
+        return 'HMT_Late_Action_c125_v5'
+    if scenario == 'late_15':
+        return 'HMT_Late_Action_c15_v5'
+    if scenario == 'late_175':
+        return 'HMT_Late_Action_c175_v5'
+    if scenario == 'late_20':
+        return 'HMT_Late_Action_c2_v5'
     if scenario == 'late_23':
         return 'HMT_Late_Action_c23_v4'
     if scenario == 'late_26':
@@ -44,6 +52,8 @@ def fix_one(infile):
 
 @click.command()
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'late_125', 'late_15',
+                                               'late_175', 'late_20',
                                                'late_23', 'late_26',
                                                'late_29', 'base')))
 def fix_mask(scenario):

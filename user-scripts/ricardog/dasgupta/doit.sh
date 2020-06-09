@@ -15,6 +15,7 @@ usage() {
 
 JOBS=4
 MODELS="base ageclass nohpd nohpd-ageclass"
+SCENARIOS="base early late_125 late_15 late_175 late_20 late_23 late_26 late_29"
 YEARS=2020:2061:5
 ODIR=${OUTDIR:-/out}
 
@@ -56,13 +57,14 @@ for model in ${MODELS}; do
     else
 	model_dir=$HOME/src/eec/predicts/models/dasgupta/2020-05-26/${model}
     fi
-    for scene in base early late_23 late_26 late_29 ; do
+    for scene in ${SCENARIOS} ; do
 	printf "%s %s\n" "${scene}" "${YEARS} ${model}"
     done | xargs -P ${JOBS} -n 1 -L 1 ${DIR}/run.sh
-    ${DIR}/summarize.py --npp ${ODIR}/rcp/npp.tif
+    ${DIR}/summarize.py --npp ${ODIR}/rcp/npp.tif --indicator BIIAb
 
     mkdir -p ${model}-model
     mv Figure-1.png vivid-summary.csv ${model}-model
+    mv mean-bii-*.png ${model}-model
 
     mkdir -p ${ODIR}/rcp/${model}-model
     mv ${ODIR}/rcp/dasgupta-*-BIIAb-20*.tif ${ODIR}/rcp/${model}-model

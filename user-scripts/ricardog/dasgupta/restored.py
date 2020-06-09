@@ -18,6 +18,8 @@ def downsample(in1, src, dst):
 
 @click.command()
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'late_125', 'late_15',
+                                               'late_175', 'late_20',
                                                'late_23', 'late_26',
                                                'late_29', 'base')))
 def doit(scenario):
@@ -25,6 +27,14 @@ def doit(scenario):
         dirname = 'HMT_Early_Action_v3'
     elif scenario == 'late':
         dirname = 'HMT_Late_Action_v3'
+    elif scenario == 'late_125':
+        dirname = 'HMT_Late_Action_c125_v5'
+    elif scenario == 'late_15':
+        dirname = 'HMT_Late_Action_c15_v5'
+    elif scenario == 'late_175':
+        dirname = 'HMT_Late_Action_c175_v5'
+    elif scenario == 'late_20':
+        dirname = 'HMT_Late_Action_c2_v5'
     elif scenario == 'late_23':
         dirname = 'HMT_Late_Action_c23_v4'
     elif scenario == 'late_26':

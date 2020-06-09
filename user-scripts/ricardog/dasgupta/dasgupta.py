@@ -64,6 +64,14 @@ def vivid_dirname(scenario):
         return 'HMT_Early_Action_v3'
     if scenario == 'late':
         return 'HMT_Late_Action_v3'
+    if scenario == 'late_125':
+        return 'HMT_Late_Action_c125_v5'
+    if scenario == 'late_15':
+        return 'HMT_Late_Action_c15_v5'
+    if scenario == 'late_175':
+        return 'HMT_Late_Action_c175_v5'
+    if scenario == 'late_20':
+        return 'HMT_Late_Action_c2_v5'
     if scenario == 'late_23':
         return 'HMT_Late_Action_c23_v4'
     if scenario == 'late_26':
@@ -314,7 +322,7 @@ def do_forested(what, ssp, scenario, year, model, tree):
         else:
             intercept = model.intercept
 
-        print('%s %s forest intercept: %6.4f' % (what, kind, intercept))
+        #print('%s %s forest intercept: %6.4f' % (what, kind, intercept))
         oname, expr = inv_transform(what, model.output, intercept)
         rs[oname] = expr
         rs[kind] = SimpleExpr(kind, f'{oname} * {kind}_mask')
@@ -347,7 +355,7 @@ def do_non_forested(what, ssp, scenario, year, model, tree):
 
     rs[model.output] = model
     intercept = model.intercept
-    print('%s non-forest intercept: %6.4f' % (what, intercept))
+    #print('%s non-forest intercept: %6.4f' % (what, intercept))
     oname, expr = inv_transform(what, model.output, intercept)
     rs[oname] = expr
     rs['masked'] = SimpleExpr('masked', f'{oname} * nonforested_mask')
@@ -406,7 +414,7 @@ def do_combine(oname, scenario, years):
             nodata = nonfor.nodata
         meta.update({'driver': 'GTiff', 'compress': 'lzw', 'predictor': 3})
         forest = ma.where(tropical.mask & temperate.mask, nodata,
-                          ma.where(tropical.mask, temperate,tropical))
+                          ma.where(tropical.mask, temperate, tropical))
         forest = ma.masked_equal(forest, nodata)
         data = ma.where(forest.mask & nonforest.mask, nodata,
                         ma.where(~forest.mask & ~nonforest.mask,
@@ -445,6 +453,8 @@ def cli(ctx):
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'late_125', 'late_15',
+                                               'late_175', 'late_20',
                                                'late_23', 'late_26',
                                                'late_29', 'base')))
 @click.argument('years', type=YEAR_RANGE)
@@ -478,6 +488,8 @@ def project(what, scenario, years, forested, model_dir, vname, tree):
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'bii')))
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'late_125', 'late_15',
+                                               'late_175', 'late_20',
                                                'late_23', 'late_26',
                                                'late_29', 'base')))
 @click.argument('years', type=YEAR_RANGE)
@@ -494,6 +506,8 @@ def combine(what, scenario, years):
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'late_125', 'late_15',
+                                               'late_175', 'late_20',
                                                'late_23', 'late_26',
                                                'late_29', 'base')))
 @click.argument('years', type=YEAR_RANGE)

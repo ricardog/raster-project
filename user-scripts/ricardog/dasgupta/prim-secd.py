@@ -103,6 +103,14 @@ def vivid(scenario, scene):
         dirname = 'HMT_Early_Action_v3'
     elif scene == 'late':
         dirname = 'HMT_Late_Action_v3'
+    elif scenario == 'late_125':
+        dirname = 'HMT_Late_Action_c125_v5'
+    elif scenario == 'late_15':
+        dirname = 'HMT_Late_Action_c15_v5'
+    elif scenario == 'late_175':
+        dirname = 'HMT_Late_Action_c175_v5'
+    elif scenario == 'late_20':
+        dirname = 'HMT_Late_Action_c2_v5'
     elif scene == 'late_23':
         dirname = 'HMT_Late_Action_c23_v4'
     elif scene == 'late_26':

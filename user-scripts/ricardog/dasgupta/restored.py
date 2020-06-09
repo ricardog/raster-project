@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import click
+import os
+from pathlib import Path
 import rasterio
 from projections.utils import data_file
 
@@ -46,6 +48,9 @@ def doit(scenario):
     else:
         dirname = 'sample'
 
+    with rasterio.open(Path(os.getenv('OUTDIR', '/out'),
+                            'rcp', 'forested-frac.tif')) as fds:
+        forest_frac = fds.read(1, masked=True)
     with rasterio.open('andy-data/historical-primary.tif') as ref:
         meta = ref.meta.copy()
     data_dir = data_file('vivid', dirname, 'spatial_files',
@@ -59,8 +64,11 @@ def doit(scenario):
                 print(year, idx)
                 fname = f'{data_dir}/restored_{subtype}_{year}.tif'
                 with rasterio.open(fname) as src:
-                    dst.write(downsample(src.read(1), src, dst),
-                              indexes=idx + 1)
+                    data = src.read(1)
+                    if subtype == 'mf':
+                        data *= forest_frac
+                    #import pdb; pdb.set_trace()
+                    dst.write(downsample(data, src, dst), indexes=idx + 1)
     return
 
 

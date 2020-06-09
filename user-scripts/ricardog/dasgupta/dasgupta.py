@@ -332,12 +332,18 @@ def do_forested(what, ssp, scenario, year, model, tree):
 def do_non_forested(what, ssp, scenario, year, model, tree):
     rs = RasterSet(rasters(ssp, scenario, year))
 
-    pre = 'magpie_baseline_pas_contrast_primary_minimal'
-    rs[f'{pre}_managed_forest'] = 'forestry'
-    rs[f'{pre}_secondary_forest'] = 'secdforest'
-    base = 'magpie_baseline_pas'
-    rs[f'{base}_secondary_forest'] = 'secdforest'
-    rs[f'{base}_managed_forest'] = 'forestry'
+    if True:
+        pre = 'magpie_baseline_pas_contrast_primary_minimal'
+        rs[f'{pre}_perennial'] = SimpleExpr(f'{pre}_perennial',
+                                            'perennial + forestry - adj_forestry')
+        rs[f'{pre}_other_not_primary'] = SimpleExpr(f'{pre}_other_not_primary',
+                                                    'other_notprimary + secdforest - adj_secdforest')
+
+        base = 'magpie_baseline_pas'
+        rs[f'{base}_perennial'] = SimpleExpr(f'{base}_perennial',
+                                             'perennial + forestry - adj_forestry')
+        rs[f'{base}_other_not_primary'] = SimpleExpr(f'{base}_other_not_primary',
+                                                     'other_notprimary + secdforest - adj_secdforest')
 
     rs[model.output] = model
     intercept = model.intercept
@@ -433,8 +439,8 @@ def cli(ctx):
         click.echo('I was invoked without subcommand')
         project()
     else:
-        click.echo('I am about to invoke %s' % ctx.invoked_subcommand)
-
+        #click.echo('I am about to invoke %s' % ctx.invoked_subcommand)
+        pass
 
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))

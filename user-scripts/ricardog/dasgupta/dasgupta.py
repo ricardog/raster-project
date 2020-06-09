@@ -290,7 +290,7 @@ def do_forested_mask(what, ssp, scenario, year, model):
     return
 
 
-def do_forested(what, ssp, scenario, year, model):
+def do_forested(what, ssp, scenario, year, model, tree):
     pname = 'forested_tropic_temperate_tropical_forest'
     pname2 = 'tropic_temperate_tropical_forest_tropical_forest'
     rs = RasterSet(rasters(ssp, scenario, year))
@@ -310,7 +310,9 @@ def do_forested(what, ssp, scenario, year, model):
         oname, expr = inv_transform(what, model.output, intercept)
         rs[oname] = expr
         rs[kind] = SimpleExpr(kind, f'{oname} * {kind}_mask')
-        #print(rs.tree(kind))
+        if tree:
+            print(rs.tree(kind))
+            continue
         data, meta = rs.eval(kind)
         suf = 'te' if kind == 'temperate' else 'tr'
         fname = f'dasgupta-{scenario}-{oname}-{suf}-{year}.tif'
@@ -319,7 +321,7 @@ def do_forested(what, ssp, scenario, year, model):
     return
 
 
-def do_non_forested(what, ssp, scenario, year, model):
+def do_non_forested(what, ssp, scenario, year, model, tree):
     rs = RasterSet(rasters(ssp, scenario, year))
     rs[model.output] = model
     intercept = model.intercept
@@ -327,7 +329,9 @@ def do_non_forested(what, ssp, scenario, year, model):
     oname, expr = inv_transform(what, model.output, intercept)
     rs[oname] = expr
     rs['masked'] = SimpleExpr('masked', f'{oname} * nonforested_mask')
-    #print(rs.tree('masked'))
+    if tree:
+        print(rs.tree('masked'))
+        return
     data, meta = rs.eval('masked')
     fname = f'dasgupta-{scenario}-{oname}-nf-{year}.tif'
     with rasterio.open(outfn('rcp', fname), 'w', **meta) as dst:
@@ -394,8 +398,11 @@ def do_combine(oname, scenario, years):
             dst.write(data.filled(), indexes=1)
 
 
-def do_other(vname, ssp, scenario, year):
+def do_other(vname, ssp, scenario, year, tree):
     rs = RasterSet(rasters(ssp, scenario, year))
+    if tree:
+        print(rs.tree(vname))
+        return
     data, meta = rs.eval(vname)
     with rasterio.open(outfn('rcp', f'dasgupta-{scenario}-{vname}-{year}.tif'), 'w',
                        **meta) as dst:
@@ -426,7 +433,8 @@ def cli(ctx):
               '(default: ./models)')
 @click.option('-v', '--vname', type=str, default=None,
               help='Variable to project when specifying other.')
-def project(what, scenario, years, forested, model_dir, vname):
+@click.option('-t', '--tree', is_flag=True, default=False)
+def project(what, scenario, years, forested, model_dir, vname, tree):
     ssp = 'ssp2'
     if what == 'other':
         if vname is None:
@@ -434,13 +442,13 @@ def project(what, scenario, years, forested, model_dir, vname):
 
     for year in years:
         if what == 'other':
-            do_other(vname, ssp, year, scenario)
+            do_other(vname, ssp, year, scenario, tree)
         else:
             model = get_model(what, forested, model_dir)
             if not forested:
-                do_non_forested(what, ssp, scenario, year, model)
+                do_non_forested(what, ssp, scenario, year, model, tree)
             else:
-                do_forested(what, ssp, scenario, year, model)
+                do_forested(what, ssp, scenario, year, model, tree)
     return
 
 

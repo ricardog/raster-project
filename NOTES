@@ -49,3 +49,7 @@ https://rmgsc.cr.usgs.gov/ecosystems/
 
   https://www.neonscience.org/create-hillshade-py
 
+- To start qgis docker container
+
+  docker run -v /gorilla/old/src/eec/predicts/data:/data:ro -v predicts-data:/out -p 2200:22 -u root qgis:latest
+  

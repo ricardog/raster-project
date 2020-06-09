@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
 from netCDF4 import Dataset
-import numpy as np
+import numpy.ma as ma
 import rasterio
 import rasterio.warp as rwarp
-from rasterio.plot import show
 
 from projections.utils import data_file, luh2_states
 from attic.cell_area import raster_cell_area
@@ -29,18 +28,22 @@ def calc_xform(src):
 
 
 def downsample(in1, src, dst):
-    src_carea = raster_cell_area(src) / 1e6
-    dst_carea = raster_cell_area(dst) / 1e6
-    area = in1 * src_carea
+    # Convert the data from Mha to cell grid fraction (and cell area is
+    # in m^2).
+    dst_carea = raster_cell_area(dst) / 1e10
+    area = ma.masked_invalid(in1) # * src_carea
     summed = area.reshape(90, 4, 180, 4).sum(3).sum(1)
     out = (summed / dst_carea).astype('float32')
     return out
 
 
 def calc_data(in0, in1, src, dst):
+    # Convert the data from Mha to cell grid fraction (and cell area is
+    # in m^2).
     src_carea = raster_cell_area(src) / 1e6
     dst_carea = raster_cell_area(dst) / 1e6
-    area = in0 * src_carea + in1 * src_carea
+    #ratio = dst_carea / src_carea
+    area = (in0 + in1) * src_carea
     summed = area.reshape(90, 8, 180, 8).sum(3).sum(1)
     out = (summed / dst_carea).astype('float32')
     return out
@@ -126,11 +129,10 @@ def vivid(scenario, scene):
     prim_ssp = rasterio.open(f'andy-data/{scenario}-primary.tif')
     secd_hist = rasterio.open('andy-data/historical-secondary.tif')
     secd_ssp = rasterio.open(f'andy-data/{scenario}-secondary.tif')
-    vivid_file = data_file('vivid', dirname, 'spatial_files',
-                           'cell.land_0.5.nc')
-    other = rasterio.open(f'netcdf:{vivid_file}:other')
-    secdf = rasterio.open(f'netcdf:{vivid_file}:secdforest')
-    primf = rasterio.open(f'netcdf:{vivid_file}:primforest')
+    vivid_dir = data_file('vivid', dirname, 'spatial_files')
+    other = rasterio.open(f'{vivid_dir}/other.tif')
+    secdf = rasterio.open(f'{vivid_dir}/secdforest.tif')
+    primf = rasterio.open(f'{vivid_dir}/primforest.tif')
 
     carea = raster_cell_area(other) / 1e10
     
@@ -154,11 +156,11 @@ def vivid(scenario, scene):
                 else:
                     p1 = prim_ssp.read(idx - 4, masked=True)
                     s1 = secd_ssp.read(idx - 4, masked=True)
-                odata = downsample(other.read(idx + 1, masked=True) / carea,
+                odata = downsample(other.read(idx + 1, masked=True),
                                    other, prim)
-                pdata = downsample(primf.read(idx + 1, masked=True) / carea,
+                pdata = downsample(primf.read(idx + 1, masked=True),
                                    primf, prim)
-                sdata = downsample(secdf.read(idx + 1, masked=True) / carea,
+                sdata = downsample(secdf.read(idx + 1, masked=True),
                                    secdf, prim)
                 #import pdb; pdb.set_trace()
                 #other_prim = np.clip((p1 - pdata) / odata, 0, 1)
@@ -174,11 +176,15 @@ def vivid(scenario, scene):
 
 if __name__ == '__main__':
     #luh2('historical')
-    #luh2('ssp2_rcp4.5_message-globiom')
+    luh2('ssp2_rcp4.5_message-globiom')
 
-    #vivid('ssp2_rcp4.5_message-globiom', 'early')
+    vivid('ssp2_rcp4.5_message-globiom', 'base')
+    vivid('ssp2_rcp4.5_message-globiom', 'early')
+    vivid('ssp2_rcp4.5_message-globiom', 'late_125')
+    vivid('ssp2_rcp4.5_message-globiom', 'late_15')
+    vivid('ssp2_rcp4.5_message-globiom', 'late_175')
+    vivid('ssp2_rcp4.5_message-globiom', 'late_20')
     vivid('ssp2_rcp4.5_message-globiom', 'late_23')
     vivid('ssp2_rcp4.5_message-globiom', 'late_26')
     vivid('ssp2_rcp4.5_message-globiom', 'late_29')
-    #vivid('ssp2_rcp4.5_message-globiom', 'base')
 

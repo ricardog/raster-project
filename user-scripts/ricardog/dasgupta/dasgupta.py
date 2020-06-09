@@ -2,7 +2,6 @@
 
 import click
 from netCDF4 import Dataset
-import numpy as np
 import numpy.ma as ma
 import os
 import rasterio
@@ -60,13 +59,23 @@ def get_model(what, forested, model_dir):
             assert False, f'unknown what {what}'
     return modelr.load(os.path.join(model_dir, mname))
 
-
+def vivid_dirname(scenario):
+    if scenario == 'early':
+        return 'HMT_Early_Action_v2'
+    elif scenario == 'late':
+        return 'HMT_Late_Action_v2'
+    elif scenario == 'base':
+        return 'HMT_Baseline_v2'
+    else:
+        return 'sample'
+    
 def vivid_land(scenario):
-    return data_file('vivid', scenario, 'spatial_files', 'cell.land_0.5.nc')
+    return data_file('vivid', vivid_dirname(scenario),
+                     'spatial_files', 'cell.land_0.5.nc')
 
 
 def vivid_crop(scenario):
-    return data_file('vivid', scenario, 'spatial_files',
+    return data_file('vivid', vivid_dirname(scenario), 'spatial_files',
                      'cell.croparea_0.5_share.nc')
 
 
@@ -78,13 +87,13 @@ def vivid_crop_layer(layer, scenario):
     return ':'.join(('netcdf', vivid_crop(scenario), layer))
 
 
-def vivid_restored_layer(year, scenario):
-    return data_file('vivid', scenario, 'spatial_files', 'restored_land',
-                     f'restored_lb_{year}-fixed.tif')
+def vivid_restored_layer(subtype, year, scenario):
+    return data_file('vivid', vivid_dirname(scenario),
+                     'spatial_files', 'restored_land',
+                     f'restored_{subtype}_{year}.tif')
 
 
-def rasters(ssp, year):
-    scenario = 'sample'
+def rasters(ssp, scenario, year):
     rasters = {}
     rasters['land'] = Raster('land', outfn('rcp', 'land.tif'))
     rasters['hpd_ref'] = Raster('hpd_ref', outfn('rcp', 'gluds00ag.tif'))
@@ -125,11 +134,17 @@ def rasters(ssp, year):
                                               band=index + 1)
             rasters[layer] = SimpleExpr(layer, f'{layer}_area / land')
 
-    for yy in range(2020, 2060, 5):
-        layer = f'restored_{yy}'
-        rasters[f'{layer}_area'] = Raster(f'{layer}_area',
-                                          vivid_restored_layer(yy, scenario))
-        rasters[layer] = SimpleExpr(layer, f'{layer}_area / land')
+    for yy in range(2020, 2061, 5):
+        for subtype in ('mf', 'sf'):
+            layer = f'restored_{subtype}_{yy}'
+            rasters[f'{layer}_area'] = Raster(f'{layer}_area',
+                                              vivid_restored_layer(subtype,
+                                                                   yy,
+                                                                   scenario))
+            rasters[layer] = SimpleExpr(layer, f'{layer}_area / land')
+        rasters[f'restored_{yy}'] = SimpleExpr(f'restored_{year}',
+                                               f'restored_mf_{year} '
+                                               f'+ restored_sf_{year}')
 
     for age in range(5, 31, 5):
         year_restored = year - age + 5
@@ -139,9 +154,12 @@ def rasters(ssp, year):
             rasters[f'age{age}'] = f'restored_{year_restored}'
 
     include_years = tuple(range(2020, year + 1, 5))
-    adj_expr = ' + '.join([f'restored_{yy}' for yy in include_years])
+    adj_mf = ' + '.join([f'restored_mf_{yy}' for yy in include_years])
     rasters['adj_forestry'] = SimpleExpr('adj_forestry',
-                                         f'clip((forestry - ({adj_expr})), 0, 1)')
+                                         f'clip((forestry - ({adj_mf})), 0, 1)')
+    adj_sf = ' + '.join([f'restored_mf_{yy}' for yy in include_years])
+    rasters['adj_secdforest'] = SimpleExpr('adj_secdforest',
+                                           f'clip((secdforest - ({adj_sf})), 0, 1)')
 
     with Dataset(vivid_crop(scenario)) as ds:
         years_avail = ds.variables['time'][:].astype(int).tolist()
@@ -187,7 +205,7 @@ def rasters(ssp, year):
     rasters[f'{base}_urban'] = 'urban'
     rasters[f'{base}_annual'] = 'annual'
     rasters[f'{base}_perennial'] = 'perennial'
-    rasters[f'{base}_secondary_forest'] = 'secdforest'
+    rasters[f'{base}_secondary_forest'] = 'adj_secdforest'
     rasters[f'{base}_primary_minimal'] = 'primary_minimal'
     rasters[f'{base}_managed_forest'] = 'adj_forestry'
     rasters[f'{base}_other_not_primary'] = 'other_notprimary'
@@ -217,7 +235,7 @@ def rasters(ssp, year):
     rasters[f'{pre}_pasture_light_intense'] = f'{base}_primary_light_intense'
     rasters[f'{pre}_pasture_minimal'] = 'pasture_minimal'
     rasters[f'{pre}_primary_light_intense'] = f'{base}_pasture_light_intense'
-    rasters[f'{pre}_secondary_forest'] = 'secdforest'
+    rasters[f'{pre}_secondary_forest'] = 'adj_secdforest'
     rasters[f'{pre}_annual'] = 'annual'
     rasters[f'{pre}_perennial'] = 'perennial'
     rasters[f'{pre}_urban'] = 'urban'
@@ -247,17 +265,17 @@ def inv_transform(what, output, intercept):
     return oname, expr
 
 
-def do_forested_mask(what, ssp, year, model):
+def do_forested_mask(what, ssp, scenario, year, model):
     pname = 'forested_tropic_temperate_tropical_forest'
     pname2 = 'tropic_temperate_tropical_forest_tropical_forest'
-    rs = RasterSet(rasters(ssp, year))
+    rs = RasterSet(rasters(ssp, scenario, year))
     rs[model.output] = model
     rs[pname] = 0
     rs[pname2] = 0
     for kind in ('temperate', 'tropical'):
         if kind == 'tropical':
             intercept = model.partial({pname: 1,
-                                       'tropic_temperate_tropical_forest': 1})
+                                       pname2: 1})
             rs[pname] = 1
             rs[pname2] = 1
         else:
@@ -265,30 +283,24 @@ def do_forested_mask(what, ssp, year, model):
 
         print('%s forest intercept: %6.4f' % (kind, intercept))
         rs[kind] = SimpleExpr(kind, f'{model.output} * {kind}_mask')
-        data, meta = rs.eval(kind)
+        data, meta = rs.eval(kind, quiet=True)
         data2 = ma.where(data < model.output_range[0], 1,
                          ma.where(data > model.output_range[1], 1, 0))
-        pdb.set_trace()
-        from rasterio.plot import show
-        show(data)
-        suf = 'te' if kind == 'temperate' else 'tr'
-        #with rasterio.open(outfn('rcp', f'dasgupta-{oname}-{suf}-{year}.tif'),
-        #                   'w', **meta) as dst:
-        #    dst.write(data.filled(), indexes=1)
+        print('%s forest clipped: %6.4f' % (kind, data2.sum()))
     return
 
 
-def do_forested(what, ssp, year, model):
+def do_forested(what, ssp, scenario, year, model):
     pname = 'forested_tropic_temperate_tropical_forest'
     pname2 = 'tropic_temperate_tropical_forest_tropical_forest'
-    rs = RasterSet(rasters(ssp, year))
+    rs = RasterSet(rasters(ssp, scenario, year))
     rs[model.output] = model
     rs[pname] = 0
     rs[pname2] = 0
     for kind in ('temperate', 'tropical'):
         if kind == 'tropical':
             intercept = model.partial({pname: 1,
-                                       'tropic_temperate_tropical_forest': 1})
+                                       pname2: 1})
             rs[pname] = 1
             rs[pname2] = 1
         else:
@@ -298,76 +310,71 @@ def do_forested(what, ssp, year, model):
         oname, expr = inv_transform(what, model.output, intercept)
         rs[oname] = expr
         rs[kind] = SimpleExpr(kind, f'{oname} * {kind}_mask')
-        print(rs.tree(kind))
+        #print(rs.tree(kind))
         data, meta = rs.eval(kind)
         suf = 'te' if kind == 'temperate' else 'tr'
-        with rasterio.open(outfn('rcp', f'dasgupta-{oname}-{suf}-{year}.tif'),
-                           'w', **meta) as dst:
+        fname = f'dasgupta-{scenario}-{oname}-{suf}-{year}.tif'
+        with rasterio.open(outfn('rcp', fname), 'w', **meta) as dst:
             dst.write(data.filled(), indexes=1)
     return
 
 
-def do_non_forested(what, ssp, year, model):
-    rs = RasterSet(rasters(ssp, year))
+def do_non_forested(what, ssp, scenario, year, model):
+    rs = RasterSet(rasters(ssp, scenario, year))
     rs[model.output] = model
     intercept = model.intercept
     print('non-forest intercept: %6.4f' % intercept)
     oname, expr = inv_transform(what, model.output, intercept)
     rs[oname] = expr
     rs['newout'] = SimpleExpr('newout', f'{oname} * nonforested_mask')
-    print(rs.tree(newout))
+    #print(rs.tree('newout'))
     data, meta = rs.eval('newout')
-    with rasterio.open(outfn('rcp', f'dasgupta-{oname}-nf-{year}.tif'), 'w',
-                       **meta) as dst:
+    fname = f'dasgupta-{scenario}-{oname}-nf-{year}.tif'
+    with rasterio.open(outfn('rcp', fname), 'w', **meta) as dst:
         dst.write(data.filled(), indexes=1)
     return
 
 
-def do_non_forested_mask(what, ssp, year, model):
-    rs = RasterSet(rasters(ssp, year))
+def do_non_forested_mask(what, ssp, scenario, year, model):
+    rs = RasterSet(rasters(ssp, scenario, year))
     rs[model.output] = model
     intercept = model.intercept
     print('non-forest intercept: %6.4f' % intercept)
     rs['masked'] = SimpleExpr('masked', f'{model.output} * nonforested_mask')
-    data, meta = rs.eval('masked')
+    data, meta = rs.eval('masked', quiet=True)
     data2 = ma.where(data < model.output_range[0], 1,
                      ma.where(data > model.output_range[1], 1, 0))
-    pdb.set_trace()
-    from rasterio.plot import show
-    show(data2)
-    #with rasterio.open(outfn('rcp', f'dasgupta-{oname}-nf-{year}.tif'), 'w',
-    #                   **meta) as dst:
-    #    dst.write(data.filled(), indexes=1)
+    print('non-forest clipped: %6.4f' % data2.sum())
     return
 
 
-def do_bii(oname, years):
+def do_bii(oname, scenario, years):
     for year in years:
         rs = RasterSet({oname: SimpleExpr('bii', 'ab * cs'),
                         'cs': Raster('cs',
                                      outfn('rcp',
-                                           f'dasgupta-CompSimAb-{year}.tif')),
+                                           f'dasgupta-{scenario}-CompSimAb-{year}.tif')),
                         'ab':  Raster('ab',
                                       outfn('rcp',
-                                            f'dasgupta-Abundance-{year}.tif'))
+                                            f'dasgupta-{scenario}-Abundance-{year}.tif'))
                         })
-        print(rs.tree(oname))
+        #print(rs.tree(oname))
         data, meta = rs.eval(oname)
-        with rasterio.open(outfn('rcp', f'dasgupta-{oname}-{year}.tif'), 'w',
+        with rasterio.open(outfn('rcp', f'dasgupta-{scenario}-{oname}-{year}.tif'), 'w',
                            **meta) as dst:
             dst.write(data.filled(), indexes=1)
     return
 
 
-def do_combine(oname, years):
+def do_combine(oname, scenario, years):
     with rasterio.open(outfn('rcp', 'forested-frac.tif')) as src:
         formask = src.read(1, masked=True)
     for year in years:
-        with rasterio.open(outfn('rcp', f'dasgupta-{oname}-te-{year}.tif')) as temp:
+        with rasterio.open(outfn('rcp', f'dasgupta-{scenario}-{oname}-te-{year}.tif')) as temp:
             temperate = temp.read(1, masked=True)
-        with rasterio.open(outfn('rcp', f'dasgupta-{oname}-tr-{year}.tif')) as trop:
+        with rasterio.open(outfn('rcp', f'dasgupta-{scenario}-{oname}-tr-{year}.tif')) as trop:
             tropical = trop.read(1, masked=True)
-        with rasterio.open(outfn('rcp', f'dasgupta-{oname}-nf-{year}.tif')) as nonfor:
+        with rasterio.open(outfn('rcp', f'dasgupta-{scenario}-{oname}-nf-{year}.tif')) as nonfor:
             nonforest = nonfor.read(1, masked=True)
             meta = nonfor.meta.copy()
             nodata = nonfor.nodata
@@ -382,15 +389,15 @@ def do_combine(oname, years):
                                  ma.where(forest.mask, nonforest, forest)))
                         
         data = ma.masked_equal(data, nodata).astype('float32')
-        with rasterio.open(outfn('rcp', f'dasgupta-{oname}-{year}.tif'), 'w',
+        with rasterio.open(outfn('rcp', f'dasgupta-{scenario}-{oname}-{year}.tif'), 'w',
                            **meta) as dst:
             dst.write(data.filled(), indexes=1)
 
 
-def do_other(vname, ssp, year):
-    rs = RasterSet(rasters(ssp, year))
+def do_other(vname, ssp, scenario, year):
+    rs = RasterSet(rasters(ssp, scenario, year))
     data, meta = rs.eval(vname)
-    with rasterio.open(outfn('rcp', f'dasgupta-{vname}-{year}.tif'), 'w',
+    with rasterio.open(outfn('rcp', f'dasgupta-{scenario}-{vname}-{year}.tif'), 'w',
                        **meta) as dst:
         dst.write(data.filled(), indexes=1)
     return
@@ -408,6 +415,8 @@ def cli(ctx):
 
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))
+@click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'base')))
 @click.argument('years', type=YEAR_RANGE)
 @click.option('-f', '--forested', is_flag=True, default=False,
               help='Use forested models for projection')
@@ -417,7 +426,7 @@ def cli(ctx):
               '(default: ./models)')
 @click.option('-v', '--vname', type=str, default=None,
               help='Variable to project when specifying other.')
-def project(what, years, forested, model_dir, vname):
+def project(what, scenario, years, forested, model_dir, vname):
     ssp = 'ssp2'
     if what == 'other':
         if vname is None:
@@ -425,31 +434,35 @@ def project(what, years, forested, model_dir, vname):
 
     for year in years:
         if what == 'other':
-            do_other(vname, ssp, year)
+            do_other(vname, ssp, year, scenario)
         else:
             model = get_model(what, forested, model_dir)
             if not forested:
-                do_non_forested(what, ssp, year, model)
+                do_non_forested(what, ssp, scenario, year, model)
             else:
-                do_forested(what, ssp, year, model)
+                do_forested(what, ssp, scenario, year, model)
     return
 
 
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'bii')))
+@click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'base')))
 @click.argument('years', type=YEAR_RANGE)
-def combine(what, years):
+def combine(what, scenario, years):
     if what == 'bii':
-        do_bii('BIIAb', years)
+        do_bii('BIIAb', scenario, years)
     elif what == 'ab':
-        do_combine('Abundance', years)
+        do_combine('Abundance', scenario, years)
     else:
-        do_combine('CompSimAb', years)
+        do_combine('CompSimAb', scenario, years)
     return
 
 
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))
+@click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'base')))
 @click.argument('years', type=YEAR_RANGE)
 @click.option('-f', '--forested', is_flag=True, default=False,
               help='Use forested models for projection')
@@ -457,14 +470,14 @@ def combine(what, years):
               default=os.path.abspath('.'),
               help='Directory where to find the models ' +
               '(default: ./models)')
-def mask(what, years, forested, model_dir):
+def mask(what, scenario, years, forested, model_dir):
     ssp = 'ssp2'
     for year in years:
         model = get_model(what, forested, model_dir)
         if not forested:
-            do_non_forested_mask(what, ssp, year, model)
+            do_non_forested_mask(what, ssp, scenario, year, model)
         else:
-            do_forested_mask(what, ssp, year, model)
+            do_forested_mask(what, ssp, scenario, year, model)
     return
 
 

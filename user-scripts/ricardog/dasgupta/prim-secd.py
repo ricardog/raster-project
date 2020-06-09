@@ -98,12 +98,21 @@ def luh2(scenario):
     return
 
 
-def vivid(scenario):
-    prim_hist = rasterio.open(f'andy-data/historical-primary.tif')
+def vivid(scenario, scene):
+    if scene == 'early':
+        dirname = 'HMT_Early_Action_v2'
+    elif scene == 'late':
+        dirname = 'HMT_Late_Action_v2'
+    elif scene == 'base':
+        dirname = 'HMT_Baseline_v2'
+    else:
+        dirname = 'sample'
+
+    prim_hist = rasterio.open('andy-data/historical-primary.tif')
     prim_ssp = rasterio.open(f'andy-data/{scenario}-primary.tif')
-    secd_hist = rasterio.open(f'andy-data/historical-secondary.tif')
+    secd_hist = rasterio.open('andy-data/historical-secondary.tif')
     secd_ssp = rasterio.open(f'andy-data/{scenario}-secondary.tif')
-    vivid_file = data_file('vivid', 'sample', 'spatial_files',
+    vivid_file = data_file('vivid', dirname, 'spatial_files',
                            'cell.land_0.5.nc')
     other = rasterio.open(f'netcdf:{vivid_file}:other')
     secdf = rasterio.open(f'netcdf:{vivid_file}:secdforest')
@@ -112,15 +121,15 @@ def vivid(scenario):
     carea = raster_cell_area(other) / 1e10
     
     nodata = -9999.0
-    years = vivid_years('sample')
+    years = vivid_years(dirname)
     print(years)
     meta = prim_hist.meta.copy()
     meta.update({'driver': 'GTiff', 'compression': 'lzw', 'predictor': 3,
                  'count': len(years), 'nodata': nodata})
     print(meta)
-    with rasterio.open(f'andy-data/vivid-primary.tif', 'w',
+    with rasterio.open(f'andy-data/vivid-{scene}-primary.tif', 'w',
                        **meta) as prim:
-        with rasterio.open(f'andy-data/vivid-secondary.tif', 'w',
+        with rasterio.open(f'andy-data/vivid-{scene}-secondary.tif', 'w',
                            **meta) as secd:
             for idx, year in enumerate(years):
                 print(year, idx)
@@ -151,7 +160,9 @@ def vivid(scenario):
 
 if __name__ == '__main__':
     #luh2('historical')
-    luh2('ssp2_rcp4.5_message-globiom')
+    #luh2('ssp2_rcp4.5_message-globiom')
 
-    vivid('ssp2_rcp4.5_message-globiom')
+    #vivid('ssp2_rcp4.5_message-globiom', 'early')
+    #vivid('ssp2_rcp4.5_message-globiom', 'late')
+    vivid('ssp2_rcp4.5_message-globiom', 'base')
 

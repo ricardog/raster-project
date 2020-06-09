@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import click
 import rasterio
 from projections.utils import data_file
 
@@ -15,23 +16,36 @@ def downsample(in1, src, dst):
     return out
 
 
+@click.command()
+@click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'base')))
 def doit(scenario):
+    if scenario == 'early':
+        dirname = 'HMT_Early_Action_v2'
+    elif scenario == 'late':
+        dirname = 'HMT_Late_Action_v2'
+    elif scenario == 'base':
+        dirname = 'HMT_Baseline_v2'
+    else:
+        dirname = 'sample'
+
     with rasterio.open('andy-data/historical-primary.tif') as ref:
         meta = ref.meta.copy()
-    data_dir = data_file('vivid', scenario, 'spatial_files',
+    data_dir = data_file('vivid', dirname, 'spatial_files',
                          'restored_land')
     years = tuple(range(2020, 2061, 5))
     meta.update({'compression': 'lzw', 'predictor': 3, 'count': len(years)})
-    for bound in ('lb', 'ub'):
-        with rasterio.open(f'andy-data/restored-{bound}.tif', 'w',
+    for subtype in ('mf', 'sf'):
+        with rasterio.open(f'andy-data/restored-{scenario}-{subtype}.tif', 'w',
                            **meta) as dst:
             for idx, year in enumerate(years):
                 print(year, idx)
-                fname = f'{data_dir}/restored_{bound}_{year}.tif'
+                fname = f'{data_dir}/restored_{subtype}_{year}.tif'
                 with rasterio.open(fname) as src:
                     dst.write(downsample(src.read(1), src, dst),
                               indexes=idx + 1)
     return
 
+
 if __name__ == '__main__':
-    doit('sample')
+    doit()

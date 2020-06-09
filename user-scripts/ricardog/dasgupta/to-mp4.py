@@ -10,7 +10,7 @@ import rasterio
 from projections.mp4_utils import to_mp4
 
 def parse_fname2(fname):
-  return os.path.splitext(os.path.basename(fname))[0].rsplit('-', 3)
+    return os.path.splitext(os.path.basename(fname))[0].rsplit('_', 3)
 
 
 @click.command()
@@ -18,8 +18,12 @@ def parse_fname2(fname):
 @click.argument('oname', type=click.Path(dir_okay=False))
 @click.option('--title', '-t', type=str)
 @click.option('--fps', type=int, default=10)
-def convert(pattern, oname, title, fps):
-    outdir = Path(os.environ.get('OUTDIR', '/out'), 'rcp')
+@click.option('--outdir', type=click.Path(file_okay=False))
+def convert(pattern, oname, title, fps, outdir):
+    if outdir is None:
+      outdir = Path(os.environ.get('OUTDIR', '/out'), 'rcp')
+    else:
+      outdir = Path(outdir)
     files = [path for path in outdir.iterdir() if fnmatch(path.name, pattern)]
     files = sorted(files)
     nframes = len(files)

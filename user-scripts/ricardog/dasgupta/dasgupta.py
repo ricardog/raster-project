@@ -254,6 +254,7 @@ def rasters(ssp, scenario, year):
     rasters[f'{pre}_age30'] = 'age30'
 
     rasters['gower_env_dist'] = 0
+    rasters['croot_gower_env'] = 0
     rasters['s2_loghpd'] = 'loghpd'
 
     return rasters

@@ -121,7 +121,7 @@ def get_bounds(pg_url, table, clause):
   return shape.bounds
   
 def get_template():
-  """Read the PostGIS query template fomr a file. """
+  """Read the PostGIS query template from a file. """
   my_dir = os.path.dirname(__file__)
   fname = os.path.join(my_dir, 'plant-db.psql')
   with open(fname) as f:

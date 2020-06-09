@@ -320,7 +320,7 @@ def do_forested(what, ssp, scenario, year, model, tree):
         if tree:
             print(rs.tree(kind))
             continue
-        data, meta = rs.eval(kind)
+        data, meta = rs.eval(kind, quiet=True)
         suf = 'te' if kind == 'temperate' else 'tr'
         fname = f'dasgupta-{scenario}-{oname}-{suf}-{year}.tif'
         with rasterio.open(outfn('rcp', fname), 'w', **meta) as dst:
@@ -339,7 +339,7 @@ def do_non_forested(what, ssp, scenario, year, model, tree):
     if tree:
         print(rs.tree('masked'))
         return
-    data, meta = rs.eval('masked')
+    data, meta = rs.eval('masked', quiet=True)
     fname = f'dasgupta-{scenario}-{oname}-nf-{year}.tif'
     with rasterio.open(outfn('rcp', fname), 'w', **meta) as dst:
         dst.write(data.filled(), indexes=1)
@@ -370,7 +370,7 @@ def do_bii(oname, scenario, years):
                                             f'dasgupta-{scenario}-Abundance-{year}.tif'))
                         })
         #print(rs.tree(oname))
-        data, meta = rs.eval(oname)
+        data, meta = rs.eval(oname, quiet=True)
         with rasterio.open(outfn('rcp', f'dasgupta-{scenario}-{oname}-{year}.tif'), 'w',
                            **meta) as dst:
             dst.write(data.filled(), indexes=1)
@@ -410,7 +410,7 @@ def do_other(vname, ssp, scenario, year, tree):
     if tree:
         print(rs.tree(vname))
         return
-    data, meta = rs.eval(vname)
+    data, meta = rs.eval(vname, quiet=True)
     with rasterio.open(outfn('rcp', f'dasgupta-{scenario}-{vname}-{year}.tif'), 'w',
                        **meta) as dst:
         dst.write(data.filled(), indexes=1)

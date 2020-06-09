@@ -31,9 +31,9 @@ def main():
         meta['schema']['properties'].update({'forested': 'bool',
                                              'tropical': 'bool'})
         with fiona.open('forested/forested.shp', 'w', **meta) as dst:
-            for eco in filter(is_forested, src):
+            for eco in src:
                 props = eco['properties']
-                props['forested'] = True
+                props['forested'] = is_forested(eco)
                 props['tropical'] = is_tropical(eco)
                 dst.write({'geometry': eco['geometry'],
                            'properties': props})

@@ -2,12 +2,14 @@
 
 import click
 from fnmatch import fnmatch
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy.ma as ma
 import os
 import pandas as pd
 from pathlib import Path
 import rasterio
+import re
 import seaborn as sns
 
 import pdb
@@ -57,17 +59,30 @@ def plot_all(data, indicator, npp):
     else:
         npp_text = 'NPP-weighted '
 
+    data = data.loc[data.Mask == 'Global']
+    plot_a = set(tuple(filter(lambda c: re.match('early', c),
+                          data.Scenario)) + ('base', ))
+    plot_b = set(tuple(filter(lambda c: re.match('late', c),
+                          data.Scenario)) + ('base', 'early'))
+    lines = (len(plot_a), len(plot_b))
+    
+    fig, axs = plt.subplots(1, 2, sharey=True)
     colors = ["windows blue", "amber", "dusty purple"]
     colors = ["windows blue", "amber", "faded green", "dusty purple",
               "scarlet"]
-    palette = sns.xkcd_palette(colors)
-    data = data.loc[data.Mask == 'Global']
-    sns.lineplot('Year', 'Mean', data=data, hue='Scenario',
-                 linewidth=2, palette=palette)
-    ax = plt.gca()
-    ax.set_title(f'Mean {npp_text}{t_ind}')
-    ax.set_ylabel(f'Mean {npp_text}{t_ind}')
-    ax.set_xlabel('Year')
+    colors = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99',
+              '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a',
+              '#ffff99', '#b15928']
+    #palette = sns.xkcd_palette(colors)
+    for idx, plot in enumerate((plot_a, plot_b)):
+        #pdb.set_trace()
+        palette = sns.color_palette(colors[0:lines[idx]])
+        subset = data[data.Scenario.apply(lambda v: v in plot)]
+        sns.lineplot('Year', 'Mean', data=subset, hue='Scenario',
+                     linewidth=2, palette=palette, ax=axs[idx])
+        axs[idx].set_title(f'Mean {npp_text}{t_ind}')
+        axs[idx].set_ylabel(f'Mean {npp_text}{t_ind}')
+        axs[idx].set_xlabel('Year')
     plt.savefig('Figure-1.png')
     plt.show()
     plt.close()
@@ -80,7 +95,9 @@ def plot_all(data, indicator, npp):
                                                       'CompSimAb',
                                                       'Abundance-nf')),
               default='BIIAb')
-def worldwide(npp, indicator):
+@click.option('--raster-dir', '-r', type=click.Path(file_okay=False),
+              default=Path(os.environ.get('OUTDIR', '/out'), 'rcp'))
+def worldwide(npp, indicator, raster_dir):
     outdir = Path(os.environ.get('OUTDIR', '/out'), 'rcp')
     df = pd.DataFrame(columns=['Year', 'Scenario', 'Mask', 'Mean'])
     mask = {}
@@ -99,10 +116,11 @@ def worldwide(npp, indicator):
         with rasterio.open(Path(outdir, f'{layer}.tif')) as ds:
             mask[layer] = ds.read(1, masked=True) * land
             area[layer] = (mask[layer] * npp).sum()
-    #outdir = Path(os.environ.get('OUTDIR', '/out'), 'rcp', 'nohpd-model')
+    if isinstance(raster_dir, str):
+        raster_dir = Path(raster_dir)
     for path in filter(lambda p: fnmatch(p.name,
                                          f'dasgupta-*-{indicator}-20*.tif'),
-                       outdir.iterdir()):
+                       raster_dir.iterdir()):
         print(path)
         _, scenario, _ = path.stem.split('-', 2)
         _, year = path.stem.rsplit('-', 1)
@@ -131,5 +149,7 @@ def worldwide(npp, indicator):
 
 
 if __name__ == '__main__':
+    matplotlib.style.use('ggplot')
+    sns.set_style("darkgrid")
     worldwide()
     

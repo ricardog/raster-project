@@ -142,9 +142,9 @@ def rasters(ssp, scenario, year):
                                                                    yy,
                                                                    scenario))
             rasters[layer] = SimpleExpr(layer, f'{layer}_area / land')
-        rasters[f'restored_{yy}'] = SimpleExpr(f'restored_{year}',
-                                               f'restored_mf_{year} '
-                                               f'+ restored_sf_{year}')
+        rasters[f'restored_{yy}'] = SimpleExpr(f'restored_{yy}',
+                                               f'restored_mf_{yy} + '
+                                               f'restored_sf_{yy}')
 
     for age in range(5, 31, 5):
         year_restored = year - age + 5
@@ -157,7 +157,7 @@ def rasters(ssp, scenario, year):
     adj_mf = ' + '.join([f'restored_mf_{yy}' for yy in include_years])
     rasters['adj_forestry'] = SimpleExpr('adj_forestry',
                                          f'clip((forestry - ({adj_mf})), 0, 1)')
-    adj_sf = ' + '.join([f'restored_mf_{yy}' for yy in include_years])
+    adj_sf = ' + '.join([f'restored_sf_{yy}' for yy in include_years])
     rasters['adj_secdforest'] = SimpleExpr('adj_secdforest',
                                            f'clip((secdforest - ({adj_sf})), 0, 1)')
 
@@ -281,12 +281,12 @@ def do_forested_mask(what, ssp, scenario, year, model):
         else:
             intercept = model.intercept
 
-        print('%s forest intercept: %6.4f' % (kind, intercept))
+        print('%s %s forest intercept: %6.4f' % (what, kind, intercept))
         rs[kind] = SimpleExpr(kind, f'{model.output} * {kind}_mask')
         data, meta = rs.eval(kind, quiet=True)
         data2 = ma.where(data < model.output_range[0], 1,
                          ma.where(data > model.output_range[1], 1, 0))
-        print('%s forest clipped: %6.4f' % (kind, data2.sum()))
+        print('%s %s forest clipped: %6.4f' % (what, kind, data2.sum()))
     return
 
 
@@ -306,7 +306,7 @@ def do_forested(what, ssp, scenario, year, model):
         else:
             intercept = model.intercept
 
-        print('%s forest intercept: %6.4f' % (kind, intercept))
+        print('%s %s forest intercept: %6.4f' % (what, kind, intercept))
         oname, expr = inv_transform(what, model.output, intercept)
         rs[oname] = expr
         rs[kind] = SimpleExpr(kind, f'{oname} * {kind}_mask')
@@ -323,12 +323,12 @@ def do_non_forested(what, ssp, scenario, year, model):
     rs = RasterSet(rasters(ssp, scenario, year))
     rs[model.output] = model
     intercept = model.intercept
-    print('non-forest intercept: %6.4f' % intercept)
+    print('%s non-forest intercept: %6.4f' % (what, intercept))
     oname, expr = inv_transform(what, model.output, intercept)
     rs[oname] = expr
-    rs['newout'] = SimpleExpr('newout', f'{oname} * nonforested_mask')
-    #print(rs.tree('newout'))
-    data, meta = rs.eval('newout')
+    rs['masked'] = SimpleExpr('masked', f'{oname} * nonforested_mask')
+    #print(rs.tree('masked'))
+    data, meta = rs.eval('masked')
     fname = f'dasgupta-{scenario}-{oname}-nf-{year}.tif'
     with rasterio.open(outfn('rcp', fname), 'w', **meta) as dst:
         dst.write(data.filled(), indexes=1)
@@ -339,12 +339,12 @@ def do_non_forested_mask(what, ssp, scenario, year, model):
     rs = RasterSet(rasters(ssp, scenario, year))
     rs[model.output] = model
     intercept = model.intercept
-    print('non-forest intercept: %6.4f' % intercept)
+    print('%s non-forest intercept: %6.4f' % (what, intercept))
     rs['masked'] = SimpleExpr('masked', f'{model.output} * nonforested_mask')
     data, meta = rs.eval('masked', quiet=True)
     data2 = ma.where(data < model.output_range[0], 1,
                      ma.where(data > model.output_range[1], 1, 0))
-    print('non-forest clipped: %6.4f' % data2.sum())
+    print('%s non-forest clipped: %6.4f' % (what, data2.sum()))
     return
 
 

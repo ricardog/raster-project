@@ -15,24 +15,24 @@ from projections.utils import data_file, outfn
 import pdb
 
 class YearRangeParamType(click.ParamType):
-  name = 'year range'
+    name = 'year range'
 
-  def convert(self, value, param, ctx):
-    try:
-      try:
-        return [int(value)]
-      except ValueError:
-        values = value.split(':')
-        if len(values) == 3:
-          low, high, inc = values
-        elif len(values) == 2:
-          low, high = values
-          inc = '1'
-        else:
-          raise ValueError
-        return range(int(low), int(high), int(inc))
-    except ValueError:
-      self.fail('%s is not a valid year range' % value, param, ctx)
+    def convert(self, value, param, ctx):
+        try:
+            try:
+              return [int(value)]
+            except ValueError:
+              values = value.split(':')
+              if len(values) == 3:
+                low, high, inc = values
+              elif len(values) == 2:
+                low, high = values
+                inc = '1'
+              else:
+                raise ValueError
+              return range(int(low), int(high), int(inc))
+        except ValueError:
+            self.fail('%s is not a valid year range' % value, param, ctx)
 
 YEAR_RANGE = YearRangeParamType()
 
@@ -56,17 +56,25 @@ def get_model(what, forested, model_dir):
     return modelr.load(os.path.join(model_dir, mname))
     
 
-def vivid_layer(layer):
-    return ':'.join(('netcdf', data_file('vivid', 'spatial_files',
-                                         'cell.land_0.5.nc'),
-                     layer))
+def vivid_land(scenario):
+    return data_file('vivid', scenario, 'spatial_files', 'cell.land_0.5.nc')
 
-def vivid_crop_layer(layer):
-    return ':'.join(('netcdf', data_file('vivid', 'spatial_files',
-                                         'cell.croparea_0.5_share.nc'),
-                     layer))
+def vivid_crop(scenario):
+    return data_file('vivid', scenario, 'spatial_files',
+                     'cell.croparea_0.5_share.nc')
+
+def vivid_layer(layer, scenario):
+    return ':'.join(('netcdf', vivid_land(scenario), layer))
+
+def vivid_crop_layer(layer, scenario):
+    return ':'.join(('netcdf', vivid_crop(scenario), layer))
+
+def vivid_restored_layer(year, scenario):
+    return data_file('vivid', scenario, 'spatial_files', 'restored_land',
+                     f'restored_lb_{year}.tif')
 
 def rasters(ssp, year):
+    scenario = 'sample'
     rasters = {}
     rasters['icew'] = Raster('icew', outfn('rcp', 'icew.tif'))
     rasters['land'] = SimpleExpr('land', '1 - icew')
@@ -91,9 +99,9 @@ def rasters(ssp, year):
     rasters['log_dist'] = 0
     rasters['log_study_max_hpd'] = 0
     rasters['log_study_mean_hpd'] = 0
+    rasters['study_mean_hpd'] = 0
 
-    with Dataset(data_file('vivid', 'spatial_files',
-                           'cell.land_0.5.nc')) as ds:
+    with Dataset(vivid_land(scenario)) as ds:
         years_avail = ds.variables['time'][:].astype(int).tolist()
         if year not in years_avail:
             raise IndexError(f'Year {year} not available in Vivid datset')
@@ -102,32 +110,49 @@ def rasters(ssp, year):
             if len(ds.variables[layer].shape) != 3:
                 continue
             rasters[f'{layer}_area'] = Raster(f'{layer}_area',
-                                              vivid_layer(layer),
+                                              vivid_layer(layer, scenario),
                                               band=index + 1)
             rasters[layer] = SimpleExpr(layer, f'{layer}_area / carea')
 
-    # FIXME: these should come from Vivid
-    rasters['age8'] = 0
-    rasters['age15'] = 0
-    rasters['age28'] = 0
+    for yy in range(2020, 2060, 5):
+        layer = f'restored_{yy}'
+        rasters[f'{layer}_area'] = Raster(f'{layer}_area',
+                                          vivid_restored_layer(yy, scenario))
+        rasters[layer] = SimpleExpr(layer, f'{layer}_area / carea')
+        
+    for age in range(5, 31, 5):
+        year_restored = year - age + 5
+        if year_restored < 2020:
+            rasters[f'age{age}'] = 0
+        else:
+            rasters[f'age{age}'] = f'restored_{year_restored}'
 
-    with Dataset(data_file('vivid', 'spatial_files',
-                           'cell.croparea_0.5_share.nc')) as ds:
+    include_years = tuple(range(2020, year + 1, 5))
+    adj_expr = ' + '.join([f'restored_{yy}' for yy in include_years])
+    rasters['adj_forestry'] = SimpleExpr('adj_forestry',
+                                         f'clip((forestry - ({adj_expr})), 0, 1)')
+
+    with Dataset(vivid_crop(scenario)) as ds:
         years_avail = ds.variables['time'][:].astype(int).tolist()
         if year not in years_avail:
             raise IndexError(f'Year {year} not available in Vivid datset')
         index = years_avail.index(year)
-        for layer in ('begr', 'betr', 'oilpalm'):
+        for layer in ('begr', 'betr', 'oilpalm', 'sugr_cane'):
             rasters[f'{layer}_rainfed'] = Raster(f'{layer}_rainfed',
                                                  vivid_crop_layer(layer +
-                                                                  '.rainfed'),
+                                                                  '.rainfed',
+                                                                  scenario),
                                                  band=index + 1)
             rasters[f'{layer}_irrigated'] = Raster(f'{layer}_rainfed',
                                                    vivid_crop_layer(layer +
-                                                                    '.irrigated'),
+                                                                    '.irrigated',
+                                                                    scenario),
                                                    band=index + 1)
-            rasters[f'{layer}'] = SimpleExpr(layer, f'{layer}_rainfed + {layer}_irrigated')
-        rasters['annual_share'] = SimpleExpr(layer, 'begr + betr + oilpalm')
+            rasters[f'{layer}'] = SimpleExpr(layer, f'{layer}_rainfed '
+                                             f'+ {layer}_irrigated')
+        rasters['perennial_share'] = SimpleExpr('perennial_layer',
+                                                'begr + betr + oilpalm '
+                                                '+ sugr_cane')
 
     # FIXME: How to compute other_notprimary
     rasters['other_primary'] = 0.00
@@ -136,8 +161,8 @@ def rasters(ssp, year):
     rasters['pasture'] = 'past'
     rasters['primary'] = SimpleExpr('primary',
                                     'other * other_primary + primforest')
-    rasters['annual'] = SimpleExpr('annual', 'crop * annual_share')
-    rasters['perennial'] = SimpleExpr('annual', 'crop * (1 - annual_share)')
+    rasters['perennial'] = SimpleExpr('annual', 'crop * perennial_share')
+    rasters['annual'] = SimpleExpr('annual', 'crop * (1 - perennial_share)')
 
     for lu in ('pasture', 'primary'):
         ref_path = outfn('rcp', '%s-recal.tif' % lu)
@@ -153,11 +178,14 @@ def rasters(ssp, year):
     rasters[f'{base}_perennial'] = 'perennial'
     rasters[f'{base}_secondary_forest'] = 'secdforest'
     rasters[f'{base}_primary_minimal'] = 'primary_minimal'
-    rasters[f'{base}_managed_forest'] = 'forestry'
+    rasters[f'{base}_managed_forest'] = 'adj_forestry'
     rasters[f'{base}_other_not_primary'] = 'other_notprimary'
-    rasters[f'{base}_age8'] = 'age8'
+    rasters[f'{base}_age5'] = 'age5'
+    rasters[f'{base}_age10'] = 'age10'
     rasters[f'{base}_age15'] = 'age15'
-    rasters[f'{base}_age28'] = 'age28'
+    rasters[f'{base}_age20'] = 'age20'
+    rasters[f'{base}_age25'] = 'age25'
+    rasters[f'{base}_age30'] = 'age30'
 
     rasters[f'{base}_primary_light_intense'] = \
         SimpleExpr('primary_light_intense',
@@ -170,18 +198,24 @@ def rasters(ssp, year):
     #
     # CompSim-only parameters
     #
-    pre = 'magpie_pas_contrast_primary_minimal'
+    #pre = 'magpie_pas_contrast_primary_minimal'
+    pre = 'magpie_baseline_pas_contrast_primary_minimal'
     rasters[f'{pre}_cropland'] = 'crop'
-    rasters[f'{pre}_managed_forest'] = 'forestry'
+    rasters[f'{pre}_managed_forest'] = 'adj_forestry'
     rasters[f'{pre}_other_not_primary'] = 'other_notprimary'
     rasters[f'{pre}_pasture_light_intense'] = f'{base}_primary_light_intense'
     rasters[f'{pre}_pasture_minimal'] = 'pasture_minimal'
     rasters[f'{pre}_primary_light_intense'] = f'{base}_pasture_light_intense'
     rasters[f'{pre}_secondary_forest'] = 'secdforest'
+    rasters[f'{pre}_annual'] = 'annual'
+    rasters[f'{pre}_perennial'] = 'perennial'
     rasters[f'{pre}_urban'] = 'urban'
-    rasters[f'{pre}_age8'] = 'age8'
+    rasters[f'{pre}_age5'] = 'age5'
+    rasters[f'{pre}_age10'] = 'age15'
     rasters[f'{pre}_age15'] = 'age15'
-    rasters[f'{pre}_age28'] = 'age28'
+    rasters[f'{pre}_age20'] = 'age20'
+    rasters[f'{pre}_age25'] = 'age25'
+    rasters[f'{pre}_age30'] = 'age30'
     
     rasters['gower_env_dist'] = 0
     rasters['s2_loghpd'] = 'loghpd'
@@ -202,17 +236,18 @@ def inv_transform(what, output, intercept):
 
 def do_forested(what, ssp, year, model):
     pname = 'forested_tropic_temperate_tropical_forest'
+    pname2 = 'tropic_temperate_tropical_forest_tropical_forest'
     rs = RasterSet(rasters(ssp, year))
     rs[model.output] = model
     rs[pname] = 0
-    rs['tropic_temperate_tropical_forest'] = 1
+    rs[pname2] = 0
     arrays = []
     for kind in ('temperate', 'tropical'):
         if kind == 'tropical':
             intercept = model.partial({pname: 1,
                                        'tropic_temperate_tropical_forest': 1})
             rs[pname] = 1
-            rs['tropic_temperate_tropical_forest'] = 1
+            rs[pname2] = 1
         else:
             intercept = model.intercept
 
@@ -221,6 +256,7 @@ def do_forested(what, ssp, year, model):
         rs[oname] = expr
         rs[kind] = SimpleExpr(kind, f'{oname} * {kind}_mask')
         print(rs.tree(kind))
+        pdb.set_trace()
         data, meta = rs.eval(kind)
         arrays.append(data)
     data = arrays[0] + arrays[1]

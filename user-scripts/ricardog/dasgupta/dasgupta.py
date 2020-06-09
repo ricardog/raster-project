@@ -240,7 +240,7 @@ def rasters(ssp, scenario, year):
     rasters[f'{pre}_perennial'] = 'perennial'
     rasters[f'{pre}_urban'] = 'urban'
     rasters[f'{pre}_age5'] = 'age5'
-    rasters[f'{pre}_age10'] = 'age15'
+    rasters[f'{pre}_age10'] = 'age10'
     rasters[f'{pre}_age15'] = 'age15'
     rasters[f'{pre}_age20'] = 'age20'
     rasters[f'{pre}_age25'] = 'age25'

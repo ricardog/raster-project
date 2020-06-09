@@ -5,12 +5,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pprint import pprint
 import re
 import seaborn as sns
 
 import projections.r2py.modelr as modelr
-import projections.lu.luh2 as luh2
 
 import pdb
 
@@ -30,22 +28,17 @@ def inv_logit(p):
               help='A file to save the plot to.')
 @click.option('--prefix', '-p', type=str)
 @click.option('--tropical', '-t', is_flag=True, default=False)
-def plot(model, title, save, adjust, prefix, tropical):
+@click.option('--clip/--no-clip', is_flag=True, default=True)
+@click.option('--cs-clip/--no-cs-clip', is_flag=True, default=False)
+def plot(model, title, save, adjust, prefix, tropical, clip, cs_clip):
     """Plot response curve of CS model versus HPD."""
-    colors = ["windows blue", "amber", "faded green", "dusty purple",
-              "scarlet", "eggplant"]
-    palette = sns.xkcd_palette(colors)
-    #palette = sns.color_palette('colorblind', 6)
-    #flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
-    #palette = sns.color_palette(flatui)
-
+    # This is a color brewer palette
     cb = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33']
     palette = sns.color_palette(cb)
 
     mod = modelr.load(model)
 
     columns = tuple(filter(lambda x: re.match(prefix, x), mod.syms))
-    #df = pd.DataFrame(columns=tuple(luh2.LU.keys()))
     df = pd.DataFrame(columns=columns)
     pname1 = 'forested_tropic_temperate_tropical_forest'
     pname2 = 'tropic_temperate_tropical_forest_tropical_forest'
@@ -60,14 +53,17 @@ def plot(model, title, save, adjust, prefix, tropical):
                                    pname1: tropical,
                                    pname2: tropical,
                                    col: np.full((13), 1)}))
-        s = s.clip(*mod.output_range)
+        if clip:
+            s = s.clip(*mod.output_range)
         if mod.output == 'sqrtRescaledAbundance':
             vname = 'Abundance'
             df[col] = np.power(s, 2) / np.power(intercept, 2)
         else:
             vname = 'CompSim'
-            df[col] = (inv_logit(s) - adjust) / (inv_logit(intercept) - adjust)
-
+            s2 = (inv_logit(s) - adjust) / (inv_logit(intercept) - adjust)
+            if cs_clip:
+                s2 = s2.clip(0, 1)
+            df[col] = s2
     #pdb.set_trace()
     df.index = np.linspace(0, 11, 13)
     df = df.rename(columns=lambda c: c.replace(prefix, ''))

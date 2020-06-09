@@ -103,6 +103,12 @@ def vivid(scenario, scene):
         dirname = 'HMT_Early_Action_v3'
     elif scene == 'late':
         dirname = 'HMT_Late_Action_v3'
+    elif scene == 'late_23':
+        dirname = 'HMT_Late_Action_c23_v4'
+    elif scene == 'late_26':
+        dirname = 'HMT_Late_Action_c26_v4'
+    elif scene == 'late_29':
+        dirname = 'HMT_Late_Action_c29_v4'
     elif scene == 'base':
         dirname = 'HMT_Baseline_v3'
     else:
@@ -163,6 +169,8 @@ if __name__ == '__main__':
     #luh2('ssp2_rcp4.5_message-globiom')
 
     #vivid('ssp2_rcp4.5_message-globiom', 'early')
-    vivid('ssp2_rcp4.5_message-globiom', 'late')
+    vivid('ssp2_rcp4.5_message-globiom', 'late_23')
+    vivid('ssp2_rcp4.5_message-globiom', 'late_26')
+    vivid('ssp2_rcp4.5_message-globiom', 'late_29')
     #vivid('ssp2_rcp4.5_message-globiom', 'base')
 

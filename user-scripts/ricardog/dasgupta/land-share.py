@@ -13,16 +13,22 @@ from projections.utils import data_file
 def vivid_dirname(scenario):
     if scenario == 'early':
         return 'HMT_Early_Action_v2\3'
-    elif scenario == 'late':
+    if scenario == 'late':
         return 'HMT_Late_Action_v3'
-    elif scenario == 'late':
+    if scenario == 'late-23':
+        return 'HMT_Late_Action_c23_v4'
+    if scenario == 'late-26':
+        return 'HMT_Late_Action_c26_v4'
+    if scenario == 'late-29':
+        return 'HMT_Late_Action_c29_v4'
+    if scenario == 'late':
         return 'HMT_Baseline_v3'
-    else:
-        return 'sample'
+    return 'sample'
 
 @click.command()
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
-                                               'base')))
+                                               'late-23', 'late-26',
+                                               'late-29', 'base')))
 def landshare(scenario):
     icew_ds = rasterio.open(data_file('rcp1.1', 'gicew.1700.txt'))
     icew = icew_ds.read(1)

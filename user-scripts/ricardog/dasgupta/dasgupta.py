@@ -62,12 +62,17 @@ def get_model(what, forested, model_dir):
 def vivid_dirname(scenario):
     if scenario == 'early':
         return 'HMT_Early_Action_v3'
-    elif scenario == 'late':
+    if scenario == 'late':
         return 'HMT_Late_Action_v3'
-    elif scenario == 'base':
+    if scenario == 'late_23':
+        return 'HMT_Late_Action_c23_v4'
+    if scenario == 'late_26':
+        return 'HMT_Late_Action_c26_v4'
+    if scenario == 'late_29':
+        return 'HMT_Late_Action_c29_v4'
+    if scenario == 'base':
         return 'HMT_Baseline_v3'
-    else:
-        return 'sample'
+    return 'sample'
     
 def vivid_land(scenario):
     return data_file('vivid', vivid_dirname(scenario),
@@ -425,7 +430,8 @@ def cli(ctx):
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
-                                               'base')))
+                                               'late_23', 'late_26',
+                                               'late_29', 'base')))
 @click.argument('years', type=YEAR_RANGE)
 @click.option('-f', '--forested', is_flag=True, default=False,
               help='Use forested models for projection')
@@ -457,7 +463,8 @@ def project(what, scenario, years, forested, model_dir, vname, tree):
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'bii')))
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
-                                               'base')))
+                                               'late_23', 'late_26',
+                                               'late_29', 'base')))
 @click.argument('years', type=YEAR_RANGE)
 def combine(what, scenario, years):
     if what == 'bii':
@@ -472,7 +479,8 @@ def combine(what, scenario, years):
 @cli.command()
 @click.argument('what', type=click.Choice(('ab', 'cs-ab', 'other')))
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
-                                               'base')))
+                                               'late_23', 'late_26',
+                                               'late_29', 'base')))
 @click.argument('years', type=YEAR_RANGE)
 @click.option('-f', '--forested', is_flag=True, default=False,
               help='Use forested models for projection')

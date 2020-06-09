@@ -30,6 +30,8 @@ def plot_by_scenario(data):
 
 def plot_all(data):
     colors = ["windows blue", "amber", "dusty purple"]
+    colors = ["windows blue", "amber", "faded green", "dusty purple",
+              "scarlet"]
     palette = sns.xkcd_palette(colors)
     data = data.loc[data.Mask == 'Global']
     sns.lineplot('Year', 'Mean', data=data, hue='Scenario',
@@ -86,7 +88,7 @@ def worldwide(npp):
     #print(df.loc[df.Scenario == 'late'])
     print(data.loc[df.Scenario == 'base'])
     data.to_csv('vivid-summary.csv', index=False)
-    #plot_by_scenario(data)
+    plot_by_scenario(data)
     plot_all(data)
     return
 

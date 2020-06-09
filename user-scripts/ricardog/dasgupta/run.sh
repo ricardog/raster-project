@@ -5,9 +5,9 @@ scene="$1"
 years="$2"
 model="${3:-base}"
 if [[ -d /out ]]; then
-    model_dir=/out/models/dasgupta/2020-05-26/${model}
+    model_dir=/out/models/dasgupta/2020-06-02/${model}
 else
-    model_dir=${HOME}/src/eec/predicts/models/dasgupta/2020-05-26/${model}
+    model_dir=${HOME}/src/eec/predicts/models/dasgupta/2020-06-02/${model}
 fi
 
 echo ${scene}

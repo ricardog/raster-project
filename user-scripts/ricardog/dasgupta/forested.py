@@ -28,13 +28,17 @@ def main():
         'tnc_terr_ecoregions.shp'
     with fiona.open(fname) as src:
         meta = src.meta.copy()
-        meta['schema']['properties'].update({'forested': 'bool',
-                                             'tropical': 'bool'})
+        meta['schema']['properties'].update({'forest': 'bool',
+                                             'nonforest': 'bool',
+                                             'tropical': 'bool',
+                                             'temperate': 'bool'})
         with fiona.open('forested/forested.shp', 'w', **meta) as dst:
             for eco in src:
                 props = eco['properties']
-                props['forested'] = is_forested(eco)
+                props['forest'] = is_forested(eco)
+                props['nonforest'] = not is_forested(eco)
                 props['tropical'] = is_tropical(eco)
+                props['temperate'] = is_forested(eco) and not is_tropical(eco)
                 dst.write({'geometry': eco['geometry'],
                            'properties': props})
 

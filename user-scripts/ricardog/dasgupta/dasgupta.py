@@ -2,6 +2,8 @@
 
 import click
 from netCDF4 import Dataset
+import numpy as np
+import numpy.ma as ma
 import os
 import rasterio
 
@@ -78,14 +80,13 @@ def vivid_crop_layer(layer, scenario):
 
 def vivid_restored_layer(year, scenario):
     return data_file('vivid', scenario, 'spatial_files', 'restored_land',
-                     f'restored_lb_{year}.tif')
+                     f'restored_lb_{year}-fixed.tif')
 
 
 def rasters(ssp, year):
     scenario = 'sample'
     rasters = {}
-    rasters['icew'] = Raster('icew', outfn('rcp', 'icew.tif'))
-    rasters['land'] = SimpleExpr('land', '1 - icew')
+    rasters['land'] = Raster('land', outfn('rcp', 'land.tif'))
     rasters['hpd_ref'] = Raster('hpd_ref', outfn('rcp', 'gluds00ag.tif'))
     rasters['unSub'] = Raster('unSub', outfn('rcp', 'un_subregions-full.tif'))
     rasters['un_code'] = Raster('un_codes', outfn('rcp', 'un_codes-full.tif'))
@@ -94,11 +95,9 @@ def rasters(ssp, year):
     else:
         hpd_dict = hpd.sps.raster(ssp, year, 'rcp')
     rasters['pop'] = hpd_dict['hpd']
-    rasters['hpd'] = SimpleExpr('hpd', '(pop / carea_m2) * 1e6')
+    rasters['hpd'] = SimpleExpr('hpd', 'pop / (land * 1e4)')
     rasters['loghpd'] = SimpleExpr('loghpd', 'log(hpd + 1)')
     rasters['hpd_diff'] = SimpleExpr('hpd_diff', '0 - loghpd')
-    rasters['carea_m2'] = Raster('carea_m2', outfn('rcp', 'carea.tif'))
-    rasters['carea'] = SimpleExpr('carea', 'land * (carea_m2 / 1e10)')
 
     rasters['tropical_mask'] = Raster('tropical_mask',
                                       outfn('rcp', 'tropical.tif'))
@@ -106,8 +105,8 @@ def rasters(ssp, year):
                                        outfn('rcp', 'temperate.tif'))
     rasters['forested_mask'] = Raster('forested_mask',
                                       outfn('rcp', 'forested.tif'))
-    rasters['nonforested_mask'] = SimpleExpr('nonforested_mask',
-                                             '1 - forested_mask')
+    rasters['nonforested_mask'] = Raster('nonforested_mask',
+                                         outfn('rcp', 'nonforested.tif'))
     rasters['log_dist'] = 0
     rasters['log_study_max_hpd'] = 0
     rasters['log_study_mean_hpd'] = 0
@@ -124,13 +123,13 @@ def rasters(ssp, year):
             rasters[f'{layer}_area'] = Raster(f'{layer}_area',
                                               vivid_layer(layer, scenario),
                                               band=index + 1)
-            rasters[layer] = SimpleExpr(layer, f'{layer}_area / carea')
+            rasters[layer] = SimpleExpr(layer, f'{layer}_area / land')
 
     for yy in range(2020, 2060, 5):
         layer = f'restored_{yy}'
         rasters[f'{layer}_area'] = Raster(f'{layer}_area',
                                           vivid_restored_layer(yy, scenario))
-        rasters[layer] = SimpleExpr(layer, f'{layer}_area / carea')
+        rasters[layer] = SimpleExpr(layer, f'{layer}_area / land')
 
     for age in range(5, 31, 5):
         year_restored = year - age + 5
@@ -177,7 +176,7 @@ def rasters(ssp, year):
     rasters['annual'] = SimpleExpr('annual', 'crop * (1 - perennial_share)')
 
     for lu in ('pasture', 'primary'):
-        ref_path = outfn('rcp', '%s-recal.tif' % lu)
+        ref_path = outfn('rcp', '%s-recal-fix.tif' % lu)
         for band, intensity in enumerate(lui.intensities()):
             n = lu + '_' + intensity
             rasters[n] = lui.RCP(lu, intensity)
@@ -284,9 +283,10 @@ def do_non_forested(what, ssp, year, model):
     print('non-forest intercept: %6.4f' % intercept)
     oname, expr = inv_transform(what, model.output, intercept)
     rs[oname] = expr
-    rs['masked'] = SimpleExpr('masked', f'{oname} * nonforested_mask')
-    print(rs.tree('masked'))
-    data, meta = rs.eval('masked')
+    #rs['newout'] = SimpleExpr('newout', f'{oname} * nonforested_mask')
+    print(rs.tree(oname))
+    #data, meta = rs.eval('newout')
+    data, meta = rs.eval(oname)
     with rasterio.open(outfn('rcp', f'dasgupta-{oname}-nf-{year}.tif'), 'w',
                        **meta) as dst:
         dst.write(data.filled(), indexes=1)
@@ -312,22 +312,28 @@ def do_bii(oname, years):
 
 
 def do_combine(oname, years):
-    formask = Raster('formask', outfn('rcp', 'forested-frac.tif'))
+    with rasterio.open(outfn('rcp', 'forested-frac.tif')) as src:
+        formask = src.read(1, masked=True)
     for year in years:
-        temperate = Raster('temperate',
-                           outfn('rcp', f'dasgupta-{oname}-te-{year}.tif'))
-        tropical = Raster('tropical',
-                          outfn('rcp', f'dasgupta-{oname}-tr-{year}.tif'))
-        nonforest = Raster('nonforest',
-                           outfn('rcp', f'dasgupta-{oname}-nf-{year}.tif'))
-        rs = RasterSet({'temperate': temperate,
-                        'tropical': tropical,
-                        'nonforest': nonforest,
-                        'formask': formask})
-        rs[oname] = SimpleExpr(oname, 'tropical + temperate + nonforest')
-        #import pdb; pdb.set_trace()
-        print(rs.tree(oname))
-        data, meta = rs.eval(oname)
+        with rasterio.open(outfn('rcp', f'dasgupta-{oname}-te-{year}.tif')) as temp:
+            temperate = temp.read(1, masked=True)
+        with rasterio.open(outfn('rcp', f'dasgupta-{oname}-tr-{year}.tif')) as trop:
+            tropical = trop.read(1, masked=True)
+        with rasterio.open(outfn('rcp', f'dasgupta-{oname}-nf-{year}.tif')) as nonfor:
+            nonforest = nonfor.read(1, masked=True)
+            meta = nonfor.meta.copy()
+            nodata = nonfor.nodata
+        meta.update({'driver': 'GTiff', 'compress': 'lzw', 'predictor': 3})
+        forest = ma.where(tropical.mask & temperate.mask, nodata,
+                          ma.where(tropical.mask, temperate,tropical))
+        forest = ma.masked_equal(forest, nodata)
+        data = ma.where(forest.mask & nonforest.mask, nodata,
+                        ma.where(~forest.mask & ~nonforest.mask,
+                                 ((forest * formask) +
+                                  (nonforest * (1 - formask))),
+                                 ma.where(forest.mask, nonforest, forest)))
+                        
+        data = ma.masked_equal(data, nodata).astype('float32')
         with rasterio.open(outfn('rcp', f'dasgupta-{oname}-{year}.tif'), 'w',
                            **meta) as dst:
             dst.write(data.filled(), indexes=1)
@@ -335,7 +341,6 @@ def do_combine(oname, years):
 
 def do_other(vname, ssp, year):
     rs = RasterSet(rasters(ssp, year))
-    pdb.set_trace()
     data, meta = rs.eval(vname)
     with rasterio.open(outfn('rcp', f'dasgupta-{vname}-{year}.tif'), 'w',
                        **meta) as dst:

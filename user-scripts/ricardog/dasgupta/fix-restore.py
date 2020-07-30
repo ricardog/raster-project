@@ -58,6 +58,8 @@ def fix_one(infile):
 
 @click.command()
 @click.argument('scenario', type=click.Choice(('sample', 'early', 'late',
+                                               'early_075', 'early_10',
+                                               'early_125',
                                                'late_125', 'late_15',
                                                'late_175', 'late_20',
                                                'late_23', 'late_26',

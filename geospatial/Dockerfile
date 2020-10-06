@@ -1,4 +1,4 @@
-FROM rocker/tidyverse:3.6.2
+FROM rocker/tidyverse:3.6.3
 MAINTAINER Ricardo E. Gonzalez <ricardog@ricardog.com>
 
 RUN apt-get update -y \

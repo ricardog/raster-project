@@ -13,3 +13,4 @@ ipbes-upload
 consolidated
 .Rhistory
 .python-version
+*.tif

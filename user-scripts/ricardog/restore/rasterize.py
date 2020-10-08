@@ -11,7 +11,6 @@ import rasterio
 import rasterio.mask
 import rasterio.features
 
-
 def read_data(shapefile, areaf, landusef):
     raw_shapes = gpd.read_file(shapefile)
     raw_shapes[['Column', 'Row']] = raw_shapes.GRD30.str\
@@ -73,47 +72,6 @@ def to_array(landuse, shapes, lu, shape, xform):
     return
 
 
-def process_lu(landuse, shapes, lu, shape, xform):
-    crs = rasterio.crs.CRS.from_epsg(shapes.crs.to_epsg())
-    nodata = -9999.0
-    lu_rows = landuse[landuse.LandUse == lu]
-    years = sorted(landuse.Year.unique())
-    count = len(years)
-    out = np.empty([count, shape[0], shape[1]], dtype='float32')
-    import pdb; pdb.set_trace()
-    for idx, year in enumerate(years):
-        rows = lu_rows[lu_rows.Year == year]
-        rows = rows.merge(shapes[['Cell', 'TotalArea', 'geometry']], on='Cell')
-        rows['Fraction'] = rows.Area / rows.TotalArea
-        if len(rows) == 0:
-            out[idx, :, :] = nodata
-        else:
-            geos = ((geom, value) for geom, value in zip(rows.geometry,
-                                                         rows.Fraction))
-            geos = tuple(geos)
-            out[idx, :, : ] = rasterio.features.rasterize(geos,
-                                                          out_shape=shape,
-                                                          fill=nodata,
-                                                          transform=xform,
-                                                          default_value=0,
-                                                          dtype='float32')
-    ma_out = ma.masked_equal(out, nodata)
-    meta = {'driver': 'GTiff',
-            'dtype': 'float32',
-            'height': shape[0],
-            'width': shape[1],
-            'count': len(years),
-            'transform': xform,
-            'crs': crs,
-            'compress': 'lzw',
-            'predictor': 3,
-            'nodata': nodata
-    }
-    with rasterio.open(f'{lu}.tif', 'w', **meta) as out_ds:
-        out_ds.write(ma_out, indexes=range(1, count + 1))
-    return
-
-
 @click.group()
 def cli():
     return
@@ -127,37 +85,9 @@ def cli():
 def rasterize(cells, area, land_use, reference):
     cells, land_use = read_data(cells, area, land_use)
     shape, xform = get_xform(cells, reference)
-    for lu in land_use.LandUse.unique():
-        print(f'Processing {lu}')
-        process_lu(land_use, cells, lu, shape, xform)
-    return
-
-
-@cli.command()
-@click.argument('cells', type=click.Path())
-@click.argument('area', type=click.Path(dir_okay=False))
-@click.argument('land-use', type=click.Path(dir_okay=False))
-@click.argument('reference', type=click.Path(dir_okay=False))
-def rast(cells, area, land_use, reference):
-    cells, land_use = read_data(cells, area, land_use)
-    shape, xform = get_xform(cells, reference)
     land_use = land_use.merge(cells[['Cell', 'TotalArea', 'Column', 'Row']],
                               on='Cell')
     land_use['Fraction'] = land_use.Area / land_use.TotalArea
-    for lu in land_use.LandUse.unique():
-        print(f'Processing {lu}')
-        to_array(land_use, cells, lu, shape, xform)
-    return
-
-
-@cli.command()
-@click.argument('cells', type=click.Path())
-@click.argument('area', type=click.Path(dir_okay=False))
-@click.argument('land-use', type=click.Path(dir_okay=False))
-@click.argument('reference', type=click.Path(dir_okay=False))
-def precheck(cells, area, land_use, reference):
-    cells, land_use = read_data(cells, area, land_use)
-    shape, xform = get_xform(cells, reference)
     for lu in land_use.LandUse.unique():
         print(f'Processing {lu}')
         to_array(land_use, cells, lu, shape, xform)

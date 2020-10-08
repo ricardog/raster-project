@@ -24,7 +24,6 @@ COPY --chown=rstudio:rstudio Abundance.ipynb \
 	doit.sh \
 	environment.yml \
 	gen_luh2.py \
-	hpd-project.py \
 	ipbes-project.py \
 	ipbes-summarize.py \
 	ipbes-visualize.py \

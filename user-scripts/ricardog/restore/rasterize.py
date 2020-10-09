@@ -11,6 +11,8 @@ import rasterio
 import rasterio.mask
 import rasterio.features
 
+from projections.utils import outfn
+
 def read_data(shapefile, areaf, landusef):
     raw_shapes = gpd.read_file(shapefile)
     raw_shapes[['Column', 'Row']] = raw_shapes.GRD30.str\
@@ -39,8 +41,6 @@ def to_array(landuse, shapes, lu, shape, xform):
     crs = rasterio.crs.CRS.from_epsg(shapes.crs.to_epsg())
     height = (shapes.Row.max() - shapes.Row.min() + 1)
     width = (shapes.Column.max() - shapes.Column.min() + 1)
-    #height = 720
-    #width = 1440
     rmin = shapes.Row.min()
     cmin = shapes.Column.min()
     nodata = -9999.0
@@ -48,6 +48,9 @@ def to_array(landuse, shapes, lu, shape, xform):
     count = len(years)
     #import pdb; pdb.set_trace()
     out = np.full([count, height, width], nodata, dtype='float32')
+    row = shapes.Row.array - rmin
+    col = shapes.Column.array - cmin
+    out[:, row, col] = 0
     for idx, year in enumerate(years):
         rows = landuse[(landuse.Year == year) & (landuse.LandUse == lu)]
         if len(rows) > 0:
@@ -67,7 +70,8 @@ def to_array(landuse, shapes, lu, shape, xform):
             'predictor': 3,
             'nodata': nodata
     }
-    with rasterio.open(f'{lu}.tif', 'w', **meta) as out_ds:
+    with rasterio.open(outfn('luh2', 'brazil',
+                             f'{lu}.tif'), 'w', **meta) as out_ds:
         out_ds.write(ma_out, indexes=range(1, count + 1))
     return
 

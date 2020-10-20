@@ -192,7 +192,7 @@ def deltas(local, out, subregions):
     names = []
     for s in scenarios:
         ssp, rcp = s.split('_')[0:2]
-        name = '%s / %s' % (ssp, rcp)
+        name = '%s / %s' % (ssp.upper(), rcp.upper())
         names.append(name)
 
     base_url = "http://ipbes.s3.amazonaws.com/weighted/" + \

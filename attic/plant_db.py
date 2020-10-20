@@ -37,7 +37,7 @@ import pdb
 # CREATE INDEX trees_geom_geom_idx ON trees USING GIST (geom);
 
 os.environ['DB_NAME'] = 'trees'
-os.environ['DB_HOST'] = '192.168.0.46'
+os.environ['DB_HOST'] = '192.168.178.63'
 os.environ['DB_USER'] = 'postgis'
 os.environ['PASSWORD'] = 'postgis'
 

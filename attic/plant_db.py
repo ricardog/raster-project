@@ -247,7 +247,7 @@ def generate(table, clause, ref_raster, path, num_workers,
     meta = src.meta.copy()
     meta.update({'driver': 'GTiff', 'dtype': dtype, 'nodata': nodata})
     if 'compress' not in meta:
-      meta.update({'compress': 'lzw', 'predictpr': 2})
+      meta.update({'compress': 'lzw', 'predictor': 3})
 
     # Query DB to find bounding box of all features and use the information
     # to set the bounds of the raster.  This saves query time (empty queries

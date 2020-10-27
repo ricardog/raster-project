@@ -7,24 +7,38 @@ import geopandas as gpd
 import numpy as np
 import numpy.ma as ma
 import pandas as pd
+from pathlib import Path
 import rasterio
 import rasterio.mask
 import rasterio.features
 
-from projections.utils import outfn
+from projections.utils import data_file, outfn
+
+def get_data_file(name):
+    return Path(data_file('brazil-restore', name))
+
 
 def read_data(shapefile, areaf, landusef):
-    raw_shapes = gpd.read_file(shapefile)
+    raw_shapes = gpd.read_file(get_data_file(shapefile))
     raw_shapes[['Column', 'Row']] = raw_shapes.GRD30.str\
                                                     .split(' - ', expand=True)
     raw_shapes.Column = raw_shapes.Column.astype(int)
     raw_shapes.Row = raw_shapes.Row.astype(int)
-    area = pd.read_csv(areaf, header=None)
+    area = pd.read_csv(get_data_file(areaf), header=None)
     area.columns = ['Country', 'Cell', 'TotalArea']
     shapes = raw_shapes.merge(area, right_on='Cell', left_on='Colrow')
-    landuse = pd.read_csv(landusef, header=None)
+    landuse = pd.read_csv(get_data_file(landusef), header=None)
     landuse.columns = ['Country', 'Cell', 'LandUse', 'Year', 'Area']
     return shapes, landuse
+
+
+def get_fname(scenario, lu):
+    fname = outfn('luh2', scenario, f'{lu}.tif')
+    parent = Path(fname).parent
+    if not parent.exists():
+        parent.mkdir()
+    return fname
+
 
 
 def get_xform(shapes, reference):
@@ -33,11 +47,27 @@ def get_xform(shapes, reference):
         img, xform = rasterio.mask.mask(ref, raw, crop=True)
         height = ref.height
         width = ref.width
-        print(height, width)
     return (img.shape[1:], xform)
 
 
-def to_array(landuse, shapes, lu, shape, xform):
+def write(fname, data, xform, crs, years):
+    meta = {'driver': 'GTiff',
+            'dtype': 'float32',
+            'height': data.shape[1],
+            'width': data.shape[2],
+            'count': len(years),
+            'transform': xform,
+            'crs': crs,
+            'compress': 'lzw',
+            'predictor': 3,
+            'nodata': data.fill_value
+    }
+    with rasterio.open(fname, 'w', **meta) as out_ds:
+        out_ds.write(data, indexes=range(1, len(years) + 1))
+    return
+
+
+def to_array(scenario, landuse, shapes, lu, shape, xform):
     crs = rasterio.crs.CRS.from_epsg(shapes.crs.to_epsg())
     height = (shapes.Row.max() - shapes.Row.min() + 1)
     width = (shapes.Column.max() - shapes.Column.min() + 1)
@@ -46,7 +76,6 @@ def to_array(landuse, shapes, lu, shape, xform):
     nodata = -9999.0
     years = sorted(landuse.Year.unique())
     count = len(years)
-    #import pdb; pdb.set_trace()
     out = np.full([count, height, width], nodata, dtype='float32')
     row = shapes.Row.array - rmin
     col = shapes.Column.array - cmin
@@ -59,20 +88,7 @@ def to_array(landuse, shapes, lu, shape, xform):
             value = rows.Fraction.array
             out[idx, row, col] = value
     ma_out = ma.masked_equal(out, nodata)
-    meta = {'driver': 'GTiff',
-            'dtype': 'float32',
-            'height': out.shape[1],
-            'width': out.shape[2],
-            'count': len(years),
-            'transform': xform,
-            'crs': crs,
-            'compress': 'lzw',
-            'predictor': 3,
-            'nodata': nodata
-    }
-    with rasterio.open(outfn('luh2', 'brazil',
-                             f'{lu}.tif'), 'w', **meta) as out_ds:
-        out_ds.write(ma_out, indexes=range(1, count + 1))
+    write(get_fname(scenario, lu), ma_out, xform, crs, years)
     return
 
 
@@ -82,19 +98,20 @@ def cli():
 
 
 @cli.command()
-@click.argument('cells', type=click.Path())
-@click.argument('area', type=click.Path(dir_okay=False))
-@click.argument('land-use', type=click.Path(dir_okay=False))
+@click.argument('shapefile', type=str)
+@click.argument('area', type=str)
+@click.argument('landuse', type=str)
 @click.argument('reference', type=click.Path(dir_okay=False))
-def rasterize(cells, area, land_use, reference):
-    cells, land_use = read_data(cells, area, land_use)
+def rasterize(shapefile, area, landuse, reference):
+    scenario = Path(landuse).stem
+    cells, land_use = read_data(shapefile, area, landuse)
     shape, xform = get_xform(cells, reference)
     land_use = land_use.merge(cells[['Cell', 'TotalArea', 'Column', 'Row']],
                               on='Cell')
     land_use['Fraction'] = land_use.Area / land_use.TotalArea
     for lu in land_use.LandUse.unique():
         print(f'Processing {lu}')
-        to_array(land_use, cells, lu, shape, xform)
+        to_array(scenario, land_use, cells, lu, shape, xform)
     return
 
 

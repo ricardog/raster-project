@@ -83,11 +83,11 @@ def year_index(year, scenario):
     return
 
 
-def globio_layer(layer, scenario):
+def globiom_layer(layer, scenario):
     return outfn('luh2', brazil_dirname(scenario), f'{layer}.tif')
 
 def regrowth(scenario):
-    return Path(globio_layer('Regrowth', scenario)).exists
+    return Path(globiom_layer('Regrowth', scenario)).exists
 
 
 def rasters(ssp, scenario, year):
@@ -97,13 +97,16 @@ def rasters(ssp, scenario, year):
     # Compute land area of each cell
     rasters['carea'] = Raster('carea', luh2_static('carea'))
     rasters['icwtr'] = Raster('icwtr', luh2_static('icwtr'))
-    rasters['land'] = SimpleExpr('land', 'carea * (1 - icwtr)')
+    rasters['land'] = Raster('land', outfn('luh2', 'gpw-land.tif'))
 
     # UN Subregion and UN country code
-    rasters['hpd_ref'] = Raster('hpd_ref', outfn('rcp', 'gluds00ag.tif'))
-    rasters['unSub'] = Raster('unSub', outfn('rcp', 'un_subregions-full.tif'))
-    rasters['un_code'] = Raster('un_codes', outfn('rcp', 'un_codes-full.tif'))
+    rasters['hpd_ref'] = Raster('hpd_ref', outfn('luh2', 'gluds00ag.tif'))
+    rasters['unSub'] = Raster('unSub', outfn('luh2', 'un_subregions-full.tif'))
+    rasters['un_code'] = Raster('un_codes', outfn('luh2', 'un_codes-full.tif'))
 
+    rasters['cube_rt_env_dist'] = SimpleExpr('cube_rt_env_dist', 0)
+    rasters['log_adj_geog_dist'] = SimpleExpr('log_adj_geog_dist', 0)
+    
     # Compute human population density
     if year < 2015:
         raise IndexError(f'year must be greater than 2014 ({year})')
@@ -129,32 +132,32 @@ def rasters(ssp, scenario, year):
                                         'secdi.tif'),
                                   band=bidx)
         rasters['regrowth'] = Raster('regrowth',
-                                     globio_layer('Regrowth', scenario),
+                                     globiom_layer('Regrowth', scenario),
                                      band=bidx)
         rasters['secdy'] = SimpleExpr('secdy', 'regrowth - secdi')
-    
+
     # Land-use layers.  Iterate twice with different prefix; one is for
     # the abundance model the other is for the compositional similarity
     # model.
     for prefix in ('globiom_lu_proj', 'contrast_proj_p_as'):
         rasters[f'{prefix}_cropland'] = Raster(f'{prefix}_cropland',
-                                               globio_layer('Cropland',
+                                               globiom_layer('Cropland',
                                                             scenario),
                                                band=bidx)
         rasters[f'{prefix}_forest'] = Raster(f'{prefix}_forest',
-                                               globio_layer('Forest',
+                                               globiom_layer('Forest',
                                                             scenario),
                                              band=bidx)
         rasters[f'{prefix}_oth_agri'] = Raster(f'{prefix}_oth_agri',
-                                               globio_layer('OthAgri',
+                                               globiom_layer('OthAgri',
                                                             scenario),
                                                band=bidx)
         rasters[f'{prefix}_pasture'] = Raster(f'{prefix}_pasture',
-                                              globio_layer('Pasture',
+                                              globiom_layer('Pasture',
                                                            scenario),
                                                band=bidx)
         rasters[f'{prefix}_plt_for'] = Raster(f'{prefix}_plt_for',
-                                              globio_layer('PltFor',
+                                              globiom_layer('PltFor',
                                                            scenario),
                                                band=bidx)
         rasters[f'{prefix}_urban'] = SimpleExpr(f'{prefix}_urban', 0)
@@ -203,7 +206,7 @@ def do_bii(oname, scenario, years):
                                            brazil_dirname(scenario),
                                            f'restore-{scenario}-cs-{year}.tif')),
                         'ab':  Raster('ab',
-                                      outfn('rcp',
+                                      outfn('luh2',
                                             f'restore-{scenario}-ab-{year}.tif'))
                         })
         #print(rs.tree(oname))
@@ -221,7 +224,7 @@ def do_other(vname, ssp, scenario, year, tree):
         print(rs.tree(vname))
         return
     data, meta = rs.eval(vname, quiet=True)
-    with rasterio.open(outfn('rcp', brazil_dirname(scenario),
+    with rasterio.open(outfn('luh2', brazil_dirname(scenario),
                              f'restore-{scenario}-{vname}-{year}.tif'), 'w',
                        **meta) as dst:
         dst.write(data.filled(), indexes=1)

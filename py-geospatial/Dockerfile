@@ -16,7 +16,8 @@ RUN apt-get -y install python3-pip \
 	tk-dev \
 	libxml2-dev \
 	libxmlsec1-dev \
-	libffi-dev && \
+	libffi-dev
+	gdal-bin && \
 	pip3 install -U pip
 
 ADD --chown=rstudio:rstudio \

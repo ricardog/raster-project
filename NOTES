@@ -1,8 +1,13 @@
-- To start a comntainer image
+- To start a container image
   docker run -it --rm -v /home/ricardog/src/eec/predicts/data:/data:ro -v predicts-data:/out predicts:latest
 
+- To create an NFS-mounted volume for predicts data
+
+  docker volume create --driver local --opt type=nfs --opt o=addr=192.168.178.52,rw,nolock,soft,nfsvers=3 --opt device=:/mnt/Pool1/predicts-data predicts-data
+
+
 - Start the postgis container
-  docker run --name postgis --restart unless-stopped -p 5432:5432 -e POSTGRES_PASSWORD=postgis -e POSTGRES_USER=postgis -e PGDATA=/var/lib/postgresql/data/pgdata -e POSTGIS_ENABLE_OUTDB_RASTERS=1 -e POSTGIS_GDAL_ENABLED_DRIVERS=ENABLE_ALL -v /mnt/gorilla/data/pgdata:/var/lib/postgresql/data/pgdata -v predicts-data:/out -v /mnt/gorilla/old/src/eec/predicts/data:/data -d postgis/postgis:13-3.0
+docker run --name postgis --restart unless-stopped -p 5432:5432 -e POSTGRES_PASSWORD=postgis -e POSTGRES_USER=postgis -e PGDATA=/var/lib/postgresql/data/pgdata -e POSTGIS_ENABLE_OUTDB_RASTERS=1 -e POSTGIS_GDAL_ENABLED_DRIVERS=ENABLE_ALL -v /mnt/gorilla/data/postgres.conf:/etc/postgresql/postgresql.conf -v /mnt/gorilla/data/pgdata:/var/lib/postgresql/data/pgdata -v predicts-data:/out -v /mnt/gorilla/old/src/eec/predicts/data:/data -d postgis/postgis:13-3.0
 
 - Start jupyter notebook server on bonobo
   jupyter notebook --ip 192.168.0.46 --no-browser --ConnectionFileMixin.ip=192.168.0.46
@@ -51,5 +56,5 @@ https://rmgsc.cr.usgs.gov/ecosystems/
 
 - To start qgis docker container
 
-  docker run -v /gorilla/old/src/eec/predicts/data:/data:ro -v predicts-data:/out -p 2200:22 -v /gorilla/data:/datasets:ro -u root qgis:latest
+  docker run -v /mnt/gorilla/old/src/eec/predicts/data:/data:ro -v /mnt/gorilla/data:/datasets:ro -v predicts-data:/out -p 2200:22 -u root qgis:latest
   

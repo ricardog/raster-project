@@ -25,5 +25,32 @@ Ecosystems of the World (TEOW) shapefile.
 
 ** Run
 
-** Summary
+*** Summary
 
+** Mapping
+
+| PREDICTS | MAgPIE                          |
+|----------|---------------------------------|
+
+
+
+PREDICTS MAgPIE
+Annual	tece
+	maiz
+	trce
+	rice_pro
+	soybean
+	rapeseed
+	groundnut
+	sunflower
+	puls_pro
+	potato
+	cassav_sp
+	sugr_beet
+	others
+	cottn_pro
+	foddr
+Perenial	begr
+	betr
+	oilpalm
+	sugar_cane

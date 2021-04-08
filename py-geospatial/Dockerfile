@@ -1,7 +1,7 @@
-FROM geospatial:latest
+FROM geospatial:4.0.0
 MAINTAINER Ricardo E. Gonzalez <ricardog@ricardog.com>
 
-RUN apt-get -y install python-pip \
+RUN apt-get -y install python3-pip \
 	make \
 	build-essential \
 	libssl-dev \
@@ -17,7 +17,7 @@ RUN apt-get -y install python-pip \
 	libxml2-dev \
 	libxmlsec1-dev \
 	libffi-dev && \
-	pip install -U pip
+	pip3 install -U pip
 
 ADD --chown=rstudio:rstudio \
 	https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer \
@@ -33,12 +33,12 @@ RUN export CONFIGURE_OPTS=--enable-shared && \
 	export PATH="${HOME}/.pyenv/bin:$PATH" && \
 	eval "$(pyenv init -)" && \
 	eval "$(pyenv virtualenv-init -)" && \
-	pyenv install 3.6.3 && \
-	pyenv global 3.6.3
+	pyenv install 3.8.6 && \
+	pyenv global 3.8.6
 
 RUN . /home/rstudio/.bashrc && \
 	pip install -U pip && \
 	pip install numpy cython && \
-	pip install gdal==2.1.3 --global-option "build_ext" --global-option="--include-dirs=/usr/include/gdal"
+	pip install gdal==3.0.4 --global-option "build_ext" --global-option="--include-dirs=/usr/include/gdal"
 
 USER root

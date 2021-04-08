@@ -1,9 +1,10 @@
-FROM rocker/tidyverse:3.6.3
+FROM rocker/tidyverse:4.0.0
 MAINTAINER Ricardo E. Gonzalez <ricardog@ricardog.com>
 
-RUN apt-get update -y \
+RUN apt-get update -qq \
 	&& apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
+    gdal-bin \
     lbzip2 \
     libfftw3-dev \
     libgdal-dev \
@@ -14,7 +15,7 @@ RUN apt-get update -y \
     libhdf4-alt-dev \
     libhdf5-dev \
     libjq-dev \
-    liblwgeom-dev \
+    libpq-dev \
     libproj-dev \
     libprotobuf-dev \
     libnetcdf-dev \
@@ -22,11 +23,13 @@ RUN apt-get update -y \
     libsqlite3-dev \
     libssl-dev \
     libudunits2-dev \
+    lsb-release \
     netcdf-bin \
     protobuf-compiler \
+    sqlite3 \
     tk-dev \
     unixodbc-dev
-RUN install2.r --error \
+RUN install2.r --error --skipinstalled \
     BiocManager \
     RColorBrewer \
     RandomFields \

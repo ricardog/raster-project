@@ -1,0 +1,30 @@
+* RESTORE+
+
+** Setup
+
+All but (1) needs to be  run for eac scenario.
+
+#+begin_src shell
+  ## 1. Generate raster with land (in km^2) per grid.
+  OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/land.py
+
+  ## 2. Convert CSV files to rasters.
+  OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/rasterize.py rasterize /mnt/data/restore/brazil/Colrow_Brazil/Colrow_Brazil.shp /mnt/data/restore/brazil/SIMUAREA_COLROW.CSV /mnt/data/restore/brazil/LANDUSE_FC.CSV /mnt/predicts/luh2/un_codes-full.tif
+
+  ## 3. Verify the convertion process (check value of each cell).
+  ./user-scripts/ricardog/restore/rasterize.py check /mnt/predicts/luh2/restore/brazil/LANDUSE_FC/*.tif
+
+  ## 4. Generate age distribution for secondary land-use class.
+  DATA_ROOT=/mnt/data OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/secdi.py
+#+end_src
+
+Also need a road-density layer (which I think came from Katia).  The
+projection script expects a file named *RDlte2_10km-avgerage.tif*.
+
+** Run
+
+To run the projections use the *restore.py* script.
+
+#+begin_src shell
+  DATA_ROOT=/mnt/data OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/restore.py project ab -m /mnt/predicts/models/restore/brazil/2020-10-27/base/ fc 2015
+#+end_src

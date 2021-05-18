@@ -5,8 +5,8 @@
 All but (1) needs to be  run for eac scenario.
 
 #+begin_src shell
-  ## 1. Generate raster with land (in km^2) per grid.
-  OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/land.py
+  ## 1. Download land area per grid cell raster from GOWv4
+  https://sedac.ciesin.columbia.edu/data/set/gpw-v4-land-water-area-rev11
 
   ## 2. Convert CSV files to rasters.
   OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/rasterize.py rasterize /mnt/data/restore/brazil/Colrow_Brazil/Colrow_Brazil.shp /mnt/data/restore/brazil/SIMUAREA_COLROW.CSV /mnt/data/restore/brazil/LANDUSE_FC.CSV /mnt/predicts/luh2/un_codes-full.tif

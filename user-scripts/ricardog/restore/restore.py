@@ -98,7 +98,7 @@ def rasters(ssp, scenario, year):
     # Compute land area of each cell
     rasters['carea'] = Raster('carea', luh2_static('carea'))
     rasters['icwtr'] = Raster('icwtr', luh2_static('icwtr'))
-    rasters['land'] = Raster('land', outfn('luh2', 'land.tif'))
+    rasters['land'] = Raster('land', outfn('luh2', 'gpw-land.tif'))
 
     # UN Subregion and UN country code
     rasters['hpd_ref'] = Raster('hpd_ref', outfn('luh2', 'gluds00ag.tif'))

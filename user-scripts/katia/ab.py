@@ -7,7 +7,7 @@ import os
 import rasterio
 
 from projections.rasterset import RasterSet, Raster
-import projections.predicts as predicts
+from projections.r2py import pythonify
 import projections.r2py.modelr as modelr
 import projections.utils as utils
 
@@ -41,7 +41,7 @@ mask_ds = rasterio.open(mask_file)
 
 # Read Katia's abundance model
 mod = modelr.load('/home/vagrant/katia/models/best_model_abund.rds')
-predicts.predictify(mod)
+pythonify(mod)
 
 # Import standard PREDICTS rasters
 rasters = predicts.rasterset('1km', 'medium', year = 2005)

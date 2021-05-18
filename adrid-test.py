@@ -10,7 +10,7 @@ from rasterio.plot import show
 import matplotlib.pyplot as plt
 
 from projections.rasterset import RasterSet, Raster
-import projections.predicts as predicts
+from projections.r2py import pythonify
 import projections.r2py.modelr as modelr
 
 # Open the mask shape file
@@ -21,7 +21,7 @@ shapes = fiona.open(shp_file)
 # Read Adriana's abundance model (mainland)
 mod = modelr.load(os.path.join(os.environ['MODEL_DIR'],
                                'ab-model.rds'))
-predicts.predictify(mod)
+pythonify(mod)
 
 # Import standard PREDICTS rasters
 rasters = predicts.rasterset('luh5', 'historical', 1990, True)
@@ -49,7 +49,7 @@ del out
 ## Redo the projection using iterative API
 ##
 mod = modelr.load('../models/ab-corrected.rds')
-predicts.predictify(mod)
+pythonify(mod)
 
 # Import standard PREDICTS rasters
 rasters2 = predicts.rasterset('rcp', 'aim', 2020, 'medium')

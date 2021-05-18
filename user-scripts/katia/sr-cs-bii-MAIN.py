@@ -17,7 +17,7 @@ from rasterio.plot import show, show_hist
 
 from projections.rasterset import RasterSet, Raster
 from projections.simpleexpr import SimpleExpr
-import projections.predicts as predicts
+from projections.r2py import pythonify
 import projections.r2py.modelr as modelr
 import projections.utils as utils
 
@@ -29,7 +29,7 @@ mask_ds = rasterio.open(mask_file)
 
 # Richness compositional similarity model with updated PriMin-Urb coefficient
 mod = modelr.load('/home/vagrant/katia/models/updated_compsim_rich.rds')
-predicts.predictify(mod)
+pythonify(mod)
 
 # Import standard PREDICTS rasters
 rasters = predicts.rasterset('1km', 'medium', year = 2005)

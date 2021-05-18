@@ -8,7 +8,7 @@ from rasterio.plot import show
 
 from projections.rasterset import RasterSet, Raster
 from projections.simpleexpr import SimpleExpr
-import projections.predicts as predicts
+from projections.r2py pythonify
 import projections.r2py.modelr as modelr
 import projections.utils as utils
 
@@ -20,7 +20,7 @@ def project(year):
 
   # Read Adriana's abundance model (mainland)
   mod = modelr.load('../tropical-bii/simplifiedAbundanceModel.rds')
-  predicts.predictify(mod)
+  pythonify(mod)
 
   # Import standard PREDICTS rasters
   rasters = predicts.rasterset('1km', '', year, 'medium')

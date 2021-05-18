@@ -2,12 +2,12 @@
 
 from projections.atlas import atlas
 from projections.rasterset import RasterSet, Raster
-import projections.predicts as predicts
+from projections.r2py import pythonify
 import projections.rds as rds
 
 # Read Katia's abundance model (mainland)
 mod = rds.read('../models/ab-mainland.rds')
-predicts.predictify(mod)
+pythonify(mod)
 
 # Import standard PREDICTS rasters
 rasters = predicts.rasterset('rcp', 'aim', 2020, 'medium')

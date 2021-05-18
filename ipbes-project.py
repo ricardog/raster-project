@@ -14,7 +14,7 @@ from rasterio.plot import show
 from projections.rasterset import RasterSet
 from projections.simpleexpr import SimpleExpr
 import projections.r2py.modelr as modelr
-import projections.predicts as predicts
+from projections.r2py import pythonify
 import projections.utils as utils
 
 class YearRangeParamType(click.ParamType):
@@ -82,7 +82,7 @@ projecting a range of years.
   # Read Sam's models
   if model:
     mod = modelr.load(model)
-    predicts.predictify(mod)
+    pythonify(mod)
     rs[mod.output] = mod
 
   if what in ('CompSimAb', 'CompSimSR', 'Abundance', 'Richness'):

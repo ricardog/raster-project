@@ -15,7 +15,7 @@ import urban_py
 import urban
 
 import projections.modelr as modelr
-import projections.predicts as predicts
+from projections.r2py import pythonify
 
 cland_ds = rasterio.open('/out/luh5/cropland-recal.tif')
 hpd_ds = rasterio.open('/out/luh5/gluds00ag-full.tif')
@@ -48,7 +48,7 @@ print("u1: ", timeit.timeit(str3, setup=prelude, number=n))
 print("u2: ", timeit.timeit(str4, setup=prelude, number=n))
 
 mod = modelr.load(os.path.join(outdir, 'ab-model.rds'))
-predicts.predictify(mod)
+pythonify(mod)
 logHPD_rs = np.log(h + 1) / 10.02803
 df = {'cropland': c,
       'cropland_intense': c,

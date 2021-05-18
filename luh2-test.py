@@ -18,9 +18,8 @@ import pdb
 from projections.rasterset import RasterSet, Raster
 from projections.simpleexpr import SimpleExpr
 import projections.r2py.modelr as modelr
-import projections.predicts as predicts
 import projections.utils as utils
-
+from projections.r2py import pythonify
 class YearRangeParamType(click.ParamType):
   name = 'year range'
 
@@ -52,11 +51,11 @@ def project_year(model, model_dir, what, scenario, year):
   # Read Sam's abundance model (forested and non-forested)
   modf = modelr.load(models[0])
   intercept_f = modf.intercept
-  predicts.predictify(modf)
+  pythonify(modf)
 
   modn = modelr.load(models[1])
   intercept_n = modn.intercept
-  predicts.predictify(modn)
+  pythonify(modn)
   
   # Open forested/non-forested mask layer
   fstnf = rasterio.open(utils.luh2_static('fstnf'))

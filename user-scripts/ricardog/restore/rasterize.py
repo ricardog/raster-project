@@ -33,7 +33,7 @@ def read_data(shapefile, areaf, landusef):
 
 
 def get_fname(scenario, lu):
-    fname = outfn('luh2', scenario, f'{lu}.tif')
+    fname = outfn('luh2', 'restore', 'brazil', scenario, f'{lu}.tif')
     parent = Path(fname).parent
     if not parent.exists():
         parent.mkdir()

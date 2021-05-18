@@ -44,12 +44,12 @@ def gen_secdi(scenario):
     handle conversion to a third land-use class.
 
     '''
-    if not Path(outfn('luh2', brazil_dirname(scenario),
+    if not Path(outfn('luh2', 'restore', 'brazil', brazil_dirname(scenario),
                       'Regrowth.tif')).exists():
         print(f'Skiping scenario {scenario}; no regrowth')
         return
     print(f'Aging secondary rasters for scenario {scenario}')
-    with rasterio.open(outfn('luh2', brazil_dirname(scenario),
+    with rasterio.open(outfn('luh2', 'restore', 'brazil', brazil_dirname(scenario),
                              'Regrowth.tif')) as src:
         meta = src.meta
         meta.update({'driver': 'GTiff', 'compress': 'lzw', 'predictor': 3})
@@ -59,7 +59,7 @@ def gen_secdi(scenario):
             out[idx, :, :] = data[0:idx + 1, :, :].sum(axis=0)
         out = rotate(out, 3)
         out.mask = data.mask
-        with rasterio.open(outfn('luh2', brazil_dirname(scenario),
+        with rasterio.open(outfn('luh2', 'restore', 'brazil', brazil_dirname(scenario),
                                  'secdi.tif'), 'w',
                            **meta) as dst:
             dst.write(out.filled())

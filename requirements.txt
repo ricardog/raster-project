@@ -1,1 +1,15 @@
--e .
+bokeh
+cartopy
+cython
+descartes
+geopandas
+geoplot
+jupyter
+pyepsg
+PySAL
+requests
+seaborn
+simplegeneric
+statsmodels
+tzlocal
+

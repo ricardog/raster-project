@@ -2,13 +2,22 @@ from setuptools import setup, find_packages
 
 setup(
     name='projections',
-    author="Ricardo E. Gonzalez",
-    author_email="ricardog@ricardog.com",
-    description="Spatio-temporal projections of R models using python",
     version='0.1',
-    python_requires='>=3.6.3',
+    author="Ricardo E. Gonzalez",
+    author_email="ricardog@itinerisinc.com",
+    description="Spatio-temporal projections of R models using python",
+    python_requires='>=3.8.3',
     url="https://github.com/NaturalHistoryMuseum/raster-project",
-    packages=find_packages(),
+    project_urls={
+        "Bug Tracker": "https://github.com/ricardog/raster-project/issues",
+    },
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
+    package_dir={"": "."},
+    packages=find_packages(where="."),
     include_package_data=True,
     install_requires=[
         'Click',

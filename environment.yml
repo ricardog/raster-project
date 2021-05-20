@@ -9,7 +9,7 @@ dependencies:
   - matplotlib
   - netCDF4
   - pandas
-  - pyparsing
+  - r2py @ git+https://github.com/ricardog/r2py
   - rasterio
   - shapely
   - xlrd

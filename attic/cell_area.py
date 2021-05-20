@@ -41,6 +41,12 @@ def raster_cell_area(src, full=False):
     return cell_area(lats, lons)
 
 
+# An easy way to generate the latitude/longitude indexes
+#
+# gxform = src.transform.to_gdal()
+# lat = np.arange(src.height) * gxform[5] + gxform[3]
+# lon = np.arange(src.width) * gxform[1] + gxform[0]
+
 @click.command()
 @click.argument("source", type=click.Path(dir_okay=False))
 @click.argument("output", type=click.Path(dir_okay=False))

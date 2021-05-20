@@ -8,10 +8,10 @@ from pylru import lrudecorator
 import rasterio
 
 import projections.hpd as hpd
-import projections.r2py.modelr as modelr
 from projections.rasterset import RasterSet, Raster
 from projections.simpleexpr import SimpleExpr
 from projections.utils import data_file, luh2_static, luh2_layer, outfn
+import r2py.modelr as modelr
 
 #import pdb
 SCENARIOS = ('fc', 'fc_no_cra', 'fc_no_sfa', 'idc_amz', 'idc_imp_f3', 'no_fc')

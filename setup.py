@@ -16,17 +16,14 @@ setup(
         'gdal',
         'fiona',
         'geopy',
-        'inflection',
         'joblib',
         'matplotlib',
         'netCDF4',
-        'numba',
         'numpy',
         'pandas',
         'pylru',
-        'pyparsing',
         'rasterio',
-        'rpy2',
+        'r2py @ git+https://github.com/ricardog/r2py',
         'setuptools',
         'shapely',
         'tqdm',
@@ -42,7 +39,6 @@ setup(
 
         nctomp4=projections.scripts.nctomp4:main
         project=projections.scripts.project:cli
-        r2py=projections.scripts.r2py:main
         rview=projections.scripts.rview:main
         tifftomp4=projections.scripts.tifftomp4:main
         tiffcmp=projections.scripts.tiffcmp:main

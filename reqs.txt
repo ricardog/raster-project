@@ -11,10 +11,8 @@ fiona --no-binary fiona
 geopy
 joblib
 jupyter
-inflection
 matplotlib
 netCDF4
-numba
 numpy
 pandas
 pyepsg
@@ -23,7 +21,6 @@ pyparsing
 PySAL
 rasterio --no-binary rasterio
 requests
-rpy2
 rtree
 seaborn
 setuptools

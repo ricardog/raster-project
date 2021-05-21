@@ -6,8 +6,8 @@ import fiona
 import multiprocessing
 from rasterio.plot import show
 
-from projections.rasterset import RasterSet, Raster
-from projections.simpleexpr import SimpleExpr
+from rasterset import RasterSet, Raster, SimpleExpr
+
 from projections.r2py pythonify
 import projections.r2py.modelr as modelr
 import projections.utils as utils

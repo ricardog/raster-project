@@ -8,8 +8,7 @@ from pylru import lrudecorator
 import rasterio
 
 import projections.hpd as hpd
-from projections.rasterset import RasterSet, Raster
-from projections.simpleexpr import SimpleExpr
+from rasterset import RasterSet, Raster, SimpleExpr
 from projections.utils import data_file, luh2_static, luh2_layer, outfn
 import r2py.modelr as modelr
 

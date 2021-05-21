@@ -2,7 +2,7 @@
 
 import argparse
 
-from projections.rasterset import RasterSet, Raster
+from rasterset import RasterSet, Raster, SimpleExpr
 import projections.utils as utils
 
 parser = argparse.ArgumentParser(description="bii.py -- BII projections")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from projections.atlas import atlas
-from projections.rasterset import RasterSet, Raster
+from rasterset import RasterSet, Raster
 from projections.r2py import pythonify
 import projections.rds as rds
 

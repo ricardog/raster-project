@@ -9,7 +9,7 @@ import time
 from rasterio.plot import show
 import matplotlib.pyplot as plt
 
-from projections.rasterset import RasterSet, Raster
+from rasterset import RasterSet, Raster
 from projections.r2py import pythonify
 import projections.r2py.modelr as modelr
 

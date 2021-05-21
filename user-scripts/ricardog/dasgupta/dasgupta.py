@@ -9,8 +9,8 @@ import rasterio
 import projections.hpd as hpd
 import projections.lui as lui
 import projections.r2py.modelr as modelr
-from projections.rasterset import RasterSet, Raster
-from projections.simpleexpr import SimpleExpr
+from rasterset import RasterSet, Raster, SimpleExpr
+
 from projections.utils import data_file, outfn
 
 import pdb

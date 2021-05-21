@@ -15,8 +15,8 @@ import numpy.ma as ma
 import rasterio
 from rasterio.plot import show, show_hist
         
-from projections.rasterset import RasterSet, Raster
-from projections.simpleexpr import SimpleExpr
+from rasterset import RasterSet, Raster, SimpleExpr
+
 from projections.r2py import pythonify
 import projections.r2py.modelr as modelr
 import projections.utils as utils

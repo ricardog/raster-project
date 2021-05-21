@@ -24,7 +24,7 @@ import projections.lu as lu
 import projections.lui as lui
 import projections.utils as utils
 import projections.predicts as predicts
-from projections.rasterset import RasterSet
+from rasterset import RasterSet
 
 class YearRangeParamType(click.ParamType):
   name = 'year range'

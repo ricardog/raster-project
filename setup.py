@@ -21,7 +21,6 @@ setup(
     include_package_data=True,
     install_requires=[
         'Click',
-        'asciitree',
         'gdal',
         'fiona',
         'geopy',
@@ -31,8 +30,9 @@ setup(
         'numpy',
         'pandas',
         'pylru',
-        'rasterio',
         'r2py @ git+https://github.com/ricardog/r2py',
+        'rasterset @ git+https://github.com/ricardog/rasterset',
+        'rasterio',
         'setuptools',
         'shapely',
         'tqdm',
@@ -52,7 +52,4 @@ setup(
         tifftomp4=projections.scripts.tifftomp4:main
         tiffcmp=projections.scripts.tiffcmp:main
     ''',
-    build_ext='''
-        include_dirs=/usr/local/include
-    '''
 )

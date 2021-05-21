@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 from rasterio.plot import show, show_hist
 
 from projections.atlas import atlas
-from projections.rasterset import RasterSet, Raster
-from projections.simpleexpr import SimpleExpr
+from rasterset import RasterSet, Raster, SimpleExpr
+
 import projections.predicts as predicts
 import projections.rds as rds
 

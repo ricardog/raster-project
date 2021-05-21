@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import rasterio
 from rasterio.plot import show
 
-from projections.rasterset import RasterSet
-from projections.simpleexpr import SimpleExpr
+from rasterset import RasterSet, SimpleExpr
+
 import projections.r2py.modelr as modelr
 from projections.r2py import pythonify
 import projections.utils as utils

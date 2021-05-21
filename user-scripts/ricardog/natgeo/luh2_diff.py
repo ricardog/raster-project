@@ -6,9 +6,9 @@ import rasterio
 import time
 
 from projections.utils import data_file, outfn, luh2_states
-from projections.rasterset import RasterSet
-from projections.simpleexpr import SimpleExpr
-from projections.rasterset import Raster
+from rasterset import RasterSet, SimpleExpr
+
+from rasterset import Raster
 
 def __infile(lu, year, path):
     return data_file(path, f'LUH2_{lu}_{year}_1KM.tif')

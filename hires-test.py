@@ -4,7 +4,7 @@ import fiona
 import time
 from rasterio.plot import show, show_hist
 
-from projections.rasterset import RasterSet, Raster
+from rasterset import RasterSet, Raster
 import projections.predicts as predicts
 import projections.modelr as modelr
 from projections.r2py import pythonify

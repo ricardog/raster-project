@@ -6,7 +6,7 @@ import os
 
 import rasterio
 
-from projections.rasterset import RasterSet
+from rasterset import RasterSet
 from projections.r2py import pythonify
 import projections.r2py.modelr as modelr
 import projections.utils as utils

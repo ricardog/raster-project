@@ -9,9 +9,9 @@ import subprocess
 import pdb
 
 import projections.poly as poly
-from projections.rasterset import Raster, RasterSet
+from rasterset import Raster, RasterSet, SimpleExpr
 import projections.reproject as reproj
-from projections.simpleexpr import SimpleExpr
+
 from projections.utils import luh2_dir, luh2_prefix, luh2_scenarios, \
   lui_model_dir, outfn
 

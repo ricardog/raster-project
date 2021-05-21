@@ -4,7 +4,7 @@ import os
 import sys
 
 import rasterio
-from projections.rasterset import RasterSet
+from rasterset import RasterSet
 import projections.predicts as predicts
 import projections.utils as utils
 

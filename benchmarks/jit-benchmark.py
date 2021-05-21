@@ -6,7 +6,7 @@ import rasterio
 import sys
 import timeit
 
-outdir = 'out/_d5ed9724c6cb2c78b59707f69b3044e6/'
+outdir = "out/_d5ed9724c6cb2c78b59707f69b3044e6/"
 sys.path.append(outdir)
 import cropland_py
 import cropland
@@ -17,9 +17,9 @@ import urban
 import projections.modelr as modelr
 from projections.r2py import pythonify
 
-cland_ds = rasterio.open('/out/luh5/cropland-recal.tif')
-hpd_ds = rasterio.open('/out/luh5/gluds00ag-full.tif')
-unsub_ds = rasterio.open('/out/luh5/un_subregions-full.tif')
+cland_ds = rasterio.open("/out/luh5/cropland-recal.tif")
+hpd_ds = rasterio.open("/out/luh5/gluds00ag-full.tif")
+unsub_ds = rasterio.open("/out/luh5/un_subregions-full.tif")
 
 unsub = unsub_ds.read(1, masked=True)
 hpd = hpd_ds.read(1, masked=True)
@@ -47,38 +47,40 @@ print("c2: ", timeit.timeit(str2, setup=prelude, number=n))
 print("u1: ", timeit.timeit(str3, setup=prelude, number=n))
 print("u2: ", timeit.timeit(str4, setup=prelude, number=n))
 
-mod = modelr.load(os.path.join(outdir, 'ab-model.rds'))
+mod = modelr.load(os.path.join(outdir, "ab-model.rds"))
 pythonify(mod)
 logHPD_rs = np.log(h + 1) / 10.02803
-df = {'cropland': c,
-      'cropland_intense': c,
-      'cropland_light': c,
-      'cropland_minimal': c,
-      'logHPD_rs': logHPD_rs,
-      'pasture': c,
-      'pasture_intense': c,
-      'pasture_light': c,
-      'pasture_minimal': c,
-      'plantation_pri': c,
-      'plantation_pri_intense': c,
-      'plantation_pri_light': c,
-      'plantation_pri_minimal': c,
-      'primary_intense': c,
-      'primary_light': c,
-      'secondary': c,
-      'secondary_light': c,
-      'secondary_minimal': c,
-      'urban': c,
-      'urban_intense': c,
-      'urban_minimal': c}
+df = {
+    "cropland": c,
+    "cropland_intense": c,
+    "cropland_light": c,
+    "cropland_minimal": c,
+    "logHPD_rs": logHPD_rs,
+    "pasture": c,
+    "pasture_intense": c,
+    "pasture_light": c,
+    "pasture_minimal": c,
+    "plantation_pri": c,
+    "plantation_pri_intense": c,
+    "plantation_pri_light": c,
+    "plantation_pri_minimal": c,
+    "primary_intense": c,
+    "primary_light": c,
+    "secondary": c,
+    "secondary_light": c,
+    "secondary_minimal": c,
+    "urban": c,
+    "urban_intense": c,
+    "urban_minimal": c,
+}
 mod.eval(df)
 
 str3 = "out = mod.eval(df)"
 prelude = "from __main__ import df, mod"
 print("a: ", timeit.timeit(str3, setup=prelude, number=n))
 
-#print(cland.flags)
+# print(cland.flags)
 
-#ds = gdal.Open('cropland-recal.tif')
-#data = ds.GetRasterBand(1).ReadAsArray()
-#print(data.flags)
+# ds = gdal.Open('cropland-recal.tif')
+# data = ds.GetRasterBand(1).ReadAsArray()
+# print(data.flags)

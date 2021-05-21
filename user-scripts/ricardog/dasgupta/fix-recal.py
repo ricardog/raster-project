@@ -7,16 +7,17 @@ from pathlib import Path
 import os
 import rasterio
 
+
 def fix_one(infile, land_file):
     path = Path(infile)
-    ofile = Path(path.parent, path.stem + '-fix' + path.suffix)
+    ofile = Path(path.parent, path.stem + "-fix" + path.suffix)
     print(infile, ofile)
     with rasterio.open(land_file) as ds:
         land = ds.read(1, masked=True)
     with rasterio.open(infile) as src:
         meta = src.meta.copy()
-        meta.update({'driver': 'GTiff', 'compress': 'lzw', 'predictor': 3})
-        with rasterio.open(ofile, 'w', **meta) as dst:
+        meta.update({"driver": "GTiff", "compress": "lzw", "predictor": 3})
+        with rasterio.open(ofile, "w", **meta) as dst:
             data = src.read(1, masked=True)
             data[np.where(~land.mask & data.mask)] = 0
             dst.write(data, indexes=1)
@@ -24,14 +25,15 @@ def fix_one(infile, land_file):
 
 
 @click.command()
-@click.argument('land-file', type=click.Path(dir_okay=False))
+@click.argument("land-file", type=click.Path(dir_okay=False))
 def fix(land_file):
-    outdir = os.environ['OUTDIR'] + '/rcp'
-    for path in filter(lambda p: fnmatch(p.name, '*-recal.tif'),
-                       Path(outdir).iterdir()):
+    outdir = os.environ["OUTDIR"] + "/rcp"
+    for path in filter(
+        lambda p: fnmatch(p.name, "*-recal.tif"), Path(outdir).iterdir()
+    ):
         fix_one(path, land_file)
     return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     fix()

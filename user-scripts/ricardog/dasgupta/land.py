@@ -6,16 +6,24 @@ import numpy.ma as ma
 import rasterio
 from rasterio.plot import show
 
+
 def doit(in_file, out_file):
     nodata = -9999.0
-    with rasterio.open(f'netcdf:{in_file}:crop') as crop_ds:
+    with rasterio.open(f"netcdf:{in_file}:crop") as crop_ds:
         meta = crop_ds.meta.copy()
-    meta.update({'driver': 'GTiff', 'compress': 'lzw', 'predictor': 3,
-                 'count': 1, 'nodata': nodata, 'dtype': 'float32'})
+    meta.update(
+        {
+            "driver": "GTiff",
+            "compress": "lzw",
+            "predictor": 3,
+            "count": 1,
+            "nodata": nodata,
+            "dtype": "float32",
+        }
+    )
     with Dataset(in_file) as src:
-        with rasterio.open(out_file, 'w', **meta) as dst:
-            land = np.full((dst.height, dst.width),
-                           fill_value=0, dtype='float32')
+        with rasterio.open(out_file, "w", **meta) as dst:
+            land = np.full((dst.height, dst.width), fill_value=0, dtype="float32")
             for layer in src.variables:
                 print(layer)
                 if len(src.variables[layer].shape) != 3:
@@ -28,8 +36,8 @@ def doit(in_file, out_file):
     return
 
 
-if __name__ == '__main__':
-    doit('/Users/ricardog/src/eec/data/vivid/sample/spatial_files/cell.land_0.5.nc',
-         'land.tif')
-
-        
+if __name__ == "__main__":
+    doit(
+        "/Users/ricardog/src/eec/data/vivid/sample/spatial_files/cell.land_0.5.nc",
+        "land.tif",
+    )

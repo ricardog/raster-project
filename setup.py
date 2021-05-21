@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='projections',
-    version='0.1',
+    name="projections",
+    version="0.1",
     author="Ricardo E. Gonzalez",
     author_email="ricardog@itinerisinc.com",
     description="Spatio-temporal projections of R models using python",
-    python_requires='>=3.8.3',
+    python_requires=">=3.8.3",
     url="https://github.com/NaturalHistoryMuseum/raster-project",
     project_urls={
         "Bug Tracker": "https://github.com/ricardog/raster-project/issues",
@@ -20,25 +20,25 @@ setup(
     packages=find_packages(where="."),
     include_package_data=True,
     install_requires=[
-        'Click',
-        'gdal',
-        'fiona',
-        'geopy',
-        'joblib',
-        'matplotlib',
-        'netCDF4',
-        'numpy',
-        'pandas',
-        'pylru',
-        'r2py @ git+https://github.com/ricardog/r2py',
-        'rasterset @ git+https://github.com/ricardog/rasterset',
-        'rasterio',
-        'setuptools',
-        'shapely',
-        'tqdm',
-        'xlrd',
+        "Click",
+        "gdal",
+        "fiona",
+        "geopy",
+        "joblib",
+        "matplotlib",
+        "netCDF4",
+        "numpy",
+        "pandas",
+        "pylru",
+        "r2py @ git+https://github.com/ricardog/r2py",
+        "rasterset @ git+https://github.com/ricardog/rasterset",
+        "rasterio",
+        "setuptools",
+        "shapely",
+        "tqdm",
+        "xlrd",
     ],
-    entry_points='''
+    entry_points="""
         [console_scripts]
         extract_values=projections.scripts.extract_values:main
         gen_hyde=projections.scripts.gen_hyde:main
@@ -51,5 +51,5 @@ setup(
         rview=projections.scripts.rview:main
         tifftomp4=projections.scripts.tifftomp4:main
         tiffcmp=projections.scripts.tiffcmp:main
-    ''',
+    """,
 )

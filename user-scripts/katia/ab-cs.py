@@ -7,10 +7,9 @@ import os
 
 import rasterio
 
-from rasterset import RasterSet, SimpleExpr
-from projections.r2py import pythonify
-import projections.r2py.modelr as modelr
-import projections.utils as utils
+from projections import predicts,  utils
+from r2py import modelr, pythonify
+from rasterset import RasterSet
 
 parser = argparse.ArgumentParser(
     description="ab-cs.py -- abundance-based " "compositional similarity projections"

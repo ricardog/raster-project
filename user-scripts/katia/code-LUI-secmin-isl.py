@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 
 import rasterio
+
+from projections import predicts, utils
 from rasterset import RasterSet
-import projections.predicts as predicts
-import projections.utils as utils
 
 # Import standard PREDICTS rasters
 rasters = predicts.rasterset("1km", "medium", year=2005)

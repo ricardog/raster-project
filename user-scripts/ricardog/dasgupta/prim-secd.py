@@ -8,8 +8,6 @@ import rasterio.warp as rwarp
 from projections.utils import data_file, luh2_states
 from attic.cell_area import raster_cell_area
 
-import pdb
-
 
 def calc_crs(src):
     if src.crs is None or src.crs == "":
@@ -150,8 +148,6 @@ def vivid(scenario, scene):
     other = rasterio.open(f"{vivid_dir}/other.tif")
     secdf = rasterio.open(f"{vivid_dir}/secdforest.tif")
     primf = rasterio.open(f"{vivid_dir}/primforest.tif")
-
-    carea = raster_cell_area(other) / 1e10
 
     nodata = -9999.0
     years = vivid_years(dirname)

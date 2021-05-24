@@ -11,8 +11,6 @@ with rasterio.open(iucn_dir + "/Richness_all.tif") as rich_ds:
         data = rich_ds.read(1, masked=True)
         icwtr = icwtr_ds.read(1, masked=True)
 data.mask = np.logical_or(icwtr.mask, icwtr == 1)
-import pdb
 
-pdb.set_trace()
 with rasterio.open(iucn_dir + "/richness-land.tif", "w", **meta) as out:
     out.write(data.filled(), indexes=1)

@@ -6,9 +6,7 @@ import numpy as np
 import numpy.ma as ma
 import pandas as pd
 import rasterio
-from rasterio.plot import show
 
-import pdb
 
 import projections.utils as utils
 

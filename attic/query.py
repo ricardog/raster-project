@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
-from affine import Affine
 import click
-import collections
 import concurrent.futures
 import numpy as np
 import numpy.ma as ma
@@ -10,26 +8,24 @@ import os
 import psycopg2
 import psycopg2.pool
 import rasterio
-from rasterio.plot import show
 from rasterio.warp import calculate_default_transform
 import re
 import shapely.wkb
-import sys
 import time
 
 import pdb
 
 #
 # To create the DB:
-# CREATE DATABASE groads WITH ENCODING='UTF8' LC_CTYPE='en_US.UTF-8' LC_COLLATE='en_US.UTF-8' OWNER=vagrant TEMPLATE=template0 CONNECTION LIMIT=-1;
+# CREATE DATABASE groads WITH ENCODING='UTF8' LC_CTYPE='en_US.UTF-8' LC_COLLATE='en_US.UTF-8' OWNER=vagrant TEMPLATE=template0 CONNECTION LIMIT=-1;  # noqa E501
 #
 # To insert roads data into database
-# ogr2ogr -f "PostgreSQL" PG:"host=hostname port=5432 dbname=groads user=username password=passwd" groads1.0/groads-v1-global-gdb/gROADS_v1.gdb Global_Roads
+# ogr2ogr -f "PostgreSQL" PG:"host=hostname port=5432 dbname=groads user=username password=passwd" groads1.0/groads-v1-global-gdb/gROADS_v1.gdb Global_Roads  # noqa E501
 #
 # To create the index
 # CREATE INDEX global_roads_gidx ON global_roads USING GIST (wkb_geometry);
 #
-#
+
 os.environ["DB_NAME"] = "groads"
 os.environ["DB_HOST"] = "192.168.0.155"
 os.environ["DB_USER"] = "vagrant"
@@ -129,8 +125,9 @@ def put(array, data):
     v = tuple(map(lambda x: 0.0 if x[2] < 1 else x[2] / 1000, data))
     try:
         idx = np.ravel_multi_index((y, x), array.shape)
-    except Exception as e:
+    except (TypeError, ValueError) as e:
         pdb.set_trace()
+        print(e)
         pass
     np.put(array, idx, v)
 

@@ -2,7 +2,6 @@
 
 import subprocess
 import sys
-import time
 import timeit
 import rasterio
 
@@ -19,7 +18,7 @@ def read_raster(raster, x_block_size, y_block_size):
             for x in range(0, width, x_block_size):
                 x_end = min(x + x_block_size, width)
                 array = src.read(1, window=((y, y_end), (x, x_end)))
-                out = poly.poly(
+                _ = poly.poly(
                     array.reshape(-1),
                     [3, 1],
                     [44840.0, 1941.85401726, 58.0508825943, 1.85514376267],

@@ -4,18 +4,12 @@ import rasterio
 
 import click
 from copy import copy
-import itertools
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 import os
 import pandas as pd
 from pylru import lrudecorator
-from rasterio.plot import show
-import re
-
-import pdb
 
 import projections.utils as utils
 
@@ -132,7 +126,6 @@ def do_plots(infiles, band, reference, npp, log):
                 maps.append(data)
                 titles.append(" ".join(scenario.upper().split("_")))
 
-        title = u"Fractional abundance gain or loss 1950 — 2010"
         palette = copy(plt.cm.viridis)
         palette.set_over("b", 1.0)
         palette.set_under("r", 1.0)
@@ -149,7 +142,7 @@ def do_plots(infiles, band, reference, npp, log):
             for ax in row:
                 # ax.axis('off')
                 ax.set_title(titles[idx])
-                img = ax.imshow(
+                _ = ax.imshow(
                     maps[idx] / refs[idx],
                     cmap=palette,
                     vmin=0.75,

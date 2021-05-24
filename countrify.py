@@ -325,6 +325,8 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
     area = None
     if npp:
         npp_ds = rasterio.open(npp)
+    if vsr:
+        vsr_ds = rasterio.open(vsr)
     with rasterio.open(country_file) as cc_ds:
         for arg in infiles:
             with rasterio.open(arg) as src:
@@ -392,7 +394,6 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
         below = ma.sum(area[b])
         within = ma.sum(area[w])
         total = ma.sum(area)
-        unaccounted = ma.sum(area[ratio.mask != area.mask])
         print(
             "Area: %6.4f / %6.4f / %6.4f"
             % (above / total, below / total, within / total)
@@ -457,7 +458,7 @@ def countrify(infiles, band, country_file, npp, vsr, mp4, log):
         title = u"Abundance ratio 2014 / 1950"
         ax2.set_title(title)
         ax2.axis("off")
-        img = plt.imshow(
+        _ = plt.imshow(
             maps[-1] / maps[0], cmap=palette, vmin=0.75, vmax=1.05, extent=extent
         )
         plt.colorbar(orientation="horizontal")
@@ -521,9 +522,9 @@ def export(infiles, band, country_file, npp, vsr, out):
     if vsr:
         df["vsr_mean"] = scale_res[:, 2]
 
-    ##
-    ## Fix a few mising FIPS codes.
-    ##
+    #
+    # Fix a few mising FIPS codes.
+    #
     df.loc[df.name == "South Sudan", "fips"] = "OD"
     df.loc[df.name == "Curaçao", "fips"] = "UC"
     df.loc[df.name == "Åland Islands", "fips"] = "AX"  # ISO 3166 code
@@ -550,21 +551,21 @@ def export(infiles, band, country_file, npp, vsr, out):
         prim_df = prim_df.apply(pd.to_numeric)
         merged = df.merge(prim_df, how="left", left_index=True, right_index=True)
 
-    ##
-    ## Read GDP data.
-    ## Source: https://www.rug.nl/ggdc/historicaldevelopment/maddison/
-    ## For this source I had to slightly massage the data (see the
-    ## cleanup-maddison.py script) which extracts data since 1950 and
-    ## adds a FIPS attribute to each country.
-    ##
+    #
+    # Read GDP data.
+    # Source: https://www.rug.nl/ggdc/historicaldevelopment/maddison/
+    # For this source I had to slightly massage the data (see the
+    # cleanup-maddison.py script) which extracts data since 1950 and
+    # adds a FIPS attribute to each country.
+    #
     merged2 = merged.merge(
         gdp_df().add_prefix("GDP_"), how="left", left_on="fips", right_index=True
     )
 
-    ##
-    ## Read Rule of Law data (World Justice Project).
-    ## Source: http://data.worldjusticeproject.org/#table
-    ##
+    #
+    # Read Rule of Law data (World Justice Project).
+    # Source: http://data.worldjusticeproject.org/#table
+    #
     wjp_attrs = [
         "WJP Rule of Law Index: Overall Score",
         "Factor 1: Constraints on Government Powers",
@@ -580,11 +581,11 @@ def export(infiles, band, country_file, npp, vsr, out):
     wjp_data[wjp_attrs] = wjp_data[wjp_attrs].apply(pd.to_numeric)
     merged3 = merged2.merge(wjp_data, how="left", left_on="fips", right_index=True)
 
-    ##
-    ## Read human population density data and compute
-    ## human population (per year).
-    ## Source: projections
-    ##
+    #
+    # Read human population density data and compute
+    # human population (per year).
+    # Source: projections
+    #
     hp_stk = []
     years = []
     with rasterio.open(country_file) as cc_ds:
@@ -604,10 +605,10 @@ def export(infiles, band, country_file, npp, vsr, out):
         merged4 = merged3.merge(hp_df, how="left", left_index=True, right_index=True)
         merged4["CID"] = merged4.index
 
-    ##
-    ## Read Energy consumption data.
-    ## Source: https://www.eia.gov/beta/international/
-    ##
+    #
+    # Read Energy consumption data.
+    # Source: https://www.eia.gov/beta/international/
+    #
     energy = energy_c_df()
     energy.rename(
         columns=dict((x, "BTU_" + x) for x in energy.columns[2:]), inplace=True
@@ -615,10 +616,10 @@ def export(infiles, band, country_file, npp, vsr, out):
     del energy["Units"]
     merged5 = merged4.merge(energy, how="left", left_on="name", right_on="Country")
 
-    ##
-    ## Combine energy consumption and human population into
-    ## energy consumption per capita.
-    ##
+    #
+    # Combine energy consumption and human population into
+    # energy consumption per capita.
+    #
     hp_cols = [col for col in merged5.columns if "HP_" in col]
     hp_years = [int(x[-4:]) for x in hp_cols]
     btu_cols = [col for col in merged5.columns if "BTU_" in col]
@@ -631,10 +632,10 @@ def export(infiles, band, country_file, npp, vsr, out):
             merged5["BTU_" + yy].astype(float) * 1e6 / merged5["HP_" + yy]
         )
 
-    ##
-    ## Read economic complexity index (ECI) data and add it to DF.
-    ## Source: https://atlas.media.mit.edu/en/
-    ##
+    #
+    # Read economic complexity index (ECI) data and add it to DF.
+    # Source: https://atlas.media.mit.edu/en/
+    #
     cnames = cnames_df()
     eci = pd.read_csv(utils.eci_csv())
     eciw = eci.pivot(index="Country", values="ECI", columns="Year")
@@ -707,20 +708,20 @@ def export2(infiles, band, country_file, gdp, scale, out):
     if scale and "vsr" in scale:
         df["vsr_mean"] = scale_res[:, 2]
 
-    ##
-    ## Fix a few mising FIPS codes.
-    ##
+    #
+    # Fix a few mising FIPS codes.
+    #
     df.loc[df.name == "South Sudan", "fips"] = "OD"
     df.loc[df.name == "Curaçao", "fips"] = "UC"
     df.loc[df.name == "Åland Islands", "fips"] = "AX"  # ISO 3166 code
 
-    ##
-    ## Read GDP data.
-    ## Source: https://www.rug.nl/ggdc/historicaldevelopment/maddison/
-    ## For this source I had to slightly massage the data (see the
-    ## cleanup-maddison.py script) which extracts data since 1950 and
-    ## adds a FIPS attribute to each country.
-    ##
+    #
+    # Read GDP data.
+    # Source: https://www.rug.nl/ggdc/historicaldevelopment/maddison/
+    # For this source I had to slightly massage the data (see the
+    # cleanup-maddison.py script) which extracts data since 1950 and
+    # adds a FIPS attribute to each country.
+    #
     my_gdp = gdp_df(gdp).add_prefix("GDP_")
     my_gdp = my_gdp.rolling(5, min_periods=1, axis=1).mean()
     merged = df.merge(my_gdp, how="inner", left_on="fips", right_index=True)
@@ -796,7 +797,6 @@ def country_timeline(infiles, band, country_file, npp, out):
     stack = []
     maps = []
     extent = None
-    extent_inset = None
     area = None
     if npp:
         npp_ds = rasterio.open(npp)

@@ -35,7 +35,7 @@ def main(output, input, reference):
         xl = round(win.col_off)
         xh = round(win.col_off + win.width)
         out[yl:yh, xl:xh] = np.where(
-            src_data.mask == False, src_data, ref_data[yl:yh, xl:xh]
+            src_data.mask == False, src_data, ref_data[yl:yh, xl:xh]    # noqa E712
         )
         out.mask = np.logical_or(
             ref_data.mask, np.where(ref_data >= (1.0 - epsilon), True, False)

@@ -9,7 +9,7 @@ import pandas as pd
 def cname_to_fips(name, df):
     def rematch(regexp, name):
         if isinstance(regexp, str):
-            return re.search(regexp, name, re.I) != None
+            return re.search(regexp, name, re.I) is not None
         return False
 
     def cleanup(index):

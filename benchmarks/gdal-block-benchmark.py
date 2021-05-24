@@ -6,10 +6,11 @@ import timeit
 
 try:
     import gdal
-except:
+except ImportError:
     from osgeo import gdal
 
 import projections.poly as poly
+
 
 # Function to read the raster as arrays for the chosen block size.
 def read_raster(raster, x_block_size, y_block_size):

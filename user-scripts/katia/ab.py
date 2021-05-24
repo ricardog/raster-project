@@ -7,9 +7,8 @@ import os
 import rasterio
 
 from rasterset import RasterSet, Raster, SimpleExpr
-from projections.r2py import pythonify
-import projections.r2py.modelr as modelr
-import projections.utils as utils
+from r2py import modelr, pythonify
+from projections import predicts, utils
 
 RD_DIST_MIN = 0
 RD_DIST_MAX = 195274.3
@@ -63,8 +62,8 @@ rasters["plantation_pri_minimal"] = 0
 rasters["plantation_pri_light"] = 0
 rasters["plantation_pri_intense"] = 0
 
-## If CLIP is true, limit the predictor variable values to the max seen
-## when fitting the model
+# If CLIP is true, limit the predictor variable values to the max seen
+# when fitting the model
 if args.clip:
     rasters["clip_hpd"] = "clip(hpd_ref, %f, %f)" % (HPD_MIN, HPD_MAX)
 else:
@@ -75,20 +74,20 @@ else:
 # same values we use if not, manually create logHPD.rs
 rasters["logHPD_rs"] = "scale(log(clip_hpd + 1), 0.0, 1.0, 0.0, 10.02087)"
 
-## I'm setting up min and max log values to rescale
+# I'm setting up min and max log values to rescale
 
 # Same is true for logDistRd_rs
 rasters["DistRd"] = Raster(
     "DistRd", os.path.join(utils.data_root(), "1km/rddistwgs.tif")
-)  ###Use new raster
-## If args.clip is true, limit the predictor variable values to the max seen
-## when fitting the model
+)  # ## Use new raster
+# If args.clip is true, limit the predictor variable values to the max seen
+# when fitting the model
 if args.clip:
     rasters["clipDistRd"] = "clip(DistRd, %f, %f)" % (RD_DIST_MIN, RD_DIST_MAX)
 else:
     rasters["clipDistRd"] = "DistRd"
 rasters["logDistRd_rs"] = "scale(log(clipDistRd + 100), 0.0, 1.0, -1.120966, 12.18216)"
-###Added +100 to DistRd to deal with  zero values
+# ## Added +100 to DistRd to deal with  zero values
 
 # set up the rasterset, cropping to mainlands
 rs = RasterSet(rasters, mask=mask_ds, maskval=0, crop=True)
@@ -104,7 +103,7 @@ print("intercept: %.5f" % intercept)
 if args.mainland:
     assert math.isclose(intercept, 0.67184, rel_tol=0.001)
 else:
-    ## FIXME: Replace RHS with the R calculated value
+    # FIXME: Replace RHS with the R calculated value
     assert math.isclose(intercept, 0.7270164, rel_tol=0.001)
 
 # evaluate the model

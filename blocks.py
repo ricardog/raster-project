@@ -9,7 +9,6 @@ import rasterio.mask
 import pandas as pd
 import sys
 
-import pdb
 
 shp_file = "/Users/ricardog/src/eec/data/from-adriana/tropicalforests.shp"
 shp_file = "/Users/ricardog/src/eec/predicts/playground/tmp/topical-band34-24.shp"

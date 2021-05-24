@@ -5,8 +5,6 @@ import os
 from pathlib import Path
 import rasterio
 
-import pdb
-
 
 def fix_one(infile):
     path = Path(infile)

@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import numpy as np
 import numpy.ma as ma
+import os
+
 
 palette = copy(plt.cm.Greens)
 palette.set_over("r", 1.0)

@@ -1,26 +1,11 @@
 #!/usr/bin/env python
 
-import time
-
-import fiona
-import multiprocessing
-from rasterio.plot import show
-import math
 import os
-
-import click
-
-# import matlibplot.pyplot as plt
-import numpy as np
-import numpy.ma as ma
 import rasterio
-from rasterio.plot import show, show_hist
 
+from r2py import pythonify, modelr
+from projections import predicts, utils
 from rasterset import RasterSet, Raster, SimpleExpr
-
-from projections.r2py import pythonify
-import projections.r2py.modelr as modelr
-import projections.utils as utils
 
 RD_DIST_MIN = 0
 RD_DIST_MAX = 195274.3
@@ -52,29 +37,29 @@ rasters["plantation_pri_minimal"] = SimpleExpr("plantation_pri_minimal", "0")
 rasters["plantation_pri_light"] = SimpleExpr("plantation_pri_light", "0")
 rasters["plantation_pri_intense"] = SimpleExpr("plantation_pri_intense", "0")
 
-## If CLIP is true, limit the predictor variable values to the max seen
-## when fitting the model
+# If CLIP is true, limit the predictor variable values to the max seen
+# when fitting the model
 if CLIP:
     rasters["clip_hpd"] = SimpleExpr(
         "clip_hpd", "clip(hpd_ref, %f, %f)" % (HPD_MIN, HPD_MAX)
     )
 else:
     rasters["clip_hpd"] = SimpleExpr("clip_hpd", "hpd_ref")
-###log values and then rescale them 0 to 1
+# ### log values and then rescale them 0 to 1
 # we need to check whether the logHPD.rs automatically produced uses the
 # same values we use if not, manually create logHPD.rs
 rasters["logHPD_rs"] = SimpleExpr(
     "logHPD_rs", "scale(log(clip_hpd + 1), 0.0, 1.0, 0.0, 10.02087)"
 )
 
-## I'm setting up min and max log values to rescale
+# I'm setting up min and max log values to rescale
 
 # Same is true for logDistRd_rs
 rasters["DistRd"] = Raster(
     "DistRd", os.path.join(utils.data_root(), "1km/rddistwgs.tif")
-)  ###Use new raster
-## If CLIP is true, limit the predictor variable values to the max seen
-## when fitting the model
+)  # ## Use new raster
+# If CLIP is true, limit the predictor variable values to the max seen
+# when fitting the model
 if CLIP:
     rasters["clipDistRd"] = SimpleExpr(
         "clipDistRd", "clip(DistRd, %f, %f)" % (RD_DIST_MIN, RD_DIST_MAX)
@@ -84,18 +69,21 @@ else:
 rasters["logDistRd_rs"] = SimpleExpr(
     "logDistRd_rs", "scale(log(clipDistRd + 100)," "0.0, 1.0, -1.120966, 12.18216)"
 )
-###Added +100 to DistRd to deal with  zero values
+# ## Added +100 to DistRd to deal with  zero values
 
 # set up the rasterset, cropping to mainlands
 rs = RasterSet(rasters, mask=mask_ds, maskval=0, crop=True)
 # if you're projecting the whole world, use this code instead
 # rs = RasterSet(rasters)
 
-# evaluate the model
+# Evaluate the model
 # model is square root abundance so square it
 
-# note that the intercept value has been calculated for the baseline land use when all other variables are held at 0
-####Therefore I calculated separatedly an intercept where DistRd is set to the max value=1
+# Note that the intercept value has been calculated for the baseline
+# land use when all other variables are held at 0.
+
+# *** Therefore I calculated separatedly an intercept where DistRd is set
+# to the max value=1
 
 rs[mod.output] = mod
 # rs['output'] = SimpleExpr('output', '(pow(%s, 2))' % (mod.output))

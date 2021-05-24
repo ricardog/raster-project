@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
 from copy import copy
-import matplotlib
 import netCDF4
-import numpy
 
+import matplotlib
 matplotlib.use("Agg")
-import matplotlib.animation as animation
-import matplotlib.colors as colors
-import matplotlib.pyplot as plt
+import matplotlib.animation as animation                    # noqa E402
+import matplotlib.colors as colors                          # noqa E402
+import matplotlib.pyplot as plt                             # noqa E402
 
 FFMpegWriter = animation.writers["ffmpeg"]
 metadata = dict(

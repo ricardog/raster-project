@@ -6,16 +6,12 @@ import rasterio
 import sys
 import timeit
 
-outdir = "out/_d5ed9724c6cb2c78b59707f69b3044e6/"
-sys.path.append(outdir)
-import cropland_py
-import cropland
-
-import urban_py
-import urban
-
 import projections.modelr as modelr
 from projections.r2py import pythonify
+
+outdir = "out/_d5ed9724c6cb2c78b59707f69b3044e6/"
+sys.path.append(outdir)
+
 
 cland_ds = rasterio.open("/out/luh5/cropland-recal.tif")
 hpd_ds = rasterio.open("/out/luh5/gluds00ag-full.tif")
@@ -40,7 +36,7 @@ str3 = "out2 = urban_py.intense(c, h, u)"
 str4 = "out = urban.intense(c, h, u)"
 n = 10
 
-prelude = "from __main__ import c, h, u, cropland_py, cropland, urban_py, urban"
+prelude = "from __main__ import c, h, u; import cropland_py, cropland, urban_py, urban"
 print("c1: ", timeit.timeit(str1, setup=prelude, number=n))
 print("c2: ", timeit.timeit(str2, setup=prelude, number=n))
 

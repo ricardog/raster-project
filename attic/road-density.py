@@ -15,6 +15,8 @@ import shapely.geometry
 
 import pdb
 
+from projections import utils
+
 
 def window_shape(win):
     return (win[0][1] - win[0][0], win[1][1] - win[1][0])
@@ -29,7 +31,7 @@ def explode(coords):
       https://gis.stackexchange.com/questions/90553/fiona-get-each-feature-extent-bounds
     """
     for e in coords:
-        if isinstance(e, (float, int, long)):
+        if isinstance(e, (float, int)):
             yield coords
             break
         else:
@@ -131,7 +133,7 @@ def do_block(win, mask, index):
         lat = lats[y]
         lat_min = lat - yres / 2.0
         lat_max = lat + yres / 2.0
-        for lon in lons[ma.where(mask_data.mask[y, :] != True)]:
+        for lon in lons[ma.where(mask_data.mask[y, :] != True)]:  # noqa E712
             bbox = (lon - xres / 2.0, lat_min, lon + xres / 2.0, lat_max)
             length = 0
             for obj in index.intersection(bbox, objects="raw"):
@@ -183,7 +185,7 @@ def densify(mask, shapes):
     with fiona.open(shapes) as layer:
         with rasterio.open(mask) as mask_ds:
             index = gen_index(layer)
-            wrap = lambda: doit(index, mask_ds, layer)
+            wrap = lambda: doit(index, mask_ds, layer)           # noqa E731
             cProfile.runctx(
                 "wrap()", filename="restats", locals={"wrap": wrap}, globals=globals()
             )

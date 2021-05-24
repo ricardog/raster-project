@@ -18,14 +18,14 @@ BINS = 52
 
 def sum_layers(ds, idx, layers, out):
     out.fill(0)
-    for l in layers:
-        out += ds.variables[l][idx]
+    for layer in layers:
+        out += ds.variables[layer][idx]
     return
 
 
 def find_frac(values, tot, frac):
     frac.fill(1)
-    ## FIXME: need np.clip() because pos - neg < 0
+    # FIXME: need np.clip() because pos - neg < 0
     frac -= np.clip(ma.where(values[-1] > 0, tot / values[-1], 0), 0, 1)
     # frac -= np.clip(tot / values[-1], 0, 1)
     return

@@ -15,12 +15,12 @@ secma = ma.empty_like(icwtr)
 secma.mask = secd.mask
 atol = 1e-5
 
-scenarios = [  #'LUH2_v2f_beta_SSP1_RCP2.6_IMAGE',
-    #'LUH2_v2f_beta_SSP2_RCP4.5_MESSAGE-GLOBIOM',
-    #'LUH2_v2f_beta_SSP3_RCP7.0_AIM',
-    #'LUH2_v2f_beta_SSP4_RCP3.4_GCAM',
-    #'LUH2_v2f_beta_SSP4_RCP6.0_GCAM',
-    #'LUH2_v2f_beta_SSP5_RCP8.5_REMIND-MAGPIE',
+scenarios = [  # 'LUH2_v2f_beta_SSP1_RCP2.6_IMAGE',
+    # 'LUH2_v2f_beta_SSP2_RCP4.5_MESSAGE-GLOBIOM',
+    # 'LUH2_v2f_beta_SSP3_RCP7.0_AIM',
+    # 'LUH2_v2f_beta_SSP4_RCP3.4_GCAM',
+    # 'LUH2_v2f_beta_SSP4_RCP6.0_GCAM',
+    # 'LUH2_v2f_beta_SSP5_RCP8.5_REMIND-MAGPIE',
     "historical"
 ]
 file_list = [os.path.join("../../data/luh2_v2", x, "states.nc") for x in scenarios]
@@ -45,7 +45,7 @@ for fname in file_list:
             if None and nz > 0:
                 indeces = zip(*ma.where(secma > 1 + atol))
                 tp = ((xx, secd[xx], secma[xx]) for xx in indeces)
-                for t in sorted(tp, lambda x, y: cmp(y[2], x[2]))[0:10]:
+                for t in sorted(tp, key=lambda x: x[2])[0:10]:
                     print("%3d, %4d: %6.4f => %6.4f" % (t[0][0], t[0][1], t[1], t[2]))
                     pass
 
@@ -60,7 +60,7 @@ def unused(filelist):
             secdf = ds.variables["secdf"][:, :, :]
             secdn = ds.variables["secdn"][:, :, :]
             secma = ma.where(
-                np.isclose(secdf + secdn, o, atol=atol),
+                np.isclose(secdf + secdn, 0, atol=atol),
                 ds.variables["secma"][:, :, :],
                 0,
             )

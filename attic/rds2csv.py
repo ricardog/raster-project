@@ -8,8 +8,6 @@ from rpy2.robjects import default_converter, pandas2ri
 from rpy2.rinterface import SexpS4
 from rpy2.robjects.conversion import Converter, localconverter
 
-import pdb
-
 
 def ri2ro_s4(obj):
     res = obj
@@ -21,7 +19,7 @@ def read_rds(path):
     print("reading...", end="", flush=True)
     my_converter = Converter("lme4-aware converter", template=default_converter)
     my_converter.ri2ro.register(SexpS4, ri2ro_s4)
-    with localconverter(my_converter) as cv:
+    with localconverter(my_converter):
         obj = robjects.r("readRDS('%s')" % path)
     df = robjects.conversion.ri2py(obj)
     print("done")
@@ -56,7 +54,7 @@ def rds2csv(infile, outfile):
 def csv2rds(infile, outfile):
     # pdb.set_trace()
     df = pd.DataFrame.from_csv(infile.name)
-    write_rds(dfr, outfile.name)
+    write_rds(df, outfile.name)
 
 
 if __name__ == "__main__":

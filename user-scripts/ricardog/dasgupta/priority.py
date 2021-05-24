@@ -16,8 +16,6 @@ with rasterio.open(outfn("luh2", "rsr-land.tif")) as rsr_ds:
         rsr.fill_value = -9999
         bii = bii_ds.read(1, masked=True)
 priority = rsr * (1 - bii)
-import pdb
 
-pdb.set_trace()
 with rasterio.open(outfn("luh2", "priority.tif"), "w", **meta) as out:
     out.write(priority.filled(), indexes=1)

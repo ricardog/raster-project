@@ -3,28 +3,20 @@
 from itertools import groupby
 import os
 import re
-import sys
 
-from bokeh.io import output_file, show, save
-from bokeh.layouts import gridplot, column
-from bokeh.models import Range1d, ColumnDataSource, HoverTool, CrosshairTool
-from bokeh.palettes import Category20, brewer, viridis
+from bokeh.io import output_file, save
+from bokeh.layouts import column
+from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.palettes import Category20
 from bokeh.plotting import figure
-
 import click
-
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.ma as ma
+import osr
 import pandas as pd
 import rasterio
-from rasterio.plot import show
-
-import pdb
 
 import projections.utils as utils
-
-import osr
 
 
 def earth_radius(authalic=False):
@@ -156,7 +148,7 @@ def do_plot(dfs, title, bokeh, out):
 def cli(ctx):
     if ctx.invoked_subcommand is None:
         click.echo("I was invoked without subcommand")
-        projections()
+        NotImplementedError("Please specify a command")
 
 
 @cli.command()

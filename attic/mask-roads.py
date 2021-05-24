@@ -2,10 +2,7 @@
 
 import click
 import numpy as np
-import os
-import pdb
 import rasterio
-import sys
 
 import projections.utils as utils
 

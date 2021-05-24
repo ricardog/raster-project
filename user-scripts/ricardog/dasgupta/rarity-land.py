@@ -3,6 +3,7 @@
 import numpy as np
 import rasterio
 
+
 iucn_dir = "/Users/ricardog/src/eec/data/iucn-range-rarity"
 with rasterio.open(iucn_dir + "/RSR_all.tif") as rich_ds:
     meta = rich_ds.meta.copy()
@@ -11,8 +12,6 @@ with rasterio.open(iucn_dir + "/RSR_all.tif") as rich_ds:
         data = rich_ds.read(1, masked=True)
         icwtr = icwtr_ds.read(1, masked=True)
 data.mask = np.logical_or(icwtr.mask, icwtr == 1)
-import pdb
 
-pdb.set_trace()
 with rasterio.open(iucn_dir + "/rsr-land.tif", "w", **meta) as out:
     out.write(data.filled(), indexes=1)

@@ -3,13 +3,9 @@
 import click
 from copy import copy
 
-# import gdal
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import numpy.ma as ma
 import rasterio
-
-# import projections.tiff_utils as tu
 
 
 @click.command()
@@ -36,7 +32,7 @@ def plot(infile, outfile, band):
     data = ds.read(band, masked=True)
     vmin, vmax = (0.31, 1.51)
     # import pdb; pdb.set_trace()
-    fig = plt.figure(figsize=(14.40, 5.59), dpi=100)
+    _ = plt.figure(figsize=(14.40, 5.59), dpi=100)
     ax1 = plt.gca()
     img = ax1.matshow(data, vmax=vmax, vmin=vmin, cmap=palette)
     ax1.axes.get_yaxis().set_visible(False)

@@ -13,8 +13,6 @@ from rasterset import RasterSet, Raster, SimpleExpr
 
 from projections.utils import data_file, outfn
 
-import pdb
-
 
 class YearRangeParamType(click.ParamType):
     name = "year range"

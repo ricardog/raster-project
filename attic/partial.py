@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import click
-import matplotlib
 import matplotlib.pyplot as plt
 
 # matplotlib.style.use('ggplot')
@@ -9,8 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from projections.pd_utils import load_pandas
-import projections.modelr as modelr
+import r2py.modelr as modelr
 
 LU2 = {
     "annual": "c3ann + c4ann",
@@ -60,6 +58,7 @@ def main(model_file, max_x=1.2, steps=20):
     print(df)
 
     df.plot()
+    ax = plt.gca()
     ax.set_title("")
     ax.set_ylabel("Species Richness")
     ax.set_xlabel("log(HPD + 1) [rescaled by 10.02083]")

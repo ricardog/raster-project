@@ -3,14 +3,12 @@
 import time
 
 import fiona
-import multiprocessing
-from rasterio.plot import show
 
 from rasterset import RasterSet, Raster, SimpleExpr
 
+from projections import predicts, utils
 from r2py import pythonify
-import projections.r2py.modelr as modelr
-import projections.utils as utils
+import r2py.modelr as modelr
 
 
 def project(year):

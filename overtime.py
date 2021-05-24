@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 
-import math
-import sys
-
 import click
 import fiona
 import joblib
-import matplotlib.pyplot as plt
-from multiprocessing import Pool as ThreadPool
 from netCDF4 import Dataset
 import numpy as np
 import numpy.ma as ma
@@ -15,8 +10,6 @@ import pandas as pd
 import rasterio
 
 import projections.utils as utils
-
-import pdb
 
 
 class YearRangeParamType(click.ParamType):

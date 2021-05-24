@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
 # From
-## https://stackoverflow.com/questions/22787209/how-to-have-clusters-of-stacked-bars-with-python-pandas
+#  https://stackoverflow.com/questions/22787209/how-to-have-clusters-of-stacked-bars-with-python-pandas
 
 import click
 import itertools
 import json
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import multiprocessing
 import numpy as np
@@ -18,7 +17,6 @@ import rasterio
 import rasterio.windows
 import time
 
-import pdb
 
 import projections.lu as lu
 import projections.lui as lui
@@ -122,9 +120,9 @@ def plot_clustered_stacked(
             **kwargs
         )  # make bar plots
 
-    h, l = axe.get_legend_handles_labels()  # get the handles we want to modify
+    h, legend = axe.get_legend_handles_labels()  # get the handles we want to modify
     for i in range(0, n_df * n_col, n_col):  # len(h) = n_col * n_df
-        for j, pa in enumerate(h[i : i + n_col]):
+        for j, pa in enumerate(h[i:i + n_col]):
             for rect in pa.patches:  # for each index
                 rect.set_x(rect.get_x() + 1 / float(n_df + 1) * i / float(n_col))
                 rect.set_hatch(H * int(i / n_col))  # edited part
@@ -139,9 +137,9 @@ def plot_clustered_stacked(
     for i in range(n_df):
         n.append(axe.bar(0, 0, color="gray", hatch=H * i))
 
-    l1 = axe.legend(h[:n_col], l[:n_col], loc=[1.01, 0.5])
+    l1 = axe.legend(h[:n_col], legend[:n_col], loc=[1.01, 0.5])
     if labels is not None:
-        l2 = plt.legend(n, labels, loc=[1.01, 0.1])
+        _ = plt.legend(n, labels, loc=[1.01, 0.1])
     axe.add_artist(l1)
     return axe
 
@@ -268,8 +266,6 @@ def project_year(model_dir, scenario, year):
     stime = time.time()
 
     values = [eval(lu, rsf, rsn) for lu in lus]
-    cells = carea(bounds(values[0][1]))
-    area = ma.sum(cells)
     out = dict(
         (lu, float(ma.sum(values[idx][0])))  # / area * 100))
         for idx, lu in enumerate(lus)
@@ -312,9 +308,9 @@ def timeline(scenario, years, output, model_dir, history, parallel):
     assert len(lus) == 1
     lus = lus.pop()
     by_series = [{"name": lu, "data": []} for lu in lus]
-    for lu in by_series:
+    for landuse in by_series:
         for year in data:
-            lu["data"].append(year[lu["name"]])
+            landuse["data"].append(year[landuse["name"]])
     if history:
         hist = json.load(history)
         years = hist["years"] + years

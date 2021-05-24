@@ -16,7 +16,7 @@ def getsheets(inputfile):
     name = file_split(inputfile)
     try:
         os.makedirs(name)
-    except:
+    except FileExistsError:
         pass
 
     df1 = pd.ExcelFile(inputfile)

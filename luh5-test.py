@@ -1,26 +1,18 @@
 #!/usr/bin/env python
 
 import click
-import fiona
 import itertools
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import multiprocessing
-import numpy as np
-import numpy.ma as ma
 import os
 import sys
 import time
 import rasterio
-from rasterio.plot import show, show_hist
+from rasterio.plot import show
 
-import pdb
-
-from rasterset import RasterSet, Raster, SimpleExpr
-
-import projections.r2py.modelr as modelr
-from projections.r2py import pythonify
-import projections.utils as utils
+from projections import predicts, utils
+from rasterset import RasterSet, SimpleExpr
+from r2py import modelr, pythonify
 
 
 class YearRangeParamType(click.ParamType):
@@ -56,6 +48,7 @@ def project_year(model, model_dir, what, scenario, year):
     models = select_models(model, model_dir)
     # Read Sam's abundance model (forested and non-forested)
     mod = modelr.load(models[0])
+    intercept = mod.intercept
     pythonify(mod)
 
     # Import standard PREDICTS rasters
@@ -95,7 +88,7 @@ def project_year(model, model_dir, what, scenario, year):
         # data.mask = np.logical_or(data.mask, cap)
         dst.write(data.filled(meta["nodata"]), indexes=1)
     if None:
-        fig = plt.figure(figsize=(8, 6))
+        _ = plt.figure(figsize=(8, 6))
         ax = plt.gca()
         show(data, cmap="viridis", ax=ax)
         plt.savefig("luh2-%s-%d.png" % (scenario, year))

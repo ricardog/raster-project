@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-import pdb
-
+from matplotlib.collections import PolyCollection
 import numpy as np
 import pandas as pd
 from pylru import lrudecorator
@@ -196,9 +195,8 @@ def gdp_tresholds_plot():
                 art.set_alpha(a)
 
     bii5 = gdp_tresholds(get_bii_data(False))
-    bii5 = bii5[bii5.threshold == True]
-    biit = biit.assign(Decade=(biit.Year / 10).astype(int) * 10)
-    bii = bii.assign(Decade=(bii.Year / 10).astype(int) * 10)
+    bii5 = bii5[bii5.threshold == True]                     # noqa E712
+    biit = bii5.assign(Decade=(bii5.Year / 10).astype(int) * 10)
 
     hue_order = tuple(reversed(sorted(biit.Decade.unique())))
     for metric in ("BIIAb2", "BIIAb"):

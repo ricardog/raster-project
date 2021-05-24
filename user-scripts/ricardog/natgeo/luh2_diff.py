@@ -11,11 +11,11 @@ from rasterset import RasterSet, SimpleExpr
 from rasterset import Raster
 
 
-def __infile(lu, year, path):
+def infile(lu, year, path):
     return data_file(path, f"LUH2_{lu}_{year}_1KM.tif")
 
 
-def __outfile(lu, path):
+def outfile(lu, path):
     return outfn(path, "LUH2_%s_delta_1KM.tif" % lu)
 
 

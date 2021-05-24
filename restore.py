@@ -33,7 +33,7 @@ def read_historical(start, end, bounds, metric):
                 win = src.window(*bounds)
                 d = src.read(1, masked=True, window=win)
             if last_year is not None and (year - last_year != 1):
-                ## Interpolate between the values
+                # Interpolate between the values
                 delta = year - last_year
                 f1 = 1.0 / delta
                 for yy in range(last_year + 1, year):

@@ -1,27 +1,7 @@
 #!/usr/bin/env python
 
-import time
-
-import fiona
-import multiprocessing
-from rasterio.plot import show
-import math
-import os
-
-import click
-
-# import matlibplot.pyplot as plt
-import numpy as np
-import numpy.ma as ma
-import rasterio
-from rasterio.plot import show, show_hist
-
+from projections import utils
 from rasterset import RasterSet, Raster, SimpleExpr
-
-import projections.predicts as predicts
-import projections.r2py.modelr as modelr
-import projections.utils as utils
-import projections.raster_utils as ru
 
 CLIP = "no-clip"
 

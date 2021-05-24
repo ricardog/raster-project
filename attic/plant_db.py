@@ -18,10 +18,10 @@ import pdb
 
 #
 # To create the DB:
-# CREATE DATABASE trees WITH ENCODING='UTF8' LC_CTYPE='en_US.UTF-8' LC_COLLATE='en_US.UTF-8' OWNER=postgis TEMPLATE=template0 CONNECTION LIMIT=-1;
+# CREATE DATABASE trees WITH ENCODING='UTF8' LC_CTYPE='en_US.UTF-8' LC_COLLATE='en_US.UTF-8' OWNER=postgis TEMPLATE=template0 CONNECTION LIMIT=-1;  # noqa E501
 #
 # To insert tree DB data into database
-# ogr2ogr -f "PostgreSQL" PG:"host=bonobo.local port=5432 dbname=trees user=postgis password=postgis" plantations_v1_3_dl.gdb aus_plant
+# ogr2ogr -f "PostgreSQL" PG:"host=bonobo.local port=5432 dbname=trees user=postgis password=postgis" plantations_v1_3_dl.gdb aus_plant  # noqa E501
 
 #
 # To create the index

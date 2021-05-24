@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt
 import rasterio
 from rasterio.plot import show
 
-from rasterset import RasterSet, SimpleExpr
 
-import projections.r2py.modelr as modelr
-from projections.r2py import pythonify
-import projections.utils as utils
+from projections import predicts, utils
+from r2py import pythonify
+import r2py.modelr as modelr
+from rasterset import RasterSet, SimpleExpr
 
 
 class YearRangeParamType(click.ParamType):

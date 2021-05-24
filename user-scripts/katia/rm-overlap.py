@@ -4,8 +4,6 @@ import click
 import numpy as np
 import rasterio
 
-import pdb
-
 
 def find_bbox(srcs):
     cc = tuple(zip(*[src.bounds for src in srcs]))

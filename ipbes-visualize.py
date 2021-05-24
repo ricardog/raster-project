@@ -6,9 +6,8 @@ import re
 
 from bokeh.io import output_file, show, save
 from bokeh.layouts import gridplot
-from bokeh.models import Range1d, ColumnDataSource, HoverTool, CrosshairTool
-from bokeh.models import Legend, LegendItem
-from bokeh.palettes import Category20, Spectral6, brewer, viridis
+from bokeh.models import Range1d, ColumnDataSource, HoverTool
+from bokeh.palettes import Category20, Spectral6
 from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
@@ -159,7 +158,6 @@ def landuse():
         df.columns = ["Cropland", "Pasture", "Primary", "Secondary", "Urban"]
 
         areas = stacked(df)
-        colors = viridis(areas.shape[1])
         x2 = np.hstack((df.index[::-1], df.index))
 
         source = ColumnDataSource(
@@ -226,15 +224,10 @@ def deltas(local, out, subregions):
 
     data = None
     delta = None
-    plots = []
     row = []
     syear = "2015"
     eyear = "2100"
     for indicator in ("BIIAb", "BIISR"):
-        title = "Change in %s per IPBES %sregion" % (
-            indicator,
-            "sub" if subregions else "",
-        )
         weight = "npp" if indicator == "BIIAb" else "vsr"
         for name, scenario in zip(names, scenarios):
             print(scenario, name)
@@ -244,8 +237,8 @@ def deltas(local, out, subregions):
             if delta is None:
                 cols = ["Global"] + subset.columns[1:].values.tolist()
                 delta = pd.DataFrame(columns=cols, index=names)
-            delta.loc[name, cols[1] :] = (
-                subset.loc[85, cols[1] :] - subset.loc[0, cols[1] :]
+            delta.loc[name, cols[1] : ] = (                 # noqa E203
+                subset.loc[85, cols[1] : ] - subset.loc[0, cols[1] : ] # noqa E203
             )
             delta.loc[name, "Global"] = glob.loc[85, "Global"] - glob.loc[0, "Global"]
 
@@ -259,12 +252,12 @@ def deltas(local, out, subregions):
 
         dlow = delta.loc[:, delta.min() < 0.0]
         dhigh = delta.loc[:, delta.max() > 0.0]
-        barsl = ColumnDataSource(
+        _ = ColumnDataSource(
             data=dict(
                 regions=dlow.columns, bottom=dlow.min(), top=dlow.max().clip(upper=0.0)
             )
         )
-        barsh = ColumnDataSource(
+        _ = ColumnDataSource(
             data=dict(
                 regions=dhigh.columns,
                 bottom=dhigh.min().clip(lower=0.0),
@@ -276,24 +269,6 @@ def deltas(local, out, subregions):
         plt.y_range = Range1d(delta.min().min() * 1.1, delta.max().max() * 1.1)
         plt.xaxis.major_label_orientation = pi / 4
 
-        r1 = plt.vbar(
-            x="regions",
-            width=0.9,
-            source=barsl,
-            top="top",
-            bottom="bottom",
-            fill_color="#D5E1DD",
-            line_color="black",
-        )
-        r2 = plt.vbar(
-            x="regions",
-            width=0.9,
-            source=barsh,
-            top="top",
-            bottom="bottom",
-            fill_color="#ccebc5",
-            line_color="black",
-        )
         r3 = plt.circle(
             x="Subregion",
             y="value",
@@ -356,12 +331,9 @@ def violin(local, out):
         base_url = "file://ipbes-weighted/%s-%s-%s-%%s-%%04d-%%04d.csv"
 
     data = None
-    plots = []
-    row = []
     syear = "2015"
     eyear = "2100"
     for indicator in ("BIIAb", "BIISR"):
-        title = "Change in %s per IPBES subregion" % indicator
         weight = "npp" if indicator == "BIIAb" else "vsr"
         delta = None
         for name, scenario in zip(names, scenarios):
@@ -372,8 +344,8 @@ def violin(local, out):
             if delta is None:
                 cols = ["Global"] + subset.columns[1:].values.tolist()
                 delta = pd.DataFrame(columns=cols, index=names)
-            delta.loc[name, cols[1] :] = (
-                subset.loc[85, cols[1] :] - subset.loc[0, cols[1] :]
+            delta.loc[name, cols[1] : ] = (                 # noqa E203
+                subset.loc[85, cols[1] : ] - subset.loc[0, cols[1] : ] # noqa E203
             )
             delta.loc[name, "Global"] = glob.loc[85, "Global"] - glob.loc[0, "Global"]
         delta = delta.T

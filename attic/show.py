@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
 from copy import copy
-import rasterio
 import matplotlib.pyplot as plt
 
 import numpy as np
 import numpy.ma as ma
-import pandas as pd
 from rasterio.plot import show
 import re
 
@@ -128,7 +126,6 @@ def doit():
                     np.where(t1 == 0, True, False), np.where(t2 == 0, True, False)
                 ),
             )
-            mm = min(r.max(), 15)
             show(r, title=str(col), vmin=0.99, vmax=1.01, cmap=palette)
 
 

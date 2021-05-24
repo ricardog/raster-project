@@ -10,8 +10,6 @@ import seaborn as sns
 
 import projections.r2py.modelr as modelr
 
-import pdb
-
 
 def inv_logit(p):
     """Returns the inverse logit function of the input."""

@@ -1,20 +1,15 @@
 #!/usr/bin/env python
 
-import rasterio
 
 import click
-import itertools
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 import os
 import pandas as pd
 from pylru import lrudecorator
-from rasterio.plot import show
+import rasterio
 import re
-
-import pdb
 
 import projections.utils as utils
 

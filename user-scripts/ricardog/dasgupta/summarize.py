@@ -12,8 +12,6 @@ import rasterio
 import re
 import seaborn as sns
 
-import pdb
-
 
 def name_to_short(indicator):
     if indicator == "BIIAb":
@@ -97,7 +95,7 @@ def plot_all(data, indicator, npp):
     # palette = sns.xkcd_palette(colors)
     for idx, plot in enumerate((plot_a, plot_b)):
         # pdb.set_trace()
-        palette = sns.color_palette(colors[0 : lines[idx]])
+        palette = sns.color_palette(colors[0:lines[idx]])
         subset = data[data.Scenario.apply(lambda v: v in plot)]
         sns.lineplot(
             "Year",

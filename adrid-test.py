@@ -9,9 +9,10 @@ import time
 from rasterio.plot import show
 import matplotlib.pyplot as plt
 
-from rasterset import RasterSet, Raster
-from projections.r2py import pythonify
-import projections.r2py.modelr as modelr
+from projections import predicts
+from r2py import pythonify
+import r2py.modelr as modelr
+from rasterset import RasterSet
 
 # Open the mask shape file
 shp_file = os.path.join(os.environ["DATA_ROOT"], "from-adriana/tropicalforests.shp")
@@ -33,9 +34,9 @@ etime = time.time()
 print("executed in %6.2fs" % (etime - stime))
 show(data1)
 
-##
-## Compare with good raster
-##
+#
+# Compare with good raster
+#
 out = rasterio.open("adrid-good.tif")
 good = out.read(1, masked=True)
 diff = np.fabs(data1 - good)
@@ -43,9 +44,9 @@ print("max diff: %f" % diff.max())
 assert np.allclose(data1, good, atol=1e-05, equal_nan=True)
 del out
 
-##
-## Redo the projection using iterative API
-##
+#
+# Redo the projection using iterative API
+#
 mod = modelr.load("../models/ab-corrected.rds")
 pythonify(mod)
 

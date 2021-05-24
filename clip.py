@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 import click
-import numpy as np
-import numpy.ma as ma
-import rasterio
 
 import projections.raster_utils as ru
 

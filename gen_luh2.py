@@ -6,11 +6,10 @@ import os
 import rasterio
 import rasterio.warp as rwarp
 import subprocess
-import pdb
 
-import projections.poly as poly
 from rasterset import Raster, RasterSet, SimpleExpr
 import projections.reproject as reproj
+from projections.utils import data_root
 
 from projections.utils import (
     luh2_dir,

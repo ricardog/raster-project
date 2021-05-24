@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 
-import rasterio
-import fiona
 import numpy as np
-import time
 
 import matplotlib.pyplot as plt
 from rasterio.plot import show, show_hist
 
-from projections.atlas import atlas
-from rasterset import RasterSet, Raster, SimpleExpr
+from rasterset import RasterSet, SimpleExpr
 
 import projections.predicts as predicts
-import projections.rds as rds
 
 # Import standard PREDICTS rasters
 rasters = predicts.rasterset("rcp", "aim", 2020, "medium")

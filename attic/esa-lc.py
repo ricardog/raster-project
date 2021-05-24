@@ -10,7 +10,6 @@ import rasterio
 from rasterio.io import MemoryFile
 import rasterio.mask
 
-import pdb
 
 R_MAJOR = 6378137.0000
 R_MINOR = 6356752.3142

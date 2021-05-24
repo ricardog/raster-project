@@ -2,7 +2,6 @@
 
 import click
 import fiona
-import pdb
 
 
 @click.command()

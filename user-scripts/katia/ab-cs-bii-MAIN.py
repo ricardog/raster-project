@@ -1,26 +1,11 @@
 #!/usr/bin/env python
 
-import time
-
-import fiona
-import multiprocessing
-from rasterio.plot import show
-import math
 import os
-
-import click
-
-# import matlibplot.pyplot as plt
-import numpy as np
-import numpy.ma as ma
 import rasterio
-from rasterio.plot import show, show_hist
 
-from rasterset import RasterSet, Raster, SimpleExpr
-
-from projections.r2py import pythonify
-import projections.r2py.modelr as modelr
-import projections.utils as utils
+from projections import predicts, utils
+from r2py import modelr, pythonify
+from rasterset import RasterSet, SimpleExpr
 
 
 # Open the mask raster file (Mainlands)

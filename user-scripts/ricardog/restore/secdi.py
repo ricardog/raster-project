@@ -59,7 +59,7 @@ def gen_secdi(scenario):
         data = src.read(masked=True)
         out = ma.empty_like(data)
         for idx in range(out.shape[0]):
-            out[idx, :, :] = data[0 : idx + 1, :, :].sum(axis=0)
+            out[idx, :, :] = data[0:idx + 1, :, :].sum(axis=0)
         out = rotate(out, 3)
         out.mask = data.mask
         with rasterio.open(

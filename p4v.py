@@ -21,7 +21,7 @@ def sum_by(regions, data):
     mask = np.logical_or(data.mask, regions.mask)
     # regions.mask = ma.getmask(data)
     # regions_idx = regions.compressed().astype(int)
-    mask_idx = np.where(mask == False)
+    mask_idx = np.where(mask == False)                      # noqa E712
     regions_idx = regions[mask_idx]
     summ = np.bincount(regions_idx, data[mask_idx])
     ncells = np.bincount(regions_idx)
@@ -38,7 +38,7 @@ def cnames_df():
 def cname_to_fips(name):
     def rematch(regexp, name):
         if isinstance(regexp, str):
-            return re.search(regexp, name, re.I) != None
+            return re.search(regexp, name, re.I) is not None
         return False
 
     def cleanup(index):
@@ -95,14 +95,6 @@ def wb3_to_cid(wb3):
     if rows.empty:
         return None
     return rows["un"].values[0]
-
-
-@lrudecorator(10)
-def cnames_df():
-    cnames = pd.read_csv(
-        os.path.join(utils.data_root(), "ssp-data", "country-names.csv")
-    )
-    return cnames
 
 
 def cid_to_x(cid, x):
@@ -174,7 +166,7 @@ def cleanup_p4v(fname, avg=True):
         lambda cc: cc if (isinstance(cc, str) and len(cc) == 2) else False, cfips
     )
     p4s2 = p4s.assign(fips=tuple(csel))
-    p4s3 = p4s2[p4s2.fips != False]
+    p4s3 = p4s2[p4s2.fips != False]                         # noqa E712
     if avg:
         df = (
             p4s3.loc[:, ["fips", "polity", "polity2"]]
@@ -203,7 +195,7 @@ def cleanup_language():
     lang.columns = fips
     lang = lang.assign(fips=fips)
     lang.index = fips
-    lang = lang.loc[lang.fips != False, lang.columns != False]
+    lang = lang.loc[lang.fips != False, lang.columns != False] # noqa E712
     del lang["fips"]
     return lang
 

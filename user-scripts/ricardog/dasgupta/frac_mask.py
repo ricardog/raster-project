@@ -3,8 +3,6 @@
 import click
 import rasterio
 
-import pdb
-
 
 @click.command()
 @click.argument("factor", type=int)

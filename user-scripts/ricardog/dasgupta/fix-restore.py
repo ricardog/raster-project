@@ -6,8 +6,6 @@ import os
 from pathlib import Path
 import rasterio
 
-import pdb
-
 
 def vivid_dir(scenario):
     if scenario == "early":

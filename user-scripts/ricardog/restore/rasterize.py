@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import click
-import fiona
-from functools import reduce
 import geopandas as gpd
 import numpy as np
 import numpy.ma as ma
@@ -44,8 +42,6 @@ def get_xform(shapes, reference):
     raw = [geo for geo in shapes.geometry]
     with rasterio.open(reference) as ref:
         img, xform = rasterio.mask.mask(ref, raw, crop=True)
-        height = ref.height
-        width = ref.width
     return (img.shape[1:], xform)
 
 

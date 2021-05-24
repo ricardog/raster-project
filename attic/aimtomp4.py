@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 
-from copy import copy
-import netCDF4
 import numpy as np
 import numpy.ma as ma
 import os
 import rasterio
 import re
 import sys
-
-import pdb
 
 from projections.mp4_utils import to_mp4
 import matplotlib.colors as colors

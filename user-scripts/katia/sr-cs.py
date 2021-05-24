@@ -6,9 +6,8 @@ import os
 import rasterio
 
 from rasterset import RasterSet
-from projections.r2py import pythonify
-import projections.r2py.modelr as modelr
-import projections.utils as utils
+from r2py import modelr, pythonify
+from projections import predicts, utils
 
 parser = argparse.ArgumentParser(
     description="sr-cs.py -- richness-based " "compositional similarity projections"

@@ -11,8 +11,6 @@ from pathlib import Path
 import rasterio
 import seaborn as sns
 
-import pdb
-
 
 def brazil_dirname(scenario):
     if scenario == "fc":
@@ -53,7 +51,7 @@ def plot_all(data, indicator, npp):
     else:
         npp_text = "NPP-weighted "
 
-    fig = plt.figure(figsize=(6, 4), dpi=100.0)
+    _ = plt.figure(figsize=(6, 4), dpi=100.0)
     ax = plt.gca()
     colors = ["windows blue", "amber", "dusty purple"]
     colors = [

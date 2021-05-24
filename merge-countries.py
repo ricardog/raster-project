@@ -17,7 +17,7 @@ import projections.utils as utils
 def cname_to_fips(name, df):
     def rematch(regexp, name):
         if isinstance(regexp, str):
-            return re.search(regexp, name, re.I) != None
+            return re.search(regexp, name, re.I) is not None
         return False
 
     def cleanup(index):
@@ -40,7 +40,7 @@ def cname_to_fips(name, df):
 
 
 def merge(src, dst, regions, cnames):
-    wrap = lambda cn: cname_to_fips(cn, cnames)
+    wrap = lambda cn: cname_to_fips(cn, cnames)                  # noqa E731
     for region in regions:
         click.echo("processing %s" % region)
         fips_names = map(wrap, regions[region])

@@ -6,8 +6,6 @@ import numpy.ma as ma
 import os
 import re
 
-import pdb
-
 
 def sumv(ds, idx, vs):
     shape = ds.variables[vs[0]].shape[1:]
@@ -77,14 +75,14 @@ for sname, tname in file_list:
                 assert np.allclose(difff, 0, atol=atol)
                 assert np.allclose(diffn, 0, atol=atol)
 
-                for l in negf:
-                    currf -= trans.variables[l][idx]
-                for l in posf:
-                    currf += trans.variables[l][idx]
+                for xx in negf:
+                    currf -= trans.variables[xx][idx]
+                for xx in posf:
+                    currf += trans.variables[xx][idx]
 
-                for l in negn:
-                    currn -= trans.variables[l][idx]
-                for l in posn:
-                    currn += trans.variables[l][idx]
+                for xx in negn:
+                    currn -= trans.variables[xx][idx]
+                for xx in posn:
+                    currn += trans.variables[xx][idx]
                 pass
 print("done")

@@ -58,7 +58,7 @@ def get_model(what, forested, model_dir):
     return modelr.load(os.path.join(model_dir, mname))
 
 
-def vivid_dirname(scenario):
+def vivid_dirname(scenario):                                # noqa C901
     if scenario == "early":
         return "HMT_Early_Action_v3"
     if scenario == "early_075":
@@ -119,7 +119,7 @@ def vivid_restored_layer(subtype, year, scenario):
     )
 
 
-def rasters(ssp, scenario, year):
+def rasters(ssp, scenario, year):                           # noqa C901
     rasters = {}
     rasters["land"] = Raster("land", outfn("rcp", "land.tif"))
     rasters["hpd_ref"] = Raster("hpd_ref", outfn("rcp", "gluds00ag.tif"))

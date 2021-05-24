@@ -52,6 +52,7 @@ def parse_fname(fname):
 
 
 def to_df(stacked, names):
+    from countrify import cid_to_fips, cid_to_name, cid_to_ar5
     hs = {
         "fips": map(cid_to_fips, stacked[:, 0, 0]),
         "name": map(cid_to_name, stacked[:, 0, 0]),

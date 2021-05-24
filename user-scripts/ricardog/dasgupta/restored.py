@@ -36,7 +36,7 @@ def downsample(in1, src, dst):
     return out
 
 
-def do_one(scenario):
+def do_one(scenario):                                       # noqa C901
     if scenario == "early":
         dirname = "HMT_Early_Action_v3"
     elif scenario == "early_075":

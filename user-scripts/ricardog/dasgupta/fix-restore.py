@@ -7,7 +7,7 @@ from pathlib import Path
 import rasterio
 
 
-def vivid_dir(scenario):
+def vivid_dir(scenario):                                    # noqa C901
     if scenario == "early":
         return "HMT_Early_Action_v3"
     if scenario == "early_075":

@@ -110,7 +110,7 @@ def luh2(scenario):
     return
 
 
-def vivid(scenario, scene):
+def vivid(scenario, scene):                                 # noqa C901
     if scene == "early":
         dirname = "HMT_Early_Action_v3"
     elif scene == "early_075":

@@ -120,7 +120,7 @@ def cli(ctx):
 @click.option("--npp", type=click.Path(dir_okay=False))
 @click.option("--vsr", type=click.Path(dir_okay=False))
 @click.option("--regions", is_flag=True, default=False)
-def summary(what, scenario, years, npp, vsr, regions):
+def summary(what, scenario, years, npp, vsr, regions):      # noqa C901
     """Generate a per-year and per-IPBES region summary of a diversity metric.
 
     Diversity metric supported are

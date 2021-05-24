@@ -318,7 +318,7 @@ def cli(ctx):
     help="When set the data is in log scale and must be "
     + "converted to linear scale (default: False)",
 )
-def countrify(infiles, band, country_file, npp, vsr, mp4, log):
+def countrify(infiles, band, country_file, npp, vsr, mp4, log):  # noqa C901
     stack = []
     maps = []
     extent = None

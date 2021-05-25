@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+"""How for can we turn-back the clock.
+
+This script generates a raster that shows how far back we can turn the
+clock for each cell for a given scenario.
+
+"""
+
 from copy import copy
 import os
 

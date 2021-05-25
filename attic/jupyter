@@ -1,4 +1,0 @@
-#!/bin/bash
-
-/home/rstudio/.pyenv/shims/jupyter $*
-

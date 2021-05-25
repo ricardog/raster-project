@@ -1,9 +1,0 @@
-<OGRVRTDataSource>
-  <OGRVRTLayer name="sites">
-    <SrcDataSource relativeToVRT="1">sites.csv</SrcDataSource>
-    <SrcLayer>sites</SrcLayer>
-    <GeometryType>wkbPoint</GeometryType>
-    <LayerSRS>GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]]</LayerSRS>
-    <GeometryField encoding="PointFromColumns" x="Longitude" y="Latitude"/>
-  </OGRVRTLayer>
-</OGRVRTDataSource>

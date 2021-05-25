@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+"""Compute the distribution of secondary vegetation age.
+
+Compute the distribution of secondary vegetation.  It breaks the cell
+fraction into three components, young (< 30 years of age), intermediate
+(> 30 && < 50 years of age), and mature (> 50 years of age).  The age
+classes match those defined by the PREDICTS database.
+
+"""
+
 import os
 import re
 import time

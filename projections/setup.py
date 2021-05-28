@@ -16,8 +16,8 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    package_dir={"": "."},
-    packages=find_packages(where="."),
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
     include_package_data=True,
     install_requires=[
         "Click",

@@ -15,12 +15,10 @@ RUN cd /home/rstudio/work && \
 	pip install -r requirements.txt && \
 	R -e "IRkernel::installspec()"
 
-COPY --chown=rstudio:rstudio setup.py pyproject.toml /home/rstudio/work/
+COPY --chown=rstudio:rstudio projections /home/rstudio/src/projections/
 COPY --chown=rstudio:rstudio user-scripts /home/rstudio/work/user-scripts/
-COPY --chown=rstudio:rstudio projections /home/rstudio/work/projections
 RUN source ~/.bashrc && \
-	cd /home/rstudio/work && \
-	pip install -e .
+	pip install -e /home/rstudio/src/projections/
 
 USER root
 WORKDIR /home/rstudio/work

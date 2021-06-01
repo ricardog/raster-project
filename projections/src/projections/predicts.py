@@ -212,12 +212,11 @@ def luh2(scenario, year, hpd_trend):                        # noqa C901
     # 0.25 =>  41335.645 / 10.62948048177454 (10.02 for Sam)
     # 1km  => 872073.500 / 13.678628988329825
     maxHPD = 10.02083
-    rasters["logHPD_rs"] = SimpleExpr(
-        "logHPD_rs", "scale(log(hpd + 1), 0.0, 1.0, 0.0, %f)" % maxHPD
-    )
-    rasters["logHPD_s2"] = SimpleExpr("LogHPD_s2", "log(hpd + 1)")
-    rasters["logHPD_diff"] = SimpleExpr("logHPD_diff", "0 - logHPD_s2")
-    rasters["logDTR_rs"] = Raster("logDTR_rs", outfn("luh2", "roads-final.tif"))
+    rasters['log_hpd_rs'] = SimpleExpr('log_lHPD_rs',
+                                       'scale(log(hpd + 1), 0.0, 1.0, 0.0, %f)' %
+                                       maxHPD)
+    rasters['log_hpd_s2'] = SimpleExpr('Log_hpd_s2', 'log(hpd + 1)')
+    rasters['log_hpd_diff'] = SimpleExpr('log_hpd_diff', '0 - log_hpd_s2')
     for fname in (
         utils.luh2_states(scenario),
         outfn("luh2", "secd-" + scenario + ".nc"),
@@ -231,7 +230,7 @@ def luh2(scenario, year, hpd_trend):                        # noqa C901
         names = set(
             reduce(lambda x, y: x + y, [list(lu.syms) for lu in lus], ["urban"])
         )
-        for name in set.intersection(names, ds_vars):
+        for name in ds_vars:
             band = year - 849 if scenario == "historical" else year - 2014
             rasters[name] = Raster(name, "netcdf:%s:%s" % (fname, name), band=band)
 
@@ -242,7 +241,7 @@ def luh2(scenario, year, hpd_trend):                        # noqa C901
         else:
             ref_path = outfn("luh2", "%s-recal.tif" % landuse.syms[0])
         for band, intensity in enumerate(lui.intensities()):
-            n = landuse.name + "_" + intensity
+            n = 'ui_' + landuse.name + "_" + intensity + '_use'
             n2 = n + "_ref"
             if landuse.name == "timber":
                 rasters[n] = SimpleExpr(n, "0")
@@ -253,16 +252,16 @@ def luh2(scenario, year, hpd_trend):                        # noqa C901
 
     ref_path = outfn("luh2", "urban-recal.tif")
     for band, intensity in enumerate(lui.intensities()):
-        n = "urban_" + intensity
+        n = "ui_urban_" + intensity + '_use'
         rasters[n] = lui.LUH2("urban", intensity)
         n2 = n + "_ref"
         rasters[n2] = Raster(n2, ref_path, band + 1)
 
     for landuse in ("annual", "pasture"):
-        name = "%s_minimal_and_light" % landuse
-        rasters[name] = SimpleExpr(name, "%s_minimal + %s_light" % (landuse, landuse))
-    rasters["mature_secondary_intense_and_light"] = SimpleExpr(
-        "mature_secondary_intense_and_light", "mature_secondary_light_and_intense"
+        name = "ui_%s_minimal_and_light_use" % landuse
+        rasters[name] = SimpleExpr(name, "ui_%s_minimal + ui_%s_light" % (landuse, landuse))
+    rasters["ui_mature_secondary_intense_and_light_use"] = SimpleExpr(
+        "ui_mature_secondary_intense_and_light_use", "ui_mature_secondary_light_and_intense_use"
     )
 
     for landuse in ("mature_secondary", "nitrogen", "rangelands", "urban"):
@@ -272,7 +271,7 @@ def luh2(scenario, year, hpd_trend):                        # noqa C901
     for intensity in ["light", "intense"]:
         expr = " + ".join(
             [
-                "%s_%s" % (name, intensity)
+                "ui_%s_%s_use" % (name, intensity)
                 for name in [lu.name for lu in lus] + ["urban"]
             ]
         )

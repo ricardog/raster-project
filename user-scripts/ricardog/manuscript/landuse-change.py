@@ -17,11 +17,8 @@ import rasterio
 import rasterio.windows
 import time
 
-
-import projections.lu as lu
-import projections.lui as lui
-import projections.utils as utils
-import projections.predicts as predicts
+from projections import predicts, utils
+from projutils import lu, lui
 from rasterset import RasterSet
 
 

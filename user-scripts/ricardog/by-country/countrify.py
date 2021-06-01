@@ -157,7 +157,7 @@ def remap(what, table, nomatch=None):
 
 
 def gen_mp4(oname, stack, ccode, title="", captions=None):
-    from projections.mp4_utils import to_mp4
+    from projutils.mp4_utils import to_mp4
 
     all_max = stack[:, 2, :].max()
     all_min = stack[:, 2, :].min()

@@ -6,7 +6,7 @@ import rasterio
 import rasterio.warp as rwarp
 
 from projections.utils import data_file, luh2_states
-from attic.cell_area import raster_cell_area
+from projutils.cell_area import raster_cell_area
 
 
 def calc_crs(src):

@@ -2,12 +2,12 @@ from functools import reduce
 import netCDF4
 import os
 
+from projutils import hpd
+from projutils import lu
+from projutils import lui
+from projutils import utils
 from rasterset import Raster, SimpleExpr
 
-from . import hpd
-from . import lu
-from . import lui
-from . import utils
 from .utils import outfn
 
 

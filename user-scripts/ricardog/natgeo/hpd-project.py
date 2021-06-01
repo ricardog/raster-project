@@ -5,13 +5,11 @@ import os
 import click
 import numpy as np
 import numpy.ma as ma
-
 import rasterio
-import projections.predicts as predicts
-from projections.rasterset import RasterSet
-from projections.simpleexpr import SimpleExpr
-import projections.r2py.modelr as modelr
-import projections.utils as utils
+
+from projections import predicts, utils
+from r2py import modelr
+from rasterset import RasterSet, SimpleExpr
 
 
 @click.group()

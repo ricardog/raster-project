@@ -6,9 +6,8 @@ import numpy.ma as ma
 import os
 import rasterio
 
-import projections.hpd as hpd
-import projections.lui as lui
-import projections.r2py.modelr as modelr
+from projutils import hpd, lui
+from r2py import modelr
 from rasterset import RasterSet, Raster, SimpleExpr
 
 from projections.utils import data_file, outfn

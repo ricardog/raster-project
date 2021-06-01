@@ -6,7 +6,7 @@ from pathlib import Path
 import rasterio
 from projections.utils import data_file
 
-from attic.cell_area import raster_cell_area
+from projutils.cell_area import raster_cell_area
 
 SCENARIOS = (
     "sample",

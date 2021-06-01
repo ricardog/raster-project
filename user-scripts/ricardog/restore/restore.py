@@ -7,7 +7,7 @@ from pathlib import Path
 from pylru import lrudecorator
 import rasterio
 
-import projections.hpd as hpd
+from projutils import hpd
 from rasterset import RasterSet, Raster, SimpleExpr
 from projections.utils import data_file, luh2_static, luh2_layer, outfn
 import r2py.modelr as modelr

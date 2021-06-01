@@ -7,7 +7,7 @@ import matplotlib.colors as colors
 import os
 from pathlib import Path
 import rasterio
-from projections.mp4_utils import to_mp4
+from projutils.mp4_utils import to_mp4
 
 
 def parse_fname2(fname):

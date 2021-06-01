@@ -7,7 +7,7 @@ import numpy.ma as ma
 import pandas as pd
 import rasterio
 
-from attic.cell_area import raster_cell_area
+from projutils.cell_area import raster_cell_area
 from projections.utils import data_file
 
 

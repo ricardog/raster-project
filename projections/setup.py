@@ -6,7 +6,7 @@ setup(
     author="Ricardo E. Gonzalez",
     author_email="ricardog@itinerisinc.com",
     description="Spatio-temporal projections of PREDICTS models",
-    python_requires=">=3.8.3",
+    python_requires=">=3.7",
     url="https://github.com/NaturalHistoryMuseum/raster-project",
     project_urls={
         "Bug Tracker": "https://github.com/NaturalHistoryMuseum/raster-project/issues",

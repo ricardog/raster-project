@@ -20,9 +20,11 @@ setup(
     packages=find_packages(where="src"),
     include_package_data=True,
     install_requires=[
+        "cartopy",
         "Click",
         "fiona",
-        "geopandas",
+        "geopandas"
+        "geopy",
         "joblib",
         "matplotlib",
         "netCDF4",

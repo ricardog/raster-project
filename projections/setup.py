@@ -23,7 +23,7 @@ setup(
         "cartopy",
         "Click",
         "fiona",
-        "geopandas"
+        "geopandas",
         "geopy",
         "joblib",
         "matplotlib",

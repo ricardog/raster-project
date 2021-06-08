@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="projections",
-    version="0.1",
+    version="0.2.0",
     author="Ricardo E. Gonzalez",
     author_email="ricardog@itinerisinc.com",
     description="Spatio-temporal projections of PREDICTS models",

@@ -120,25 +120,23 @@ def vivid_restored_layer(subtype, year, scenario):
 
 def rasters(ssp, scenario, year):                           # noqa C901
     rasters = {}
-    rasters["land"] = Raster("land", outfn("rcp", "land.tif"))
-    rasters["hpd_ref"] = Raster("hpd_ref", outfn("rcp", "gluds00ag.tif"))
-    rasters["unSub"] = Raster("unSub", outfn("rcp", "un_subregions-full.tif"))
-    rasters["un_code"] = Raster("un_codes", outfn("rcp", "un_codes-full.tif"))
+    rasters["land"] = Raster(outfn("rcp", "land.tif"))
+    rasters["hpd_ref"] = Raster(outfn("rcp", "gluds00ag.tif"))
+    rasters["unSub"] = Raster(outfn("rcp", "un_subregions-full.tif"))
+    rasters["un_code"] = Raster(outfn("rcp", "un_codes-full.tif"))
     if year < 2015:
         raise IndexError(f"year must be greater than 2014 ({year})")
     else:
         hpd_dict = hpd.sps.raster(ssp, year, "rcp")
     rasters["pop"] = hpd_dict["hpd"]
-    rasters["hpd"] = SimpleExpr("hpd", "pop / (land * 1e4)")
-    rasters["loghpd"] = SimpleExpr("loghpd", "log(hpd + 1)")
-    rasters["hpd_diff"] = SimpleExpr("hpd_diff", "0 - loghpd")
+    rasters["hpd"] = SimpleExpr("pop / (land * 1e4)")
+    rasters["loghpd"] = SimpleExpr("log(hpd + 1)")
+    rasters["hpd_diff"] = SimpleExpr("0 - loghpd")
 
-    rasters["tropical_mask"] = Raster("tropical_mask", outfn("rcp", "tropical.tif"))
-    rasters["temperate_mask"] = Raster("temperate_mask", outfn("rcp", "temperate.tif"))
-    rasters["forested_mask"] = Raster("forested_mask", outfn("rcp", "forested.tif"))
-    rasters["nonforested_mask"] = Raster(
-        "nonforested_mask", outfn("rcp", "nonforested.tif")
-    )
+    rasters["tropical_mask"] = Raster(outfn("rcp", "tropical.tif"))
+    rasters["temperate_mask"] = Raster(outfn("rcp", "temperate.tif"))
+    rasters["forested_mask"] = Raster(outfn("rcp", "forested.tif"))
+    rasters["nonforested_mask"] = Raster(outfn("rcp", "nonforested.tif"))
     rasters["log_dist"] = 0
     rasters["log_study_max_hpd"] = 0
     rasters["log_study_mean_hpd"] = 0
@@ -153,19 +151,19 @@ def rasters(ssp, scenario, year):                           # noqa C901
             if len(ds.variables[layer].shape) != 3:
                 continue
             rasters[f"{layer}_area"] = Raster(
-                f"{layer}_area", vivid_layer(layer, scenario), band=index + 1
+                vivid_layer(layer, scenario), band=index + 1
             )
-            rasters[layer] = SimpleExpr(layer, f"{layer}_area / land")
+            rasters[layer] = SimpleExpr(f"{layer}_area / land")
 
     for yy in range(2020, 2061, 5):
         for subtype in ("mf", "sf"):
             layer = f"restored_{subtype}_{yy}"
             rasters[f"{layer}_area"] = Raster(
-                f"{layer}_area", vivid_restored_layer(subtype, yy, scenario)
+                vivid_restored_layer(subtype, yy, scenario)
             )
-            rasters[layer] = SimpleExpr(layer, f"{layer}_area / land")
+            rasters[layer] = SimpleExpr(f"{layer}_area / land")
         rasters[f"restored_{yy}"] = SimpleExpr(
-            f"restored_{yy}", f"restored_mf_{yy} + " f"restored_sf_{yy}"
+            f"restored_mf_{yy} + " f"restored_sf_{yy}"
         )
 
     for age in range(5, 31, 5):
@@ -177,12 +175,11 @@ def rasters(ssp, scenario, year):                           # noqa C901
 
     include_years = tuple(range(2020, year + 1, 5))
     adj_mf = " + ".join([f"restored_mf_{yy}" for yy in include_years])
-    rasters["adj_forestry"] = SimpleExpr(
-        "adj_forestry", f"clip((forestry - ({adj_mf})), 0, 1)"
-    )
+    import pdb; pdb.set_trace()
+    rasters["adj_forestry"] = SimpleExpr(f"clip((forestry - ({adj_mf})), 0, 1)")
     adj_sf = " + ".join([f"restored_sf_{yy}" for yy in include_years])
     rasters["adj_secdforest"] = SimpleExpr(
-        "adj_secdforest", f"clip((secdforest - ({adj_sf})), 0, 1)"
+        f"clip((secdforest - ({adj_sf})), 0, 1)"
     )
 
     with Dataset(vivid_crop(scenario)) as ds:
@@ -192,31 +189,29 @@ def rasters(ssp, scenario, year):                           # noqa C901
         index = years_avail.index(year)
         for layer in ("begr", "betr", "oilpalm", "sugr_cane"):
             rasters[f"{layer}_rainfed"] = Raster(
-                f"{layer}_rainfed",
                 vivid_crop_layer(layer + ".rainfed", scenario),
                 band=index + 1,
             )
             rasters[f"{layer}_irrigated"] = Raster(
-                f"{layer}_rainfed",
                 vivid_crop_layer(layer + ".irrigated", scenario),
                 band=index + 1,
             )
             rasters[f"{layer}"] = SimpleExpr(
-                layer, f"{layer}_rainfed " f"+ {layer}_irrigated"
+                f"{layer}_rainfed " f"+ {layer}_irrigated"
             )
         rasters["perennial_share"] = SimpleExpr(
-            "perennial_layer", "begr + betr + oilpalm " "+ sugr_cane"
+            "begr + betr + oilpalm " "+ sugr_cane"
         )
 
     # FIXME: How to compute other_notprimary
     rasters["other_primary"] = 0.00
     rasters["other_notprimary"] = SimpleExpr(
-        "other_notprimary", "other * (1 - other_primary)"
+        "other * (1 - other_primary)"
     )
     rasters["pasture"] = "past"
-    rasters["primary"] = SimpleExpr("primary", "other * other_primary + primforest")
-    rasters["perennial"] = SimpleExpr("annual", "crop * perennial_share")
-    rasters["annual"] = SimpleExpr("annual", "crop * (1 - perennial_share)")
+    rasters["primary"] = SimpleExpr("other * other_primary + primforest")
+    rasters["perennial"] = SimpleExpr("crop * perennial_share")
+    rasters["annual"] = SimpleExpr("crop * (1 - perennial_share)")
 
     for lu in ("pasture", "primary"):
         ref_path = outfn("rcp", "%s-recal-fix.tif" % lu)
@@ -224,7 +219,7 @@ def rasters(ssp, scenario, year):                           # noqa C901
             n = lu + "_" + intensity
             rasters[n] = lui.RCP(lu, intensity)
             n2 = n + "_ref"
-            rasters[n2] = Raster(n2, ref_path, band + 1)
+            rasters[n2] = Raster(ref_path, band + 1)
 
     base = "magpie_baseline_pas"
     rasters[f"{base}_urban"] = "urban"
@@ -242,11 +237,11 @@ def rasters(ssp, scenario, year):                           # noqa C901
     rasters[f"{base}_age30"] = "age30"
 
     rasters[f"{base}_primary_light_intense"] = SimpleExpr(
-        "primary_light_intense", "primary_light + primary_intense"
+        "primary_light + primary_intense"
     )
     rasters[f"{base}_pasture_minimal"] = "pasture_minimal"
     rasters[f"{base}_pasture_light_intense"] = SimpleExpr(
-        "pasture_light_intense", "pasture_light + primary_intense"
+        "pasture_light + primary_intense"
     )
 
     #
@@ -281,11 +276,10 @@ def rasters(ssp, scenario, year):                           # noqa C901
 def inv_transform(what, output, intercept):
     if what == "ab":
         oname = "Abundance"
-        expr = SimpleExpr(oname, "pow(%s, 2) / pow(%f, 2)" % (output, intercept))
+        expr = SimpleExpr("pow(%s, 2) / pow(%f, 2)" % (output, intercept))
     else:
         oname = "CompSimAb"
         expr = SimpleExpr(
-            oname,
             "(inv_logit(%s) - 0.01) /" "(inv_logit(%f) - 0.01)" % (output, intercept),
         )
     return oname, expr
@@ -307,7 +301,7 @@ def do_forested_mask(what, ssp, scenario, year, model):
             intercept = model.intercept
 
         print("%s %s forest intercept: %6.4f" % (what, kind, intercept))
-        rs[kind] = SimpleExpr(kind, f"{model.output} * {kind}_mask")
+        rs[kind] = SimpleExpr(f"{model.output} * {kind}_mask")
         data, meta = rs.eval(kind, quiet=True)
         data2 = ma.where(
             data < model.output_range[0],
@@ -336,7 +330,7 @@ def do_forested(what, ssp, scenario, year, model, tree):
         # print('%s %s forest intercept: %6.4f' % (what, kind, intercept))
         oname, expr = inv_transform(what, model.output, intercept)
         rs[oname] = expr
-        rs[kind] = SimpleExpr(kind, f"{oname} * {kind}_mask")
+        rs[kind] = SimpleExpr(f"{oname} * {kind}_mask")
         if tree:
             print(rs.tree(kind))
             continue
@@ -354,18 +348,17 @@ def do_non_forested(what, ssp, scenario, year, model, tree):
     if True:
         pre = "magpie_baseline_pas_contrast_primary_minimal"
         rs[f"{pre}_perennial"] = SimpleExpr(
-            f"{pre}_perennial", "perennial + forestry - adj_forestry"
+            "perennial + forestry - adj_forestry"
         )
         rs[f"{pre}_other_not_primary"] = SimpleExpr(
-            f"{pre}_other_not_primary", "other_notprimary + secdforest - adj_secdforest"
+            "other_notprimary + secdforest - adj_secdforest"
         )
 
         base = "magpie_baseline_pas"
         rs[f"{base}_perennial"] = SimpleExpr(
-            f"{base}_perennial", "perennial + forestry - adj_forestry"
+            "perennial + forestry - adj_forestry"
         )
         rs[f"{base}_other_not_primary"] = SimpleExpr(
-            f"{base}_other_not_primary",
             "other_notprimary + secdforest - adj_secdforest",
         )
 
@@ -374,7 +367,7 @@ def do_non_forested(what, ssp, scenario, year, model, tree):
     # print('%s non-forest intercept: %6.4f' % (what, intercept))
     oname, expr = inv_transform(what, model.output, intercept)
     rs[oname] = expr
-    rs["masked"] = SimpleExpr("masked", f"{oname} * nonforested_mask")
+    rs["masked"] = SimpleExpr(f"{oname} * nonforested_mask")
     if tree:
         print(rs.tree("masked"))
         return
@@ -390,7 +383,7 @@ def do_non_forested_mask(what, ssp, scenario, year, model):
     rs[model.output] = model
     intercept = model.intercept
     print("%s non-forest intercept: %6.4f" % (what, intercept))
-    rs["masked"] = SimpleExpr("masked", f"{model.output} * nonforested_mask")
+    rs["masked"] = SimpleExpr(f"{model.output} * nonforested_mask")
     data, meta = rs.eval("masked", quiet=True)
     data2 = ma.where(
         data < model.output_range[0], 1, ma.where(data > model.output_range[1], 1, 0)
@@ -403,12 +396,12 @@ def do_bii(oname, scenario, years):
     for year in years:
         rs = RasterSet(
             {
-                oname: SimpleExpr("bii", "ab * cs"),
+                oname: SimpleExpr("ab * cs"),
                 "cs": Raster(
-                    "cs", outfn("rcp", f"dasgupta-{scenario}-CompSimAb-{year}.tif")
+                    outfn("rcp", f"dasgupta-{scenario}-CompSimAb-{year}.tif")
                 ),
                 "ab": Raster(
-                    "ab", outfn("rcp", f"dasgupta-{scenario}-Abundance-{year}.tif")
+                    outfn("rcp", f"dasgupta-{scenario}-Abundance-{year}.tif")
                 ),
             }
         )

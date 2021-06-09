@@ -8,7 +8,7 @@ from pylru import lrudecorator
 import rasterio
 
 from projutils import hpd
-from rasterset import RasterSet, Raster, SimpleExpr
+from rasterset import RasterSet, Raster
 from projections.utils import data_file, luh2_static, luh2_layer, outfn
 import r2py.modelr as modelr
 
@@ -114,12 +114,12 @@ def rasters(ssp, scenario, year):
     else:
         hpd_dict = hpd.sps.raster(ssp, year, "luh2")
     rasters["pop"] = hpd_dict["hpd"]
-    rasters["hpd"] = SimpleExpr("pop / land")
-    rasters["log_hpd30sec"] = SimpleExpr("log(hpd + 1)")
+    rasters["hpd"] = "pop / land"
+    rasters["log_hpd30sec"] = "log(hpd + 1)"
 
     # Road density
     rasters["r_dlte2_10"] = Raster(outfn("luh2", "RDlte2_10km-avgerage.tif"))
-    rasters["log_r_dlte2_10"] = SimpleExpr("log(r_dlte2_10 + 1)")
+    rasters["log_r_dlte2_10"] = "log(r_dlte2_10 + 1)"
 
     # import pdb; pdb.set_trace()
     if not regrowth(scenario):
@@ -132,7 +132,7 @@ def rasters(ssp, scenario, year):
         )
         rasters["regrowth"] = Raster(globiom_layer("Regrowth", scenario),
                                      band=bidx)
-        rasters["secdy"] = SimpleExpr("regrowth - secdi")
+        rasters["secdy"] = "regrowth - secdi"
 
     # Read the raw GLOBIOM rasters.  These may be scaled to add urban
     # from the LUH2 dataset.
@@ -159,28 +159,25 @@ def rasters(ssp, scenario, year):
     # the abundance model the other is for the compositional similarity
     # model.
     for prefix in ("globiom_lu_proj", "contrast_proj_p_as"):
-        rasters[f"{prefix}_cropland"] = SimpleExpr("cropland * scale")
-        rasters[f"{prefix}_forest"] = SimpleExpr("forest * scale")
-        rasters[f"{prefix}_oth_agri"] = SimpleExpr("oth_agri * scale")
-        rasters[f"{prefix}_pasture"] = SimpleExpr("pasture * scale")
-        rasters[f"{prefix}_plt_for"] = SimpleExpr("plt_for * scale")
-        rasters[f"{prefix}_urban"] = SimpleExpr("urban * unscale")
-        rasters[f"{prefix}_secondary_intermediate"] = SimpleExpr(
-            "secdi * scale"
-        )
-        rasters[f"{prefix}_secondary_young"] = SimpleExpr("secdy * scale")
+        rasters[f"{prefix}_cropland"] = "cropland * scale"
+        rasters[f"{prefix}_forest"] = "forest * scale"
+        rasters[f"{prefix}_oth_agri"] = "oth_agri * scale"
+        rasters[f"{prefix}_pasture"] = "pasture * scale"
+        rasters[f"{prefix}_plt_for"] = "plt_for * scale"
+        rasters[f"{prefix}_urban"] = "urban * unscale"
+        rasters[f"{prefix}_secondary_intermediate"] = "secdi * scale"
+        rasters[f"{prefix}_secondary_young"] = "secdy * scale"
     return rasters
 
 
 def inv_transform(what, output, intercept):
     if what == "ab":
         oname = "Abundance"
-        expr = SimpleExpr("pow(%s, 2) / pow(%f, 2)" % (output, intercept))
+        expr = "pow(%s, 2) / pow(%f, 2)" % (output, intercept)
     else:
         oname = "CompSimAb"
-        expr = SimpleExpr(
-            "(inv_logit(%s) - 0.01) /" "(inv_logit(%f) - 0.01)" % (output, intercept),
-        )
+        expr = "(inv_logit(%s) - 0.01) /" "(inv_logit(%f) - 0.01)" % (output, intercept)
+
     return oname, expr
 
 
@@ -204,7 +201,7 @@ def do_bii(oname, scenario, years):
     for year in years:
         rs = RasterSet(
             {
-                oname: SimpleExpr("ab * cs"),
+                oname: "ab * cs",
                 "cs": Raster(
                     outfn(
                         "luh2",

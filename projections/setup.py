@@ -36,4 +36,5 @@ setup(
         "setuptools",
         "shapely",
     ],
+    extras_require={"dev": ["black", "flake8", "pylint", "pytest"]},
 )

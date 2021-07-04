@@ -46,7 +46,7 @@ def gen_secdi(scenario):
 
     """
     if not Path(
-        outfn("luh2", "restore", "brazil", brazil_dirname(scenario), "Regrowth.tif")
+        outfn("rcp", "restore", "brazil", brazil_dirname(scenario), "Regrowth.tif")
     ).exists():
         print(f"Skiping scenario {scenario}; no regrowth")
         return

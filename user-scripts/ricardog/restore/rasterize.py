@@ -10,18 +10,36 @@ import rasterio
 import rasterio.mask
 import rasterio.features
 
-from projections.utils import data_file, outfn
+from projutils.utils import data_file, outfn
 
 
 def get_data_file(name):
-    return Path(data_file("brazil-restore", name))
+    return Path(data_file("restore", "brazil", name))
 
 
-def read_data(shapefile, areaf, landusef):
+def get_shapes(shapefile):
     raw_shapes = gpd.read_file(get_data_file(shapefile))
     raw_shapes[["Column", "Row"]] = raw_shapes.GRD30.str.split(" - ", expand=True)
     raw_shapes.Column = raw_shapes.Column.astype(int)
     raw_shapes.Row = raw_shapes.Row.astype(int)
+    return raw_shapes
+
+
+def get_urban_data(shapefile, urbanf):
+    raw_shapes = get_shapes(shapefile)
+    biomas = pd.read_csv(get_data_file(urbanf))
+    biomas[['Fraction']] = biomas.groupby('Colrow')\
+                                 .apply(lambda x: x['sum'] / x['sum'].sum())\
+                                 .reset_index()['sum']
+    urban = biomas[biomas.MapBiomas_description == 'Urban Infrastructure']
+    shapes = raw_shapes.merge(urban[['Colrow', 'Fraction']], on='Colrow',
+                              how='left')
+    shapes.Fraction = shapes.Fraction.fillna(0.0)
+    return shapes
+
+
+def read_data(shapefile, areaf, landusef):
+    raw_shapes = get_shapes(shapefile)
     area = pd.read_csv(get_data_file(areaf), header=None)
     area.columns = ["Country", "Cell", "TotalArea"]
     shapes = raw_shapes.merge(area, right_on="Cell", left_on="Colrow")
@@ -39,8 +57,9 @@ def get_fname(scenario, lu):
 
 
 def get_xform(shapes, reference):
+    import pdb; pdb.set_trace()
     raw = [geo for geo in shapes.geometry]
-    with rasterio.open(reference) as ref:
+    with rasterio.open(outfn("luh2", reference)) as ref:
         img, xform = rasterio.mask.mask(ref, raw, crop=True)
     return (img.shape[1:], xform)
 
@@ -88,6 +107,23 @@ def to_array(scenario, landuse, shapes, lu, shape, xform):
     return
 
 
+def to_array2(shapes, shape, xform):
+    crs = rasterio.crs.CRS.from_epsg(shapes.crs.to_epsg())
+    height = shapes.Row.max() - shapes.Row.min() + 1
+    width = shapes.Column.max() - shapes.Column.min() + 1
+    rmin = shapes.Row.min()
+    cmin = shapes.Column.min()
+    nodata = -9999.0
+    out = np.full([1, height, width], nodata, dtype="float32")
+    row = shapes.Row.array - rmin
+    col = shapes.Column.array - cmin
+    out[0, row, col] = shapes.Fraction.array
+    ma_out = ma.masked_equal(out, nodata)
+    fname = outfn("luh2", "restore", "brazil", "urban.tif")
+    write(fname, ma_out, xform, crs, (1,))
+    return
+
+
 @click.group()
 def cli():
     return
@@ -121,7 +157,6 @@ def check(landuse):
     count = [xx.count for xx in srcs]
     assert len(set(count)) == 1
     bands = count[0]
-    # import pdb; pdb.set_trace()
     for idx in range(bands):
         data = ma.stack([xx.read(idx + 1, masked=True) for xx in srcs])
         total = data.sum(axis=0)
@@ -131,6 +166,17 @@ def check(landuse):
             "%d: %6.4f | %6.4f -- %6d"
             % (idx, total.min(), total.max(), np.isclose(total, 1.0, atol=1e-1).sum())
         )
+    return
+
+
+@cli.command()
+@click.argument("shapefile", type=str)
+@click.argument("biomas", type=str)
+@click.argument("reference", type=click.Path(dir_okay=False))
+def urbanize(shapefile, biomas, reference):
+    cells = get_urban_data(shapefile, biomas)
+    shape, xform = get_xform(cells, reference)
+    to_array2(cells, shape, xform)
     return
 
 

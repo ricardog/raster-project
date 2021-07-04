@@ -2,17 +2,20 @@
 
 ** Setup
 
-All but (1) needs to be  run for eac scenario.
+All but (1) needs to be  run for each scenario.
 
 #+begin_src shell
-  ## 1. Download land area per grid cell raster from GOWv4
+  ## 1. Download land area per grid cell raster from GPWv4
   https://sedac.ciesin.columbia.edu/data/set/gpw-v4-land-water-area-rev11
 
+  ## 2. Generate a raster with the fraction of each cell that is urban.
+  OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/rasterize.py urbanize /mnt/data/restore/brazil/Colrow_Brazil/Colrow_Brazil.shp /mnt/data/restore/brazil/MapBiomas_prop_colrow.CSV /mnt/predicts/rcp/un_codes-full.tif
+
   ## 2. Convert CSV files to rasters.
-  OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/rasterize.py rasterize /mnt/data/restore/brazil/Colrow_Brazil/Colrow_Brazil.shp /mnt/data/restore/brazil/SIMUAREA_COLROW.CSV /mnt/data/restore/brazil/LANDUSE_FC.CSV /mnt/predicts/luh2/un_codes-full.tif
+  OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/rasterize.py rasterize /mnt/data/restore/brazil/Colrow_Brazil/Colrow_Brazil.shp /mnt/data/restore/brazil/SIMUAREA_COLROW.CSV /mnt/data/restore/brazil/LANDUSE_FC.CSV /mnt/predicts/rcp/un_codes-full.tif
 
   ## 3. Verify the convertion process (check value of each cell).
-  ./user-scripts/ricardog/restore/rasterize.py check /mnt/predicts/luh2/restore/brazil/LANDUSE_FC/*.tif
+  ./user-scripts/ricardog/restore/rasterize.py check /mnt/predicts/rcp/restore/brazil/LANDUSE_FC/*.tif
 
   ## 4. Generate age distribution for secondary land-use class.
   DATA_ROOT=/mnt/data OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/secdi.py

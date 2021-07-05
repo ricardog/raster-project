@@ -67,9 +67,8 @@ def plot_all(data, indicator, npp):
     #          '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a',
     #          '#ffff99', '#b15928']
     palette = sns.xkcd_palette(colors)
-    sns.lineplot(
-        "Year", "Mean", data=data, hue="Scenario", linewidth=2, palette=palette, ax=ax
-    )
+    sns.lineplot(x="Year", y="Mean", data=data, hue="Scenario",
+                 linewidth=2, palette=palette, ax=ax)
     ax.set_title(f"Mean {npp_text}{t_ind}")
     ax.set_ylabel(f"Mean {npp_text}{t_ind}")
     ax.set_xlabel("Year")
@@ -93,21 +92,16 @@ def get_npp(land, npp, src):
 
 @click.command()
 @click.option("--npp", type=click.Path(dir_okay=False))
-@click.option(
-    "--indicator",
-    "-i",
-    type=click.Choice(("BIIAb", "Abundance", "CompSimAb")),
-    default="BIIAb",
-)
-@click.option(
-    "--raster-dir",
-    "-r",
-    type=click.Path(file_okay=False),
-    default=Path(os.environ.get("OUTDIR", "/out"), "luh2"),
-)
+@click.option("--indicator", "-i", type=click.Choice(("BIIAb",
+                                                      "Abundance",
+                                                      "CompSimAb")),
+              default="BIIAb")
+@click.option("--raster-dir", "-r", type=click.Path(file_okay=False),
+              default=Path(os.environ.get("OUTDIR", "/mnt/predicts"),
+                           "rcp", "restore", "brazil"))
 def worldwide(npp, indicator, raster_dir):
     land_area = None
-    outdir = Path(os.environ.get("OUTDIR", "/out"), "luh2")
+    outdir = Path(os.environ.get("OUTDIR", "/mnt/predicts"), "rcp")
     df = pd.DataFrame(columns=["Year", "Scenario", "Mean"])
     if isinstance(raster_dir, str):
         raster_dir = Path(raster_dir)

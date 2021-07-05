@@ -52,7 +52,7 @@ def gen_secdi(scenario):
         return
     print(f"Aging secondary rasters for scenario {scenario}")
     with rasterio.open(
-        outfn("luh2", "restore", "brazil", brazil_dirname(scenario), "Regrowth.tif")
+        outfn("rcp", "restore", "brazil", brazil_dirname(scenario), "Regrowth.tif")
     ) as src:
         meta = src.meta
         meta.update({"driver": "GTiff", "compress": "lzw", "predictor": 3})
@@ -63,7 +63,7 @@ def gen_secdi(scenario):
         out = rotate(out, 3)
         out.mask = data.mask
         with rasterio.open(
-            outfn("luh2", "restore", "brazil", brazil_dirname(scenario), "secdi.tif"),
+            outfn("rcp", "restore", "brazil", brazil_dirname(scenario), "secdi.tif"),
             "w",
             **meta,
         ) as dst:

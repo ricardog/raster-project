@@ -17,7 +17,7 @@ JOBS=4
 MODELS="base"
 SCENARIOS="fc fc_no_cra fc_no_sfa idc_amz idc_imp_f3 no_fc"
 YEARS=2015:2051:5
-ODIR=${OUTDIR:-/out}
+ODIR=${OUTDIR:-/mnt/predicts}
 
 while getopts "p:m:y:h" options; do
     case "${options}" in
@@ -55,7 +55,7 @@ for model in ${MODELS}; do
     for scene in ${SCENARIOS} ; do
 	printf "%s %s\n" "${scene}" "${YEARS} ${model}"
     done | xargs -P ${JOBS} -n 1 -L 1 ${DIR}/run.sh
-    ${DIR}/summarize.py --npp ${ODIR}/luh2/npp.tif --indicator BIIAb
+    ${DIR}/summarize.py --npp ${ODIR}/rcp/npp.tif --indicator BIIAb
 
     mkdir -p ${model}-model
     mv Figure-1.png brazil-summary.csv ${model}-model

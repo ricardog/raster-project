@@ -5,20 +5,31 @@
 All but (1) needs to be  run for each scenario.
 
 #+begin_src shell
-  ## 1. Download land area per grid cell raster from GPWv4
+  ## 1. Download and resize land area per grid cell raster from GPWv4.
   https://sedac.ciesin.columbia.edu/data/set/gpw-v4-land-water-area-rev11
 
+  gdalwarp -r average  -tap -overwrite -tr 0.5 0.5 -te -180 -90 180 90 -dstnodata -9999 -of GTiff -co COMPRESS=lzw -co PREDICTOR=3 /mnt/predicts/luh2/gpw-land.tif /mnt/predicts/rcp/gpw-land4.tif
+
+
   ## 2. Generate a raster with the fraction of each cell that is urban.
-  OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/rasterize.py urbanize /mnt/data/restore/brazil/Colrow_Brazil/Colrow_Brazil.shp /mnt/data/restore/brazil/MapBiomas_prop_colrow.CSV /mnt/predicts/rcp/un_codes-full.tif
+  ./user-scripts/ricardog/restore/rasterize.py urbanize Colrow_Brazil/Colrow_Brazil.shp MapBiomas_prop_colrow.CSV un_codes-full.tif
 
   ## 2. Convert CSV files to rasters.
-  OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/rasterize.py rasterize /mnt/data/restore/brazil/Colrow_Brazil/Colrow_Brazil.shp /mnt/data/restore/brazil/SIMUAREA_COLROW.CSV /mnt/data/restore/brazil/LANDUSE_FC.CSV /mnt/predicts/rcp/un_codes-full.tif
+  ./user-scripts/ricardog/restore/rasterize.py rasterize Colrow_Brazil/Colrow_Brazil.shp SIMUAREA_COLROW.CSV LANDUSE_FC.CSV un_codes-full.tif
 
   ## 3. Verify the convertion process (check value of each cell).
   ./user-scripts/ricardog/restore/rasterize.py check /mnt/predicts/rcp/restore/brazil/LANDUSE_FC/*.tif
 
   ## 4. Generate age distribution for secondary land-use class.
-  DATA_ROOT=/mnt/data OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/secdi.py
+  ./user-scripts/ricardog/restore/secdi.py
+
+  ## 5. Mask & resize the road density layer.
+  ./user-scripts/ricardog/restore/roads.py /mnt/data/restore/brazil/RDlte2_10km/RDlte2_10km.tif /vsizip//mnt/data/1km/ICE.zip/ICE_1km_2005.bil /mnt/predicts/1km/RDlte2_10km.tif
+
+  gdalwarp -r average -multi -wo NUM_THREADS=ALL_CPUS -tap -overwrite -tr 0.5 0.5 -te -180 -90 180 90 -dstnodata -9999 -of GTiff -co COMPRESS=lzw -co PREDICTOR=3 /mnt/predicts/1km/RDlte2_10km.tif /mnt/predicts/rcp/RDlte2_10km-average.tif
+
+  # This uses a different algorithm for downsampling.
+  gdalwarp -r q3 -multi -wo NUM_THREADS=ALL_CPUS -tap -overwrite -tr 0.5 0.5 -te -180 -90 180 90 -dstnodata -9999 -of GTiff -co COMPRESS=lzw -co PREDICTOR=3 /mnt/predicts/1km/RDlte2_10km.tif /mnt/predicts/rcp/RDlte2_10km-q3.tif
 #+end_src
 
 Also need a road-density layer (which I think came from Katia).  The
@@ -31,3 +42,8 @@ To run the projections use the *restore.py* script.
 #+begin_src shell
   DATA_ROOT=/mnt/data OUTDIR=/mnt/predicts ./user-scripts/ricardog/restore/restore.py project ab -m /mnt/predicts/models/restore/brazil/2020-10-27/base/ fc 2015
 #+end_src
+
+There is also a script (~doit.sh~) that will run all the projections (all
+three indicators) for all the scenarios and will generate the summary
+chart. 
+

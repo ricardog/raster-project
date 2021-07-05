@@ -4,6 +4,7 @@ import click
 from fnmatch import fnmatch
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 import numpy.ma as ma
 import os
 import pandas as pd
@@ -121,13 +122,12 @@ def worldwide(npp, indicator, raster_dir):
             if not land_area:
                 npp, land = get_npp(Path(outdir, "land.tif"), npp, src)
                 land_area = (land * npp).sum()
-            # pdb.set_trace()
             data = src.read(1, masked=True) * npp
             df = df.append(
                 {
                     "Year": int(year),
                     "Scenario": scenario,
-                    "Mean": ((data * land).sum() / (npp * data.mask * land).sum()),
+                    "Mean": ((data * land).sum() / (npp * np.where(data.mask, 0, 1) * land).sum()),
                 },
                 ignore_index=True,
             )

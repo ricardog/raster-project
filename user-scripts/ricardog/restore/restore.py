@@ -84,7 +84,10 @@ def year_index(year, scenario):
 
 
 def globiom_layer(layer, scenario):
-    return outfn("luh2", "restore", "brazil", brazil_dirname(scenario), f"{layer}.tif")
+    if scenario:
+        return outfn("rcp", "restore", "brazil", brazil_dirname(scenario),
+                     f"{layer}.tif")
+    return outfn("rcp", "restore", "brazil", f"{layer}.tif")
 
 
 def regrowth(scenario):
@@ -96,14 +99,12 @@ def rasters(ssp, scenario, year):
     rasters = {}
 
     # Compute land area of each cell
-    rasters["carea"] = Raster(luh2_static("carea"))
-    rasters["icwtr"] = Raster(luh2_static("icwtr"))
-    rasters["land"] = Raster(outfn("luh2", "gpw-land.tif"))
+    rasters["land"] = Raster(outfn("rcp", "gpw-land.tif"))
 
     # UN Subregion and UN country code
-    rasters["hpd_ref"] = Raster(outfn("luh2", "gluds00ag.tif"))
-    rasters["unSub"] = Raster(outfn("luh2", "un_subregions-full.tif"))
-    rasters["un_code"] = Raster(outfn("luh2", "un_codes-full.tif"))
+    rasters["hpd_ref"] = Raster(outfn("rcp", "gluds00ag.tif"))
+    rasters["unSub"] = Raster(outfn("rcp", "un_subregions-full.tif"))
+    rasters["un_code"] = Raster(outfn("rcp", "un_codes-full.tif"))
 
     rasters["cube_rt_env_dist"] = 0
     rasters["log_adj_geog_dist"] = 0
@@ -112,13 +113,13 @@ def rasters(ssp, scenario, year):
     if year < 2015:
         raise IndexError(f"year must be greater than 2014 ({year})")
     else:
-        hpd_dict = hpd.sps.raster(ssp, year, "luh2")
+        hpd_dict = hpd.sps.raster(ssp, year, "rcp")
     rasters["pop"] = hpd_dict["hpd"]
     rasters["hpd"] = "pop / land"
     rasters["log_hpd30sec"] = "log(hpd + 1)"
 
     # Road density
-    rasters["r_dlte2_10"] = Raster(outfn("luh2", "RDlte2_10km-avgerage.tif"))
+    rasters["r_dlte2_10"] = Raster(outfn("rcp", "RDlte2_10km-average.tif"))
     rasters["log_r_dlte2_10"] = "log(r_dlte2_10 + 1)"
 
     # import pdb; pdb.set_trace()
@@ -127,32 +128,31 @@ def rasters(ssp, scenario, year):
         rasters["secdy"] = 0
     else:
         rasters["secdi"] = Raster(
-            outfn("luh2", "restore", "brazil", brazil_dirname(scenario), "secdi.tif"),
+            outfn("rcp", "restore", "brazil", brazil_dirname(scenario), "secdi.tif"),
             band=bidx,
         )
         rasters["regrowth"] = Raster(globiom_layer("Regrowth", scenario),
                                      band=bidx)
         rasters["secdy"] = "regrowth - secdi"
 
-    # Read the raw GLOBIOM rasters.  These may be scaled to add urban
-    # from the LUH2 dataset.
-    rasters["cropland"] = Raster(
-        globiom_layer("CropLand", scenario), band=bidx
-    )
+    # Read the raw GLOBIOM rasters.
+    rasters["cropland"] = Raster(globiom_layer("CropLand", scenario),
+                                 band=bidx)
     rasters["forest"] = Raster(globiom_layer("Forest", scenario), band=bidx)
     rasters["oth_agri"] = Raster(
         globiom_layer("OthAgri", scenario), band=bidx
     )
-    rasters["pasture"] = Raster(
-        globiom_layer("Pasture", scenario), band=bidx
-    )
+    rasters["pasture"] = Raster(globiom_layer("Pasture", scenario), band=bidx)
     rasters["plt_for"] = Raster(globiom_layer("PltFor", scenario), band=bidx)
+    rasters["wetlnd"] = Raster(globiom_layer("WetLnd", scenario), band=bidx)
+    rasters["not_rel"] = Raster(globiom_layer("NotRel", scenario), band=bidx)
 
-    ssp_scenario = "SSP2_RCP4.5_MESSAGE-GLOBIOM"
-    rasters["urban"] = Raster(
-        luh2_layer(ssp_scenario, "urban"), band=year - 2015 + 1
-    )
-    rasters["scale"] = 1
+    # Urban cell fraction comes from MapBiomas.
+    rasters["urban"] = Raster(globiom_layer("Urban", None))
+
+    # Scale up cell fractions to remove WetLnd and NotRel classes (they
+    # do not have an equivalent in PREDICTS).
+    rasters["scale"] = "1.0 / (1 - wetlnd - not_rel)"
     rasters["unscale"] = 0
 
     # Land-use layers.  Iterate twice with different prefix; one is for
@@ -182,7 +182,8 @@ def inv_transform(what, output, intercept):
 
 
 def do_model(what, ssp, scenario, year, model, tree):
-    rs = RasterSet(rasters(ssp, scenario, year))
+    bbox = [-74.0, -33.5, -34.5, 5.5]
+    rs = RasterSet(rasters(ssp, scenario, year), bbox=bbox, crop=True)
     rs[model.output] = model
     intercept = model.intercept
     oname, expr = inv_transform(what, model.output, intercept)
@@ -192,7 +193,7 @@ def do_model(what, ssp, scenario, year, model, tree):
         return
     data, meta = rs.eval(oname, quiet=True)
     fname = f"restore-{scenario}-{oname}-{year}.tif"
-    with rasterio.open(outfn("luh2", "restore", "brazil", fname), "w", **meta) as dst:
+    with rasterio.open(outfn("rcp", "restore", "brazil", fname), "w", **meta) as dst:
         dst.write(data.filled(), indexes=1)
     return
 
@@ -204,7 +205,7 @@ def do_bii(oname, scenario, years):
                 oname: "ab * cs",
                 "cs": Raster(
                     outfn(
-                        "luh2",
+                        "rcp",
                         "restore",
                         "brazil",
                         f"restore-{scenario}-CompSimAb-{year}.tif",
@@ -212,7 +213,7 @@ def do_bii(oname, scenario, years):
                 ),
                 "ab": Raster(
                     outfn(
-                        "luh2",
+                        "rcp",
                         "restore",
                         "brazil",
                         f"restore-{scenario}-Abundance-{year}.tif",
@@ -222,13 +223,9 @@ def do_bii(oname, scenario, years):
         )
         # print(rs.tree(oname))
         data, meta = rs.eval(oname, quiet=True)
-        with rasterio.open(
-            outfn(
-                "luh2", "restore", "brazil", f"restore-{scenario}-{oname}-{year}.tif"
-            ),
-            "w",
-            **meta,
-        ) as dst:
+        with rasterio.open(outfn("rcp", "restore", "brazil",
+                                 f"restore-{scenario}-{oname}-{year}.tif"),
+                           "w", **meta,) as dst:
             dst.write(data.filled(), indexes=1)
     return
 
@@ -239,11 +236,9 @@ def do_other(vname, ssp, scenario, year, tree):
         print(rs.tree(vname))
         return
     data, meta = rs.eval(vname, quiet=True)
-    with rasterio.open(
-        outfn("luh2", "restore", "brazil", f"restore-{scenario}-{vname}-{year}.tif"),
-        "w",
-        **meta,
-    ) as dst:
+    with rasterio.open(outfn("luh2", "restore", "brazil",
+                             f"restore-{scenario}-{vname}-{year}.tif"),
+                       "w", **meta,) as dst:
         dst.write(data.filled(), indexes=1)
     return
 

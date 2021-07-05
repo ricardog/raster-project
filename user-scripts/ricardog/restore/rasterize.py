@@ -28,18 +28,18 @@ def get_shapes(shapefile):
 def get_urban_data(shapefile, urbanf):
     raw_shapes = get_shapes(shapefile)
     biomas = pd.read_csv(get_data_file(urbanf))
-    biomas[['Fraction']] = biomas.groupby('Colrow')\
+    biomas[['Urban']] = biomas.groupby('Colrow')\
                                  .apply(lambda x: x['sum'] / x['sum'].sum())\
                                  .reset_index()['sum']
     urban = biomas[biomas.MapBiomas_description == 'Urban Infrastructure']
-    shapes = raw_shapes.merge(urban[['Colrow', 'Fraction']], on='Colrow',
+    shapes = raw_shapes.merge(urban[['Colrow', 'Urban']], on='Colrow',
                               how='left')
-    shapes.Fraction = shapes.Fraction.fillna(0.0)
+    shapes.Urban = shapes.Urban.fillna(0.0)
     return shapes
 
 
-def read_data(shapefile, areaf, landusef):
-    raw_shapes = get_shapes(shapefile)
+def read_data(shapefile, areaf, urbanf, landusef):
+    raw_shapes = get_urban_data(shapefile, urbanf)
     area = pd.read_csv(get_data_file(areaf), header=None)
     area.columns = ["Country", "Cell", "TotalArea"]
     shapes = raw_shapes.merge(area, right_on="Cell", left_on="Colrow")
@@ -49,7 +49,7 @@ def read_data(shapefile, areaf, landusef):
 
 
 def get_fname(scenario, lu):
-    fname = outfn("luh2", "restore", "brazil", scenario, f"{lu}.tif")
+    fname = outfn("rcp", "restore", "brazil", scenario, f"{lu}.tif")
     parent = Path(fname).parent
     if not parent.exists():
         parent.mkdir()
@@ -57,9 +57,8 @@ def get_fname(scenario, lu):
 
 
 def get_xform(shapes, reference):
-    import pdb; pdb.set_trace()
     raw = [geo for geo in shapes.geometry]
-    with rasterio.open(outfn("luh2", reference)) as ref:
+    with rasterio.open(outfn("rcp", reference)) as ref:
         img, xform = rasterio.mask.mask(ref, raw, crop=True)
     return (img.shape[1:], xform)
 
@@ -82,6 +81,25 @@ def write(fname, data, xform, crs, years):
     return
 
 
+def remove_unwanted(df):
+    def process(cell):
+        selector = cell.LandUse.isin(("WetLnd", "NotRel"))
+        extra = cell[selector].Fraction.sum()
+        if extra > 0:
+            fraction = cell.Fraction / (1 - extra)
+            fraction[selector] = 0
+        else:
+            fraction = cell.Fraction
+        if fraction.sum() > 2:
+            import pdb; pdb.set_trace()
+        #print("%s: %4d -- %7.5f" % (cell.Cell.values[0], cell.Year.values[0],
+        #                            cell.Fraction.sum()))
+        return cell
+
+    out = df.groupby(["Year", "Cell"]).apply(process)
+    return out
+
+            
 def to_array(scenario, landuse, shapes, lu, shape, xform):
     crs = rasterio.crs.CRS.from_epsg(shapes.crs.to_epsg())
     height = shapes.Row.max() - shapes.Row.min() + 1
@@ -117,9 +135,12 @@ def to_array2(shapes, shape, xform):
     out = np.full([1, height, width], nodata, dtype="float32")
     row = shapes.Row.array - rmin
     col = shapes.Column.array - cmin
-    out[0, row, col] = shapes.Fraction.array
+    out[0, row, col] = shapes.Urban.array
     ma_out = ma.masked_equal(out, nodata)
-    fname = outfn("luh2", "restore", "brazil", "urban.tif")
+    fname = outfn("rcp", "restore", "brazil", "Urban.tif")
+    parent = Path(fname).parent
+    if not parent.exists():
+        parent.mkdir()
     write(fname, ma_out, xform, crs, (1,))
     return
 
@@ -130,16 +151,23 @@ def cli():
 
 
 @cli.command()
-@click.argument("shapefile", type=str)
-@click.argument("area", type=str)
 @click.argument("landuse", type=str)
 @click.argument("reference", type=click.Path(dir_okay=False))
-def rasterize(shapefile, area, landuse, reference):
+@click.option("-s", "--shapefile", type=click.Path(),
+              default="Colrow_Brazil/Colrow_Brazil.shp")
+@click.option("-a", "--area", type=click.Path(),
+              default="SIMUAREA_COLROW.CSV")
+@click.option("-b", "--biomas", type=click.Path(dir_okay=False),
+              default="MapBiomas_prop_colrow.CSV")
+def rasterize(landuse, reference, shapefile, area, biomas):
     scenario = Path(landuse).stem
-    cells, land_use = read_data(shapefile, area, landuse)
+    cells, land_use = read_data(shapefile, area, biomas, landuse)
     shape, xform = get_xform(cells, reference)
-    land_use = land_use.merge(cells[["Cell", "TotalArea", "Column", "Row"]], on="Cell")
+    land_use = land_use.merge(cells[["Cell", "TotalArea", "Urban",
+                                     "Column", "Row"]], on="Cell")
     land_use["Fraction"] = land_use.Area / land_use.TotalArea
+    land_use.Fraction *= 1 - land_use.Urban
+    #land_use = remove_unwanted(land_use)
     for lu in land_use.LandUse.unique():
         print(f"Processing {lu}")
         to_array(scenario, land_use, cells, lu, shape, xform)
@@ -149,8 +177,6 @@ def rasterize(shapefile, area, landuse, reference):
 @cli.command()
 @click.argument("landuse", nargs=-1, type=click.Path(dir_okay=False))
 def check(landuse):
-    import matplotlib.pyplot as plt
-
     if not landuse:
         return
     srcs = [rasterio.open(xx) for xx in landuse]
@@ -160,8 +186,8 @@ def check(landuse):
     for idx in range(bands):
         data = ma.stack([xx.read(idx + 1, masked=True) for xx in srcs])
         total = data.sum(axis=0)
-        plt.imshow(total)
-        plt.show()
+        # plt.imshow(total)
+        # plt.show()
         print(
             "%d: %6.4f | %6.4f -- %6d"
             % (idx, total.min(), total.max(), np.isclose(total, 1.0, atol=1e-1).sum())
@@ -170,10 +196,12 @@ def check(landuse):
 
 
 @cli.command()
-@click.argument("shapefile", type=str)
-@click.argument("biomas", type=str)
 @click.argument("reference", type=click.Path(dir_okay=False))
-def urbanize(shapefile, biomas, reference):
+@click.option("-s", "--shapefile", type=click.Path(),
+              default="Colrow_Brazil/Colrow_Brazil.shp")
+@click.option("-b", "--biomas", type=click.Path(dir_okay=False),
+              default="MapBiomas_prop_colrow.CSV")
+def urbanize(reference, shapefile, biomas):
     cells = get_urban_data(shapefile, biomas)
     shape, xform = get_xform(cells, reference)
     to_array2(cells, shape, xform)

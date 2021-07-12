@@ -9,7 +9,7 @@ import rasterio
 
 from projutils import hpd
 from rasterset import RasterSet, Raster
-from projections.utils import data_file, luh2_static, luh2_layer, outfn
+from projections.utils import data_file, outfn
 import r2py.modelr as modelr
 
 # import pdb
@@ -192,7 +192,7 @@ def do_model(what, ssp, scenario, year, model, tree):
         print(rs.tree(oname))
         return
     data, meta = rs.eval(oname, quiet=True)
-    fname = f"restore-{scenario}-{oname}-{year}.tif"
+    fname = f"{scenario}-{oname}-{year}.tif"
     with rasterio.open(outfn("rcp", "restore", "brazil", fname), "w", **meta) as dst:
         dst.write(data.filled(), indexes=1)
     return
@@ -208,7 +208,7 @@ def do_bii(oname, scenario, years):
                         "rcp",
                         "restore",
                         "brazil",
-                        f"restore-{scenario}-CompSimAb-{year}.tif",
+                        f"{scenario}-CompSimAb-{year}.tif",
                     ),
                 ),
                 "ab": Raster(
@@ -216,7 +216,7 @@ def do_bii(oname, scenario, years):
                         "rcp",
                         "restore",
                         "brazil",
-                        f"restore-{scenario}-Abundance-{year}.tif",
+                        f"{scenario}-Abundance-{year}.tif",
                     ),
                 ),
             }
@@ -224,7 +224,7 @@ def do_bii(oname, scenario, years):
         # print(rs.tree(oname))
         data, meta = rs.eval(oname, quiet=True)
         with rasterio.open(outfn("rcp", "restore", "brazil",
-                                 f"restore-{scenario}-{oname}-{year}.tif"),
+                                 f"{scenario}-{oname}-{year}.tif"),
                            "w", **meta,) as dst:
             dst.write(data.filled(), indexes=1)
     return
@@ -236,8 +236,8 @@ def do_other(vname, ssp, scenario, year, tree):
         print(rs.tree(vname))
         return
     data, meta = rs.eval(vname, quiet=True)
-    with rasterio.open(outfn("luh2", "restore", "brazil",
-                             f"restore-{scenario}-{vname}-{year}.tif"),
+    with rasterio.open(outfn("rcp", "restore", "brazil",
+                             f"{scenario}-{vname}-{year}.tif"),
                        "w", **meta,) as dst:
         dst.write(data.filled(), indexes=1)
     return

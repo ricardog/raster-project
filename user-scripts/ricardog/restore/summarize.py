@@ -106,12 +106,11 @@ def worldwide(npp, indicator, raster_dir):
     if isinstance(raster_dir, str):
         raster_dir = Path(raster_dir)
     for path in filter(
-        lambda p: fnmatch(p.name, f"restore-*-{indicator}-20*.tif"),
+        lambda p: fnmatch(p.name, f"*-{indicator}-20*.tif"),
         raster_dir.iterdir(),
     ):
         print(path)
-        _, scenario, _ = path.stem.split("-", 2)
-        _, year = path.stem.rsplit("-", 1)
+        scenario, _, year= path.stem.split("-")
         with rasterio.open(path) as src:
             if not land_area:
                 npp, land = get_npp(Path(outdir, "land.tif"), npp, src)

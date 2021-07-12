@@ -64,8 +64,8 @@ for model in ${MODELS}; do
 	rio calc -t float32 -f GTiff --masked --overwrite \
 	    --co COMPRESS=lzw --co PREDICTOR=3 \
 	    "(- (read 1) (read 2))" \
-	    ${ODIR}/rcp/restore/brazil/restore-${scene}-BIIAb-2050.tif \
-	    ${ODIR}/rcp/restore/brazil/restore-${scene}-BIIAb-2015.tif \
+	    ${ODIR}/rcp/restore/brazil/${scene}-BIIAb-2050.tif \
+	    ${ODIR}/rcp/restore/brazil/${scene}-BIIAb-2015.tif \
 	    -o ${model}-model/restore-${scene}-BIIAb-diff.tif
 	rview -s ${model}-model/restore-${scene}-BIIAb-diff.png \
 	      ${model}-model/restore-${scene}-BIIAb-diff.tif

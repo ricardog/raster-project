@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PG_HOST=192.168.178.63
+PG_HOST=192.168.178.21
 PG_PORT=5432
 DB=trees
 PG_USER=postgis

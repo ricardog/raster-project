@@ -18,7 +18,7 @@ import pdb
 
 #
 # To create the DB:
-# CREATE DATABASE trees WITH ENCODING='UTF8' LC_CTYPE='en_US.UTF-8' LC_COLLATE='en_US.UTF-8' OWNER=postgis TEMPLATE=template0 CONNECTION LIMIT=-1;  # noqa E501
+# CREATE DATABASE trees WITH ENCODING='UTF8' LC_CTYPE='en_US.utf8' LC_COLLATE='en_US.utf8' OWNER=postgis TEMPLATE=template_postgis CONNECTION LIMIT=-1;  # noqa E501
 #
 # To insert tree DB data into database
 # ogr2ogr -f "PostgreSQL" PG:"host=bonobo.local port=5432 dbname=trees user=postgis password=postgis" plantations_v1_3_dl.gdb aus_plant  # noqa E501
@@ -33,11 +33,11 @@ import pdb
 # generates "tpology errors".  I fixed this by creating a new column and
 # assigning it with a "valid" version of the geometry
 # ALTER TABLE trees ADD COLUMN geom geometry(MultiPolygon, 4326);
-# UPDATE trees SET geom = STMakeValid(geom);
+# UPDATE trees SET geom = ST_MakeValid(geom);
 # CREATE INDEX trees_geom_geom_idx ON trees USING GIST (geom);
 
 os.environ["DB_NAME"] = "trees"
-os.environ["DB_HOST"] = "192.168.178.63"
+os.environ["DB_HOST"] = "192.168.178.21"
 os.environ["DB_USER"] = "postgis"
 os.environ["PASSWORD"] = "postgis"
 

@@ -7,7 +7,7 @@
 
 
 - Start the postgis container
-docker run --name postgis --restart unless-stopped -p 5432:5432 -e POSTGRES_PASSWORD=postgis -e POSTGRES_USER=postgis -e PGDATA=/var/lib/postgresql/data/pgdata -e POSTGIS_ENABLE_OUTDB_RASTERS=1 -e POSTGIS_GDAL_ENABLED_DRIVERS=ENABLE_ALL -v /mnt/gorilla/data/postgres.conf:/etc/postgresql/postgresql.conf -v /mnt/gorilla/data/pgdata:/var/lib/postgresql/data/pgdata -v predicts-data:/out -v /mnt/gorilla/old/src/eec/predicts/data:/data -d postgis/postgis:13-3.0
+docker run --name postgis --restart unless-stopped -p 5432:5432 -e POSTGRES_PASSWORD=postgis -e POSTGRES_USER=postgis -e PGDATA=/var/lib/postgresql/data/pgdata -e POSTGIS_ENABLE_OUTDB_RASTERS=1 -e POSTGIS_GDAL_ENABLED_DRIVERS=ENABLE_ALL -v pgconf:/etc/postgresql -v postgis:/var/lib/postgresql/data/pgdata -v predicts-data:/mnt/predicts -v datasets:/mnt/data -d postgis/postgis:13-3.1
 
 - Start jupyter notebook server on bonobo
   jupyter notebook --ip 192.168.0.46 --no-browser --ConnectionFileMixin.ip=192.168.0.46

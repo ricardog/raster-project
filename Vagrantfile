@@ -8,8 +8,8 @@ Vagrant.configure("2") do |config|
       #d.create_args = ['--gpus', 'all']
       d.env = {PASSWORD: 'browsesafely'}
       d.ports = ['8787:8787', '8888:8888']
-      d.volumes = ["datasets:/data",
-                   "predicts-data:/out"
+      d.volumes = ["datasets:/mnt/data",
+                   "predicts-data:/mnt/predicts"
                   ]
       d.force_host_vm = false
       if false

@@ -40,7 +40,7 @@ RUN export CONFIGURE_OPTS=--enable-shared && \
 	pyenv global 3.8.6
 
 RUN . /home/rstudio/.bash_profile && \
-	pip install -U pip && \
+	pip install -U pip setuptools wheel && \
 	pip install numpy cython && \
 	pip install gdal==3.0.4 --global-option "build_ext" --global-option="--include-dirs=/usr/include/gdal"
 

@@ -8,7 +8,7 @@ from projutils import lui
 from projutils import utils
 from rasterset import Raster, SimpleExpr
 
-from .utils import outfn
+from projutils.utils import outfn
 
 
 def rcp(scenario, year, hpd_trend):
@@ -66,6 +66,7 @@ def rcp(scenario, year, hpd_trend):
 
 
 def luh5(scenario, year, plus3):                            # noqa C901
+    import projutils.lu.luh5 as luh5
     rasters = {}
 
     lus = [
@@ -124,28 +125,29 @@ def luh5(scenario, year, plus3):                            # noqa C901
         except IOError:
             print("Error: opening '%s'" % fname)
             raise IOError("Error: opening '%s'" % fname)
-        ds_vars = set(ds.variables.keys())
-        names = set(
-            reduce(lambda x, y: x + y, [list(lu.syms) for lu in lus], ["urban"])
-        )
-        for name in set.intersection(names, ds_vars):
+        ds_vars = filter(lambda v: v not in ("time", "lat", "lon", "crs"),
+                         ds.variables.keys())
+        for name in ds_vars:
             band = year - 849 if scenario == "historical" else year - 2014
-            rasters[name] = Raster("netcdf:%s:%s" % (fname, name), band=band)
+            rasters[name] = Raster("netcdf:%s:%s" % (fname, name),
+                                   band=band, decode_times=False)
 
-    for landuse in lus:
-        rasters[landuse.name] = landuse
+    for landuse, sexpr in luh5.types2(True).items():
+        rasters[landuse] = SimpleExpr(sexpr)
         for band, intensity in enumerate(lui.intensities()):
-            n = landuse.name + "_" + intensity
-            rasters[n] = lui.LUH5(landuse.name, intensity)
+            n = landuse + "_" + intensity
+            rasters[n] = lui.LUH5(landuse, intensity)
             n2 = n + "_ref"
-            if landuse.name[0:11] == "plantation_":
-                rasters[n2] = SimpleExpr(0)
-            elif landuse.name[-10:] != "_secondary":
-                if landuse.name in ("annual", "cropland", "nitrogen",
-                                    "perennial", "timber"):
-                    ref_path = outfn("luh2", "%s-recal.tif" % landuse.name)
+            if landuse[0:11] == "plantation_":
+                rasters[n2] = 0
+            elif landuse[-10:] != "_secondary":
+                if landuse in ("annual", "cropland", "nitrogen",
+                               "perennial", "timber"):
+                    ref_path = outfn("luh2", "%s-recal.tif" % landuse)
                 else:
-                    ref_path = outfn("luh2", "%s-recal.tif" % landuse.syms[0])
+                    print(landuse)
+                    ref_path = outfn("luh2", "%s-recal.tif" %
+                                     rasters[landuse].syms[0])
                 rasters[n2] = Raster(ref_path, band + 1)
 
     for band, intensity in enumerate(lui.intensities()):
@@ -153,9 +155,6 @@ def luh5(scenario, year, plus3):                            # noqa C901
         rasters[n] = lui.LUH5("urban", intensity)
         n2 = n + "_ref"
         rasters[n2] = Raster(outfn("luh2", "urban-recal.tif"), band + 1)
-
-    name = "%s_light_and_intense" % "primary"
-    rasters[name] = SimpleExpr("primary_light + primary_intense")
 
     return rasters
 

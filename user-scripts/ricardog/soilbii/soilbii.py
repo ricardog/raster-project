@@ -119,9 +119,16 @@ def rasters(scenario, year):
     rs.update(states)
     rs.update(secd)
 
-    for layer, band in SOIL_GRID_MAP.items():
-        rs[layer] = Raster(data_file("SoilGrids", "soil-grids-4326-luh2.tif"),
-                           band=band)
+    rs["raw_bd"] = Raster(outfn("luh2", f"soil-bdod.tif"))
+    rs["raw_clay"] = Raster(outfn("luh2", f"soil-clay.tif"))
+    rs["raw_phho"] = Raster(outfn("luh2", f"soil-phh2o.tif"))
+    rs["raw_oc"] = Raster(outfn("luh2", f"soil-soc.tif"))
+
+    rs["bd"] = "scale(raw_bd, 0, 1)"
+    rs["clay"] = "scale(raw_clay, 0, 1)"
+    rs["phho"] = "scale(raw_phho, 0, 1)"
+    rs["oc"] = "scale(raw_oc, 0, 1)"
+
     if year < 2015:
         rs["hpd"] = hpd.WPP("historical", year, utils.wpp_xls())
     else:
@@ -177,7 +184,7 @@ def do_model(what, scenario, year, model_dir, tree):
     with rasterio.open(outfn("luh2", "soilbii",
                              f"{scenario}-{name}-{year}.tif"),
                        "w", **meta) as dst:
-        dst.write(data.filled(), indxes=1)
+        dst.write(data.filled().squeeze(), indexes=1)
     return
 
 

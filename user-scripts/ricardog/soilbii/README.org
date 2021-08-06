@@ -1,0 +1,67 @@
+#+TITLE: Soil Biodiversity Projections
+
+* Source data
+The soil biodiversity projections require data from [[https://www.isric.org/explore/soilgrids/][SoilGrids]]. The data
+is available at 250m resolution in the (interrupted) Goode Homolosine
+projections.  So the first step is to download the data, re-project the
+maps to EPSG:4326 (so they are compatible with the rest of the data we
+use), and clean and rescale the data.
+
+Data is available as GTiff tiles.  To make download easy they make
+available VRT files.
+
+The data is available at various depths:
+
+- 0-5cm
+- 5-15cm
+- 15-30cm
+- 30-60cm
+- 60-100cm
+- 100-200cm
+
+Victoria's models use four variables from the SoilGrids dataset
+
+- bdod
+- clay
+- phh2o
+- soc
+
+Victoria used the mean of the first three ranges when fitting models.
+In addition she scaled each variable to be in the 0-1 range.  We need to
+follow a similar process to have equivalent data.
+
+To make life easy, I created VRTs files with the four variables we need
+at each depth (I perhaps should have created a single VRT with all the
+variables at all the depths).  Here is how I downloaded and cleaned the
+data.
+
+#+begin_src shell
+
+  SG_URL="/vsicurl?max_retry=3&retry_delay=1&list_dir=no&url=https://files.isric.org/soilgrids/latest/data"
+
+
+  # Create one VRT per-depth.
+  gdalbuildvrt -separate soil-grid_0-5cm_mean.vrt $SG_URL"/bdod/bdod_0-5cm_mean.vrt" $SG_URL"/clay/clay_0-5cm_mean.vrt" $SG_URL"/phh2o/phh2o_0-5cm_mean.vrt" $SG_URL"/soc/soc_0-5cm_mean.vrt"
+
+  gdalbuildvrt -separate soil-grid_5-15cm_mean.vrt $SG_URL"/bdod/bdod_5-15cm_mean.vrt" $SG_URL"/clay/clay_5-15cm_mean.vrt" $SG_URL"/phh2o/phh2o_5-15cm_mean.vrt" $SG_URL"/soc/soc_5-15cm_mean.vrt"
+
+  gdalbuildvrt -separate soil-grid_15-30cm_mean.vrt $SG_URL"/bdod/bdod_15-30cm_mean.vrt" $SG_URL"/clay/clay_15-30cm_mean.vrt" $SG_URL"/phh2o/phh2o_15-30cm_mean.vrt" $SG_URL"/soc/soc_15-30cm_mean.vrt"
+
+
+  # Download one the overview that is closest in size to LUH2 resolution.
+  gdal_translate -outsize 2489 907 -co "SPARSE_OK=YES" -co "TILED=YES" -co "COMPRESS=DEFLATE" -co "PREDICTOR=2" -co "BIGTIFF=YES" soil-grid_0-5cm_mean.vrt soil-grid_0-5cm_mean.tif
+
+  gdal_translate -outsize 2489 907 -co "SPARSE_OK=YES" -co "TILED=YES" -co "COMPRESS=DEFLATE" -co "PREDICTOR=2" -co "BIGTIFF=YES" soil-grid_5-15cm_mean.vrt soil-grid_5-15cm_mean.tif
+
+  gdal_translate -outsize 2489 907 -co "SPARSE_OK=YES" -co "TILED=YES" -co "COMPRESS=DEFLATE" -co "PREDICTOR=2" -co "BIGTIFF=YES" soil-grid_15-30cm_mean.vrt soil-grid_15-30cm_mean.tif
+
+
+  # Re-project and re-size the rasters.
+  gdalwarp -t_srs EPSG:4326 -tr 0.25 0.25 -r average -dstnodata -32768 soil-grid_0-5cm_mean.tif luh2/soil-grid_0-5cm_mean.tif
+
+  gdalwarp -t_srs EPSG:4326 -tr 0.25 0.25 -r average -dstnodata -32768 soil-grid_5-15cm_mean.tif luh2/soil-grid_5-15cm_mean.tif
+
+  gdalwarp -t_srs EPSG:4326 -tr 0.25 0.25 -r average -dstnodata -32768 soil-grid_15-30cm_mean.tif luh2/soil-grid_15-30cm_mean.tif
+
+#+end_src
+

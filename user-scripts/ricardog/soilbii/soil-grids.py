@@ -46,11 +46,12 @@ def doit(name):
                 meta.update({
                     "compression": "deflate",
                     "predictor": 2,
+                    "count": 1,
                     "dtype": "float32",
                     "nodata": -9999,
                 })
                 with rasterio.open(outfn("luh2", "soil-grids",
-                                         f"soil-grids-{name}.tif"), "w",
+                                         f"{name}.tif"), "w",
                                    **meta) as dst:
                     #band = BAND_MAP[name]
                     #limits = LIMIT_MAP[name]

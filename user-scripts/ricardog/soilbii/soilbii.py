@@ -36,14 +36,6 @@ class YearRangeParamType(click.ParamType):
 YEAR_RANGE = YearRangeParamType()
 
 
-SOIL_GRID_MAP = {
-    'bd': 1,
-    'clay': 2,
-    'phho': 3,
-    'oc': 4
-}
-
-
 def get_model(what, model_dir):
     if what == "bii":
         return None
@@ -119,15 +111,17 @@ def rasters(scenario, year):
     rs.update(states)
     rs.update(secd)
 
-    rs["raw_bd"] = Raster(outfn("luh2", f"soil-bdod.tif"))
-    rs["raw_clay"] = Raster(outfn("luh2", f"soil-clay.tif"))
-    rs["raw_phho"] = Raster(outfn("luh2", f"soil-phh2o.tif"))
-    rs["raw_oc"] = Raster(outfn("luh2", f"soil-soc.tif"))
+    rs["raw_bd"] = Raster(outfn("luh2", "soil-grids",
+                                "bdod.tif"))
+    rs["raw_clay"] = Raster(outfn("luh2", "soil-grids",
+                                "clay.tif"))
+    rs["raw_phho"] = Raster(outfn("luh2", "soil-grids",
+                                "phh2o.tif"))
 
     rs["bd"] = "scale(raw_bd, 0, 1)"
     rs["clay"] = "scale(raw_clay, 0, 1)"
     rs["phho"] = "scale(raw_phho, 0, 1)"
-    rs["oc"] = "scale(raw_oc, 0, 1)"
+    rs["oc"] = 0.1907555
 
     if year < 2015:
         rs["hpd"] = hpd.WPP("historical", year, utils.wpp_xls())

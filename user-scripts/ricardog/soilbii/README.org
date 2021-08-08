@@ -36,7 +36,6 @@ variables at all the depths).  Here is how I downloaded and cleaned the
 data.
 
 #+begin_src shell
-
   SG_URL="/vsicurl?max_retry=3&retry_delay=1&list_dir=no&url=https://files.isric.org/soilgrids/latest/data"
 
 
@@ -65,3 +64,14 @@ data.
 
 #+end_src
 
+I wrote a script ([[file:soil-grids.py][soil-grids.py]]) which does the averaging over the three
+depths, clip for min & mac, and units scaling.  For example, pH is
+stored as ~ph*10~ in the rasters whereas Victoria used ~pH~.  The script
+will scale the units appropriatelly but does not scale to the (0, 1)
+range (that's done during projection).
+
+The soil organic content variable turned out to not be useable so I set
+it to the mean of the OC variable in the model frame.
+
+After downloading, re-projecting, and re-scaling the rasters run the
+script to generate the files used when running projections.

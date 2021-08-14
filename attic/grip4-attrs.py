@@ -14,12 +14,12 @@ def camel_case_split(identifier):
 
 def main():
     tables = {}
-    fname = ("/Users/ricardog/Downloads/GRIP4_GlobalRoads/"
-             "GRIP4_AttributeDescription.xlsx"
+    fname = ("/Volumes/Macintosh HD/Users/ricardog/datasets/"
+             "GRIP4_GlobalRoads/GRIP4_AttributeDescription.xlsx"
              )
     xls = pd.read_excel(fname)
     attrs = xls.loc[:, "Attribute name":"Unnamed: 8"]
-    indexes = attrs[pd.isna(attrs["Attribute name"]) is False].index.tolist()
+    indexes = attrs[pd.isna(attrs["Attribute name"]) == False].index.tolist()
     for idx in range(0, len(indexes) - 1):
         tbl = attrs.iloc[indexes[idx] : indexes[idx + 1], :]
         name = tbl.iloc[0, 0]
@@ -51,7 +51,7 @@ def main():
         tbl = tbl.drop("ID", axis=1)
         tables[name] = tbl
 
-    engine = create_engine("postgresql://postgis:postgis@192.168.0.46:5432/grip4")
+    engine = create_engine("postgresql://postgis:postgis@192.168.178.21:5432/grip4")
     for name in tables:
         print(name)
         tbl = tables[name]

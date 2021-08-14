@@ -37,7 +37,9 @@ https://mgimond.github.io/Spatial/spatial-autocorrelation-in-r.html
 https://cran.r-project.org/web/packages/spdep/vignettes/nb_igraph.html
 
 - Ecological Land Units
+https://www.usgs.gov/centers/gecsc/science/global-ecosystems
 https://rmgsc.cr.usgs.gov/ecosystems/
+
 
   Similar to http://maps.tnc.org/gis_data.html with higher level of detail.
 
@@ -56,6 +58,6 @@ https://rmgsc.cr.usgs.gov/ecosystems/
 
 - To start qgis docker container
 
-  docker run -v /mnt/gorilla/old/src/eec/predicts/data:/data:ro -v /mnt/gorilla/data:/datasets:ro -v predicts-data:/out -p 2200:22 -u root qgis:latest
+  docker run -v datasets:/mnt/data:ro -v predicts-data:/mnt/predicts -p 2200:22 -u root ricardog/qgis:latest
 
   

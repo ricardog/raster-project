@@ -1,0 +1,102 @@
+#+TITLE: Helen's BII project
+
+* Introduction
+Andy asked me for projections help for Helen's project.  Initially this
+was going to be a really high-resolution temporal projections.  But that
+has slowly come down to earth and it is now a climate-adjusted
+projections for the next couple of decades.
+
+* Setup
+
+** Road Density
+Helen wanted me to generate new road density rasters using the GRIP4
+database ignoring the smallest/most local roads (type 5 in GRIP4
+parlance).
+
+I did heavy listing with PostGIS.  I first created a table with a 0.25°
+grid cell data and then joined the roads table with it.  I limit the
+grid table to the extent of the roads table--there's no need to do joins
+where there are no roads.
+
+NOTE: the radius of the search buffer is built into the table.
+
+#+CAPTION: Generate grid table
+#+BEGIN_SRC sql
+  -- Generate the table.
+  create table grid_0_25_50 AS WITH major_roads AS (
+    SELECT *,
+           geography(shape) AS geog
+      FROM roads
+     WHERE roads.gp_rtp != 5
+  ),
+  table_extent as (
+    select ST_SetSRID(ST_Extent(shape), 4326) AS extent FROM major_roads
+  ),
+  grid AS (
+    SELECT (ST_SquareGrid(0.25, extent)).* FROM table_extent
+  ),
+  some_sites AS (
+    SELECT ST_SetSRID(ST_Centroid(geom), 4326) AS geom,
+   geography(geom) as geog,
+   ST_Buffer(geography(geom), 50000) AS buffer
+      FROM grid
+  )
+  select * from some_sites;
+
+  -- Specify the geometry type and SRID for the geom column.
+  ALTER TABLE grid_0_25_50
+    ALTER COLUMN geom
+      TYPE geometry(Point, 4326)
+    USING ST_SetSRID(geom, 4326);
+
+  -- Add GIST indexes for all three columns.
+  CREATE INDEX grid_0_25_50_geom_idx ON grid_0_25_50 USING GIST (geom);
+  CREATE INDEX grid_0_25_50_geog_idx ON grid_0_25_50 USING GIST (geog);
+  CREATE INDEX grid_0_25_50_buffer_idx ON grid_0_25_50 USING GIST (buffer);
+#+END_SRC
+
+
+Next we need to do a query that joins the grid table with the roads
+table.  Ignore roads of type 5.
+
+#+CAPTION: Compute road length per cell.
+#+BEGIN_SRC sql
+  EXPLAIN WITH major_roads AS (
+    SELECT *,
+           geography(shape) AS geog
+      FROM roads
+     WHERE roads.gp_rtp != 5
+  )
+    SELECT grid_0_25_50.geom, COUNT(major_roads.objectid),
+    SUM(ST_LengthSpheroid(ST_Intersection(grid_0_25_50.buffer,
+                                          major_roads.geog)::geometry,
+                                          'SPHEROID["WGS 84",6378137,298.257223563]'))
+    FROM grid_0_25_50
+    JOIN major_roads ON
+    ST_DWithin(grid_0_25_50.geog, major_roads.geog, 1000)
+    GROUP BY grid_0_25_50.geom;
+#+END_SRC
+
+As usuall, I used ~Copy() TO 'file' header csv~ to dump the results to a
+file on the PostGIS host and then transfered them to my workstation.
+
+The query produces 161327, which seems about right.  Since I didn't do a
+~LEFT JOIN~ it only has an entry for cells where there are roads.
+
+** Convert to GeoTIFF
+
+I wrote a simple script (~csv2tif.py~) that converts the generated csv
+into a raster in GTiff format.  The script has an option to use a second
+raster as a "mask".  The generated data does not distinguish between
+land/water and cells without roads.  The mask (I use the ~icwtr~ luh2
+layer) then helps distinguish between the two.
+
+To run the script
+
+#+BEGIN_SRC shell
+  user-scripts/ricardog/helen/csv2tif.py  --mask NETCDF:"/mnt/data/luh2_v2/staticData_quarterdeg.nc":icwtr user-scripts/ricardog/helen/road-density-50.csv user-scripts/ricardog/helen/road-density-50.tif
+#+END_SRC
+
+*FIXME:* so far my raster is road length per cell.  Still need to divide
+by buffer area.
+

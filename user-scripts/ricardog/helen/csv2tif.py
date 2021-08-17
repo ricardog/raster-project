@@ -11,7 +11,7 @@ import rasterio
 from rasterio.crs import CRS
 from rasterio.io import MemoryFile
 from rasterio.profiles import DefaultGTiffProfile
-from shapely import wkb
+from shapely import wkb, wkt
 
 
 def parse(s):
@@ -19,10 +19,13 @@ def parse(s):
 
 
 def read_csv(fname, col='st_astext'):
-    col = "geom"
+    #col = "geom"
     print("reading csv file")
     df = gpd.read_file(fname)
-    df.geometry = df[col].apply(parse)
+    if col == "geom":
+        df.geometry = df[col].apply(parse)
+    else:
+        df.geometry = df[col].apply(wkt.loads)
     del df[col]
     df["lat"] = df.geometry.y
     df["lon"] = df.geometry.x

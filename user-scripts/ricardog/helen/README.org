@@ -99,4 +99,49 @@ To run the script
 
 *FIXME:* so far my raster is road length per cell.  Still need to divide
 by buffer area.
+** CRU Temperature data
+Helen is using temprarature data from [[https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.05/cruts.2103051243.v4.05/tmp/][CRU]] to determine historical
+average temperature.
 
+Monthly mean temperature data is available as one NetCDF file in 0.5°
+degree resolution.  I wrote a scrpt to determine the mean and the
+standard deviation.  The script also upsamples the data to 0.25° for use
+with LUH2 data.
+
+The script generates a single GTiff raster with two bands.  Band 1 is
+the mean and band 2 is the standard deviation.
+
+To run the script pass the file name of the input (the NetCDF file) and
+the output file name. 
+#+begin_src shell
+  cru_process.py /mnt/data/cru-ts-4.05/cru_ts4.05.1901.2020.tmp.dat.nc
+  /mnt/predicts/luh2/helen/tmp-1900-1930.tif
+#+end_src
+** CCAFS Projected temperature data
+
+Helen wants to use projected temperature data from a paper by
+[[https://www.nature.com/articles/s41597-019-0343-8][Navarro-Racines, Carlos]] for which projected mean temperature data is
+available for a number of RCPs.
+
+I downloaded the data from [[https://cera-www.dkrz.de/WDCC/ui/cerasearch/q?query=*:*&page=0&hierarchy_steps_ss=CCAFS-CMIP5_downscaling&entry_type_s=dataset][WDC Climate]] Website.  I used the global 10
+arc-minute resolution since that is the closest they have to 0.25°
+resolution we are using for the projections.
+
+The download is a large zip file with smaller zip files inside.  Helen
+wants to use the data from the GISS-E2R model.
+
+I wrote a script that extracts the monthly mean temperature data from
+the large zip archive into one GTiff file per RCP per decade.  A second
+python script to compute the mean annual temperature per decade per RCP.
+
+#+begin_src shell
+    # Extract the data we need from the download.
+    user-scripts/ricardog/helen/zip2tif.py /mnt/data/ccafs-climate/CMIP5_Downscaled_GDF_ds01_1-16.zip
+
+    # Compute the mean annual temperature per decade per RCP
+    user-scripts/ricardog/helen/ccafs_process.sh
+#+end_src
+
+The result is one GTiff file per RCP per decade with mean annual
+temperature per cell in 0.25° resolution suitable for use in
+projections.

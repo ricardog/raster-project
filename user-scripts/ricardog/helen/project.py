@@ -2,6 +2,7 @@
 
 import datetime
 import click
+import pandas as pd
 from pathlib import Path
 import rasterio
 import rioxarray as rxr
@@ -51,14 +52,14 @@ def get_model(what, model_dir):
 
 
 def get_scale_vars(what, model_dir):
-    if what == "bii":
-        return None
     if what == "ab":
         fname = "AbundanceModel_variables.csv"
     elif what == "cs-ab":
         fname = "CompositionalSimModel_variables.csv"
     else:
-        assert False, f"unknown what {what}"
+        fname = "AbundanceModel_variables.csv"
+        print("scaling using abundance attributes")
+        #assert False, f"unknown what {what}"
     return pd.read_csv(model_dir / fname)
 
 
@@ -102,6 +103,7 @@ def add_lu(rs):
     for name, expr in LU.items():
         if name != "urban":
             rs[name] = expr
+    rs["secondary"] = "secdf + secdn"
     return
 
 
@@ -123,7 +125,28 @@ def add_ui(rs, prefix, suffix):
     return
 
 
+def scale_vars(what, model_dir, rs):
+    df = get_scale_vars(what, model_dir)
+
+    hpd = df.loc[df.variableName == "HPD"]
+    rs["scale_log_hpd"] = "(log1p(hpd) - %f) / %f" % (hpd["mean"], hpd.SD)
+
+    roads = df.loc[df.variableName == "Road density in 50km"]
+    rs["scale_log_roads"] = "(log1p(road_density) - %f) / %f" % (roads["mean"], roads.SD)
+
+    nathab = df.loc[df.variableName == "Proportion of natural habitat in 25km"]
+    rs["scale_log_natural_habitat"] = "(log1p(natural_habitat) - %f) / %f" % (nathab["mean"], nathab.SD)
+
+    clim = df.loc[df.variableName == "ClimateAnomaly"]
+    rs["scale_climate_anomaly"] = "(log(climate_anomaly) - %f) / %f" % (clim["mean"], clim.SD)
+    return rs
+
+
 def rasters(scenario, year):
+    if scenario == "historical":
+        start_year = 850
+    else:
+        start_year = 0
     rs = RasterSet({
         "unSub": Raster(outfn("luh2", "un_subregions.tif")),
         "un_code": Raster(outfn("luh2", "un_codes.tif")),
@@ -133,7 +156,7 @@ def rasters(scenario, year):
     states = read_states(scenario, (year, ))
     secd = rxr.open_rasterio(outfn("luh2", f"secd-{scenario}.nc"),
                              lock=False, decode_times=0)
-    secd = secd.assign_coords(coords={"time": [datetime.datetime(850 + x, 1, 1)
+    secd = secd.assign_coords(coords={"time": [datetime.datetime(start_year + x, 1, 1)
                                                for x in secd.time]})
     secd = secd.sel(time=[datetime.datetime(year, 1, 1)])
     rs.update(states)
@@ -142,17 +165,17 @@ def rasters(scenario, year):
     rs["secdy"] = "secdyf + secdyn"
     rs["secdi"] = "secdif + secdin"
     rs["secdm"] = "secdmf + secdmn"
-    
+
     if year < 2015:
         rs["hpd"] = hpd.WPP("historical", year, utils.wpp_xls())
     else:
-        rasters.update(hpd.sps.scale_grumps(utils.luh2_scenario_ssp(scenario),
-                                            year))
+        rs.update(hpd.sps.scale_grumps(utils.luh2_scenario_ssp(scenario),
+                                       year))
     rs["scale_logstudy_hpd"] = 0
-    
+
     # Add road density
-    rs["road_length"] = Raster(outfn("luh2", "helen", "road-length-50.tif"))
-    rs["road_density"] = "road_length / 7853981633.98"
+    rs["road_density"] = Raster(outfn("luh2", "helen", "road-length-50.tif"))
+    # rs["road_density"] = "road_length / 7853981633.98"
     rs["scale_logstudy_roads"] = 0
 
     # Add natural habitat
@@ -160,34 +183,66 @@ def rasters(scenario, year):
 
     # Add climate anomaly
     rs["tmp_1930_mean"] = Raster(outfn("luh2", "helen", "tmp-1900-1930.tif"),
-                                 band=1)
+                                 bands=1)
     rs["tmp_1930_std"] = Raster(outfn("luh2", "helen", "tmp-1900-1930.tif"),
-                                band=2)
+                                bands=2)
+    ssp, rcp, model = scenario.split("_")
+    rcp = rcp[3:].replace(".", "_")
+    decade = int(year / 10) * 10
+    rs["mean_temp"] = Raster(outfn("luh2", "helen",
+                                   f"rcp{rcp}-{decade}s-tmean.tif"))
+    rs["climate_anomaly"] = "(mean_temp - tmp_1930_mean) / tmp_1930_std"
     add_lu(rs)
     add_ui(rs, "new_ui_", "_use")
-
     return rs
 
 
-def scale_vars(what, model_dir, rs):
-    df = get_scale_vars(what, model_dir)
-
-    hpd = df.loc[df.variableName == "HPD"]
-    rs["scale_log_hpd"] = "(log1p(hpd) - %f) / %f" % (hpd.mean, hpd.SD)
-
-    roads = df.loc[df.variableName == "Road density in 50km"]
-    rs["scale_log_roads"] = "(log1p(hpd) - %f) / %f" % (roads.mean, roads.SD)
-
-    nathab = df.loc[df.variableName == "Proportion of natural habitat in 25km"]
-    rs["scale_log_natural_habitat"] = "(log(natural_habitat) - %f) / %f" % (nathab.mean, nathab.SD)
+def do_other(what, scenario, year, model_dir, tree):
+    rs = rasters(scenario, year)
+    rs = scale_vars(what, model_dir, rs)
+    if tree:
+        print(rs.tree(what))
+        return
+    data, meta = rs.eval(what)
+    with rasterio.open(outfn("luh2", "helen",
+                             f"{scenario}-{what}-{year}.tif"),
+                       "w", **meta) as dst:
+        dst.write(data.filled().squeeze(), indexes=1)
     return
 
-    
+
+def do_bii(scenario, years):
+    oname = "BIIAb"
+    for year in years:
+        rs = RasterSet(
+            {
+                oname: SimpleExpr("ab * cs"),
+                "cs": Raster(
+                    outfn("luh2", "helen",
+                          f"{scenario}-CompSimAb-{year}.tif")
+                ),
+                "ab": Raster(
+                    outfn("luh2", "helen",
+                          f"{scenario}-Abundance-{year}.tif")
+                ),
+            }
+        )
+        # print(rs.tree(oname))
+        data, meta = rs.eval(oname, quiet=True)
+        with rasterio.open(
+                outfn("luh2", "helen", f"{scenario}-{oname}-{year}.tif"),
+                "w", **meta
+        ) as dst:
+            dst.write(data.squeeze().filled(), indexes=1)
+    return
+
+
 def do_model(what, scenario, year, model_dir, tree):
     name = get_name(what)
     link = get_link(what)
     mod = get_model(what, model_dir)
     rs = rasters(scenario, year)
+    rs = scale_vars(what, model_dir, rs)
     rs[mod.output] = mod
     if link == "pow":
         rs[what] = f"{link}({mod.output}, 2)"
@@ -196,8 +251,7 @@ def do_model(what, scenario, year, model_dir, tree):
     if tree:
         print(rs.tree(what))
         return
-    import pdb; pdb.set_trace()
-    data, meta = rs.eval(what)
+    data, meta = rs.eval(mod.output)
     with rasterio.open(outfn("luh2", "helen",
                              f"{scenario}-{name}-{year}.tif"),
                        "w", **meta) as dst:
@@ -206,7 +260,7 @@ def do_model(what, scenario, year, model_dir, tree):
 
 
 @click.command()
-@click.argument("what", type=click.Choice(("ab", "cs-ab", "bii")))
+@click.argument("what", type=click.Choice(("ab", "cs-ab", "bii", "other")))
 @click.argument(
     "scenario",
     type=click.Choice(utils.luh2_scenarios()),
@@ -220,10 +274,26 @@ def do_model(what, scenario, year, model_dir, tree):
     default=Path(".").resolve(),
     help="Directory where to find the models " + "(default: ./models)",
 )
+@click.option(
+    "-v",
+    "--vname",
+    type=str,
+    default=None,
+    help="Variable to project when specifying other.",
+)
 @click.option("-t", "--tree", is_flag=True, default=False)
-def project(what, scenario, years, model_dir, tree):
+def project(what, scenario, years, model_dir, vname, tree):
+    if what == "other":
+        if vname is None:
+            raise ValueError("Please specify a variable name")
+
     for year in years:
-        do_model(what, scenario, year, Path(model_dir), tree)
+        if what == "other":
+            do_other(vname, scenario, year, Path(model_dir), tree)
+        elif what == "bii":
+            do_bii(scenario, year)
+        else:
+            do_model(what, scenario, year, Path(model_dir), tree)
     return
 
 

@@ -232,7 +232,8 @@ def luh2(scenario, year, hpd_trend):                        # noqa C901
         )
         for name in set.intersection(names, ds_vars):
             band = year - 849 if scenario == "historical" else year - 2014
-            rasters[name] = Raster("netcdf:%s:%s" % (fname, name), band=band)
+            rasters[name] = Raster("netcdf:%s:%s" % (fname, name), bands=band,
+                                   decode_times=False)
 
     for landuse in lus:
         rasters[landuse.name] = landuse

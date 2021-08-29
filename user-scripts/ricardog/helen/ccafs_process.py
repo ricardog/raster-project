@@ -40,7 +40,7 @@ def write_downsample(memfile, outfile, factor):
 @click.argument("infile", type=click.Path(dir_okay=False))
 @click.argument("outfile", type=click.Path(dir_okay=False))
 def process(infile, outfile):
-    factor = 1.5
+    factor = 1/1.5
     with rasterio.open(infile) as src:
         crs = src.crs or CRS.from_epsg(4326)
         data = src.read(masked=True)

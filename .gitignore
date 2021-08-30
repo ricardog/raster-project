@@ -13,11 +13,6 @@
 .dir-locals.el
 __pycache__
 *.egg-info/
-/PilotStudy/data/all_data.csv
-/PilotStudy/data/gludsag*
-/PilotStudy/data/gludsag/
-/PilotStudy/data/vcf_for_wgs84*
-/PilotStudy/data/vcf_for_wgs84/
 /packages.txt
 FullFactorialModels/
 TAGS

@@ -11,8 +11,21 @@ import rioxarray as rxr
 from rasterset import RasterSet, Raster
 from projutils import hpd, lui, utils
 from projutils.utils import luh2_states, outfn
-from projutils.lu.luh2 import LU
 import r2py.modelr as modelr
+
+
+LU = {
+    "annual": "c3ann + c4ann",
+    "nitrogen": "c3nfx",
+    "pasture": "pastr",
+    "perennial": "c3per + c4per",
+    "primary": "primf + primn",
+    "rangelands": "range",
+    "urban": "urban",
+    "young_secondary": "secdy",
+    "intermediate_secondary": "secdi",
+    "mature_secondary": "secdm",
+}
 
 
 class YearRangeParamType(click.ParamType):
@@ -108,7 +121,7 @@ def add_lu(rs):
 
 
 def add_ui(rs, prefix, suffix):
-    for landuse in filter(lambda x: x != "timber", LU.keys()):
+    for landuse in LU.keys():
         #import pdb; pdb.set_trace()
         for band, intensity in enumerate(lui.intensities()):
             rs[f"{landuse}_{intensity}"] = lui.LUH2(landuse, intensity)
@@ -216,7 +229,7 @@ def do_bii(scenario, years):
     for year in years:
         rs = RasterSet(
             {
-                oname: SimpleExpr("ab * cs"),
+                oname: "ab * cs",
                 "cs": Raster(
                     outfn("luh2", "helen",
                           f"{scenario}-CompSimAb-{year}.tif")

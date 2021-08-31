@@ -127,12 +127,15 @@ I downloaded the data from [[https://cera-www.dkrz.de/WDCC/ui/cerasearch/q?query
 arc-minute resolution since that is the closest they have to 0.25°
 resolution we are using for the projections.
 
-The download is a large zip file with smaller zip files inside.  Helen
-wants to use the data from the GISS-E2R model.
+The download is a large zip file with smaller zip files inside--one per
+model used for the projection.  Helen wants to use the data from the
+GISS-E2R model.
 
 I wrote a script that extracts the monthly mean temperature data from
 the large zip archive into one GTiff file per RCP per decade.  A second
-python script to compute the mean annual temperature per decade per RCP.
+python script computes the mean annual temperature per decade per RCP.
+With a bash script to iterate the second python script for each RCP and
+decade.
 
 #+begin_src shell
     # Extract the data we need from the download.

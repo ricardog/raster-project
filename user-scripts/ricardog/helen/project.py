@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 import datetime
+import resource
+import tracemalloc
+
 import click
 import pandas as pd
 from pathlib import Path
 import rasterio
 import rioxarray as rxr
-
 
 from rasterset import RasterSet, Raster
 from projutils import hpd, lui, utils
@@ -14,9 +16,9 @@ from projutils.utils import luh2_states, outfn
 import r2py.modelr as modelr
 
 
+
 LU = {
-    "annual": "c3ann + c4ann",
-    "nitrogen": "c3nfx",
+    "annual": "c3ann + c4ann + c3nfx",
     "pasture": "pastr",
     "perennial": "c3per + c4per",
     "primary": "primf + primn",
@@ -80,7 +82,7 @@ def get_link(what):
     if what == "bii":
         return None
     if what == "ab":
-        link = "pow"
+        link = "pow_2"
     elif what == "cs-ab":
         link = "inv_logit"
     else:
@@ -257,8 +259,9 @@ def do_model(what, scenario, year, model_dir, tree):
     rs = rasters(scenario, year)
     rs = scale_vars(what, model_dir, rs)
     rs[mod.output] = mod
-    if link == "pow":
-        rs[what] = f"{link}({mod.output}, 2)"
+    if link[0:3] == "pow":
+        link, degree = link.split("_")
+        rs[what] = f"{link}({mod.output}, {degree})"
     else:
         rs[what] = f"{link}({mod.output})"
     if tree:
@@ -295,7 +298,10 @@ def do_model(what, scenario, year, model_dir, tree):
     help="Variable to project when specifying other.",
 )
 @click.option("-t", "--tree", is_flag=True, default=False)
-def project(what, scenario, years, model_dir, vname, tree):
+@click.option("-e", "--memtrace", is_flag=True, default=False)
+def project(what, scenario, years, model_dir, vname, tree, memtrace):
+    if memtrace:
+        tracemalloc.start()
     if what == "other":
         if vname is None:
             raise ValueError("Please specify a variable name")
@@ -307,6 +313,13 @@ def project(what, scenario, years, model_dir, vname, tree):
             do_bii(scenario, year)
         else:
             do_model(what, scenario, year, Path(model_dir), tree)
+    if memtrace:
+        current, peak = tracemalloc.get_traced_memory()
+        print("Current memory use: is %d MB" % (current >> 20))
+        print("Peak memory use   : %d MB" % (peak >> 20))
+        tracemalloc.stop()
+    usage= resource.getrusage(resource.RUSAGE_SELF)
+    print("Max RSS           : %d MB" % (usage.ru_maxrss >> 10))
     return
 
 

@@ -69,23 +69,19 @@ def luh5(scenario, year, plus3):                            # noqa C901
     import projutils.lu.luh5 as luh5
     rasters = {}
 
-    lus = [
-        SimpleExpr("primf + primn"),
-        SimpleExpr("c3ann + c4ann + c3nfx"),
-        SimpleExpr("range + pastr"),
-        SimpleExpr("c3per + c4per"),
-        SimpleExpr(0),
-    ]
+    rasters["primary"] = SimpleExpr("primf + primn")
+    rasters["cropland"] = SimpleExpr("c3ann + c4ann + c3nfx")
+    rasters["pasture"] = SimpleExpr("range + pastr")
+    rasters["plantation_pri"] = SimpleExpr("c3per + c4per")
+    rasters["plantation_sec"] = SimpleExpr(0)
 
     if plus3:
-        lus += [
-            SimpleExpr("secdmf + secdmn"),
-            SimpleExpr("secdif + secdin"),
-            SimpleExpr("secdyf + secdyn"),
-        ]
+        rasters["secdm"] = SimpleExpr("secdmf + secdmn")
+        rasters["secdi"] = SimpleExpr("secdif + secdin")
+        rasters["secdy"] = SimpleExpr("secdyf + secdyn")
         rasters["secondary"] = SimpleExpr("secdy + secdi + secdm")
     else:
-        lus += [SimpleExpr("secdf + secdn")]
+        rasters["secondary"] = SimpleExpr("secdf + secdn")
 
     # Human population density and UN subregions
     rasters["unSub"] = Raster(outfn("luh2", "un_subregions.tif"))
@@ -96,24 +92,6 @@ def luh5(scenario, year, plus3):                            # noqa C901
         rasters["hpd"] = hpd.WPP("historical", year, utils.wpp_xls())
     else:
         rasters.update(hpd.sps.scale_grumps(utils.luh2_scenario_ssp(scenario), year))
-    # The values in the expression of hpd_max need to be updated when the
-    # predicts DB changes.
-    rasters["hpd_max"] = SimpleExpr(
-        "(primary * 39.810) + (cropland * 125.40) + "
-        "(pasture * 151.500) + (plantation_pri * 140.70) + "
-        "(secondary * 98.400) + (urban * 2443.0)",
-    )
-
-    # NOTE: Pass max & min of log(HPD) so hi-res rasters can be processed
-    # incrementally.  Recording the max value here for when I create
-    # other functions for other resolutions.
-    # 0.50 =>  20511.541 / 9.92874298232494
-    # 0.25 =>  41335.645 / 10.62948048177454 (10.02 for Sam)
-    # 1km  => 872073.500 / 13.678628988329825
-    maxHPD = 10.02083
-    rasters["logHPD_rs"] = SimpleExpr(
-        "scale(log(hpd + 1), 0.0, 1.0, 0.0, %f)" % maxHPD
-    )
 
     fname = utils.luh2_states(scenario)
     for fname in (
@@ -125,12 +103,14 @@ def luh5(scenario, year, plus3):                            # noqa C901
         except IOError:
             print("Error: opening '%s'" % fname)
             raise IOError("Error: opening '%s'" % fname)
-        ds_vars = filter(lambda v: v not in ("time", "lat", "lon", "crs"),
+        ds_vars = filter(lambda v: v not in ("time", "lat", "lon", "crs",
+                                        "lat_bounds", "lon_bounds",
+                                        "binsf", "binsn"),
                          ds.variables.keys())
         for name in ds_vars:
             band = year - 849 if scenario == "historical" else year - 2014
             rasters[name] = Raster("netcdf:%s:%s" % (fname, name),
-                                   band=band, decode_times=False)
+                                   bands=band, decode_times=False)
 
     for landuse, sexpr in luh5.types2(True).items():
         rasters[landuse] = SimpleExpr(sexpr)
@@ -234,20 +214,20 @@ def luh2(scenario, year, hpd_trend):                        # noqa C901
             rasters[name] = Raster("netcdf:%s:%s" % (fname, name), bands=band,
                                    decode_times=False)
 
-    for landuse in lus:
-        rasters[landuse.name] = landuse
-        if landuse.name in ("annual", "cropland", "nitrogen", "perennial", "timber"):
-            ref_path = outfn("luh2", "%s-recal.tif" % landuse.name)
+    for landuse, sexpr in luh2.types2().items():
+        rasters[landuse] = SimpleExpr(sexpr)
+        if landuse in ("annual", "cropland", "nitrogen", "perennial", "timber"):
+            ref_path = outfn("luh2", "%s-recal.tif" % landuse)
         else:
-            ref_path = outfn("luh2", "%s-recal.tif" % landuse.syms[0])
+            ref_path = outfn("luh2", "%s-recal.tif" % rasters[landuse].syms[0])
         for band, intensity in enumerate(lui.intensities()):
-            n = landuse.name + "_" + intensity
+            n = landuse + "_" + intensity
             n2 = n + "_ref"
-            if landuse.name == "timber":
+            if landuse == "timber":
                 rasters[n] = SimpleExpr(0)
                 rasters[n2] = SimpleExpr(0)
             else:
-                rasters[n] = lui.LUH2(landuse.name, intensity)
+                rasters[n] = lui.LUH2(landuse, intensity)
                 rasters[n2] = Raster(ref_path, band + 1)
 
     ref_path = outfn("luh2", "urban-recal.tif")

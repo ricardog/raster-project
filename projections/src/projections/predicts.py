@@ -260,6 +260,75 @@ def luh2(scenario, year, hpd_trend):                        # noqa C901
     return rasters
 
 
+def helen(scenario, year, wpp=False):                            # noqa C901
+    rasters = {}
+
+    secd_models = (("cropland", "cropland"),
+                   ("pasture", "pasture"),
+                   ("primary", "primary"),
+                   ("urban", "urban"),
+                   ("young_secondary", "secondary"),
+                   ("intermediate_secondary", "secondary"),
+                   ("mature_secondary", "secondary"),
+                   )
+
+    rasters["cropland"] = "c3ann + c4ann + c3nfx"
+    rasters["pasture"] = "range + pastr"
+    rasters["plantation_pri"] = "c3per + c4per"
+    rasters["plantation_sec"] = 0
+    rasters["primary"] = "primf + primn"
+
+    rasters["mature_secondary"] = "secdmf + secdmn"
+    rasters["intermediate_secondary"] = "secdif + secdin"
+    rasters["young_secondary"] = "secdyf + secdyn"
+    rasters["secondary"] = ("young_secondary + "
+                            "intermediate_secondary + "
+                            "mature_secondary")
+
+    # Human population density and UN subregions
+    rasters["unSub"] = Raster(outfn("luh2", "un_subregions.tif"))
+    rasters["un_code"] = Raster(outfn("luh2", "un_codes.tif"))
+    if year < 2015:
+        if wpp:
+            rasters["hpd_ref"] = Raster(outfn("luh2", "gluds00ag.tif"))
+            rasters["hpd"] = hpd.WPP("historical", year, utils.wpp_xls())
+        else:
+            rasters.update(hpd.hyde.scale_grumps(year))
+    else:
+        rasters.update(hpd.sps.scale_grumps(utils.luh2_scenario_ssp(scenario),
+                                            year))
+
+    # Add luh2 and secondary age classes data layers
+    fname = utils.luh2_states(scenario)
+    for fname in (utils.luh2_states(scenario),
+                  outfn("luh2", "secd-" + scenario + ".nc")):
+        try:
+            ds = netCDF4.Dataset(fname)
+        except IOError:
+            print("Error: opening '%s'" % fname)
+            raise IOError("Error: opening '%s'" % fname)
+        ds_vars = filter(lambda v: v not in ("time", "lat", "lon", "crs",
+                                        "lat_bounds", "lon_bounds",
+                                        "binsf", "binsn", "time_bnds"),
+                         ds.variables.keys())
+        for name in ds_vars:
+            band = year - 849 if scenario == "historical" else year - 2014
+            rasters[name] = Raster("netcdf:%s:%s" % (fname, name),
+                                   bands=band, decode_times=False)
+
+    # Add land-use intensity variables.
+    for landuse, mod_name in secd_models:
+        for band, intensity in enumerate(lui.intensities()):
+            name = landuse + "_" + intensity
+            rasters[name] = lui.LUI(landuse, intensity, mod_name)
+
+    # No LUI models for plantation so divide evenly between intensities.
+    for band, intensity in enumerate(lui.intensities()):
+        name = "plantation_pri_" + intensity
+        rasters[name] = "plantation_pri / 3.0"
+    return rasters
+
+
 def oneKm(year, scenario, hpd_trend):
     rasters = {}
     if scenario == "version3.3":

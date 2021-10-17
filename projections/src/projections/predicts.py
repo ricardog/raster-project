@@ -260,7 +260,7 @@ def luh2(scenario, year, hpd_trend):                        # noqa C901
     return rasters
 
 
-def helen(scenario, year, wpp=False):                            # noqa C901
+def helen(scenario, year, wpp=False, scale_grumps=True):        # noqa C901
     rasters = {}
 
     secd_models = (("cropland", "cropland"),
@@ -293,10 +293,16 @@ def helen(scenario, year, wpp=False):                            # noqa C901
             rasters["hpd_ref"] = Raster(outfn("luh2", "gluds00ag.tif"))
             rasters["hpd"] = hpd.WPP("historical", year, utils.wpp_xls())
         else:
-            rasters.update(hpd.hyde.scale_grumps(year))
+            if scale_grumps:
+                rasters.update(hpd.hyde.scale_grumps(year))
+            else:
+                rasters.update(hpd.hyde.raster(year))
     else:
-        rasters.update(hpd.sps.scale_grumps(utils.luh2_scenario_ssp(scenario),
-                                            year))
+        sps_nc = utils.luh2_scenario_ssp(scenario)
+        if scale_grumps:
+            rasters.update(hpd.sps.scale_grumps(sps_nc, year))
+        else:
+            rasters.update(hpd.sps.raster(sps_nc, year))
 
     # Add luh2 and secondary age classes data layers
     fname = utils.luh2_states(scenario)

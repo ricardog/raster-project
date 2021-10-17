@@ -83,7 +83,8 @@ for model in models:
 
         for year in years:
             print(f'{scenario}: {year}')
-            rasters = predicts.helen(scenario, year, wpp=False)
+            rasters = predicts.helen(scenario, year, wpp=False,
+                                     scale_grumps=False)
 
             if model == 'abundance_model_simple.rds':
                 rasters.update(ablayers)
@@ -103,8 +104,8 @@ for model in models:
 
             #rs.write('output', './simple_projections/'+ what + '-' + scenario + '-' + '%d.tif' % year)
             
-            data, meta = rs.eval("output", quiet=True)
-            from rasterio.plot import show
-            show(data)
-            xxx
+            #data, meta = rs.eval("output", quiet=True)
+            #from rasterio.plot import show
+            #show(data)
+            #xxx
         

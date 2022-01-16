@@ -1,0 +1,322 @@
+#+TITLE: Projecting PREDICTS Models
+#+AUTHOR: Ricardo E. Gonzalez
+#+EMAIL: ricardog@ricardog.com
+
+:PROPERTIES:
+#+REVEAL_PLUGINS: (markdown notes zoom highlight)
+#+REVEAL_REVEAL_JS_VERSION: 4
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js
+#+REVEAL_THEME: moon
+#+REVEAL_EXTRA_CSS: ./css/extra.css
+:END:
+
+#+OPTIONS: toc:1 reveal_keyboard:t timestamp:nil num:nil
+
+* Fable
+** 
+:PROPERTIES:
+:reveal_background: ./images/cake.jpg
+:reveal_background_trans: slide
+:END:
+
+#+begin_notes
+Mr Fox want to make beautiful cakes like they do in bake-off
+  - He's out of sugar
+  - He goes to his local Tesco (and they are out as well)
+  - Goes home, jumps on his bike and goes to bigger Tesco. No sugar!
+  - OK, time to go to distributor (again no sugar)
+  - Rides down to Southhampton and sails to Cuba (at least it's warm)
+    - Buy a cup of sugar
+    - Makes his way back
+  - Now he needs vainilla
+    - Repeats the same process, sailing to Madagascar
+  - Maybe he'll finish his cake by next century!
+  - Computers care about the output (cakes)
+    - Need to be stored (equivalent of sailing back to Madagascar)
+  - Unlike roads
+    - further away from the center
+    - the smaller the roads
+#+end_notes
+
+* Maps
+** Raster map
+[[./images/brazil-map.png]]
+
+#+begin_notes
+
+Each grid cell has
+  - coordinate (0,0)
+  - value
+
+Raster has properties
+  - width, height
+  - NA value
+  - Coordinate Reference System (CRS)
+    - Convert (0, 0) to actual coordinates
+    - WGS84
+
+Framework prefers unprojected maps
+  - Think 3-D planet not 2-D paper
+  - Will talk more about this Friday
+  - White areas are NA (or don't care)
+    - Not essential but nice to have (esp for rendering)
+  - Different tools use different reference for cell coordinates
+    - UL, center
+    - Careful when moving from one to the other
+#+end_notes
+
+** Shape map
+
+#+ATTR_REVEAL: :frag t :frag_idx (1 2 3 4)
+- Geometric shapes
+  - Point, Line, Polygon
+- Examples
+  - Country borders, roads, conservation areas
+- Uses
+  - Masks, Distance
+- rasterize — convert to raster
+
+** Example
+[[./images/brazil-bii.png]]
+
+
+* Maths
+** PREDICTS models
+
+Structure of PREDICTS models
+
+#+ATTR_HTML: :class r-frame
+#+BEGIN_SRC language-r
+  sqrt.rs.abund ~ globiom_LU_proj * poly(logHPD30sec, 2) +
+    globiom_LU_proj * poly(logRDlte2_10, 2) +
+    (1 | SS) + (1 | SSB)
+#+END_SRC
+
+- Categorical: ~globio_LU_proj~
+- Continuous: ~logHPD30sec~, ~logRDlte2_10~
+
+
+#+ATTR_REVEAL: :frag t :frag_idx 1
+#+begin_src python
+bii = inv_xform(abundance) * inv_xform(comp_sim)
+#+end_src
+
+#+begin_notes
+- Pretty typical structure of a PREDICTS model (used for restore+)
+- Doesn't include use-intensity (LUI)
+- Sometimes includes terms not used in projections
+  - Ag suitability
+  - Ignore those
+- Ignore random effects
+- BII product of abundance and compositional similarity
+  - Often need to back-transform
+    - logit, log, sqrt
+#+end_notes
+
+* Python
+
+#+begin_notes
+- Framework written in Python
+  - Historical (could probably re-write in R/C)
+- I'm familiar with Python (so I find it easy)
+  - If ever projecting really high resolution, Python is better
+- I use the command line (CLI) a lot (so most examples use CLI)
+- Part of what you are learning is my convention
+  - How to organize & name raster maps
+#+end_notes
+
+** Python dict(ionary)
+Table mapping from ~key~ to ~value~
+
+#+begin_src python
+  students = {"Cristina": "Brazil",
+              "Katia": "Mexico",
+              "Claudia": "Portugal",
+              "Sam": "England"
+              }
+
+  print(students["Katia"])
+#+end_src
+
+#+begin_notes
+- A dict (or dictionary or hash table) is a kind of variable in Python
+- It stores a "mapping" from a key to a value
+- I think there isn't a hash or dict type in R
+- The same meaning applies in the code you will use
+#+end_notes
+
+** R to Python
+Convert R model to Python code
+
+Run explicitly
+#+begin_src shell
+r2py final_abund_model.rds
+#+end_src
+
+Writes ~final_abund_model.py~ (if curious)
+
+Mostly under-the-hood
+
+** R model properties
+Some properties carry forward
+
+#+begin_src python
+def output():
+  return "sqrt_rs_abund"
+
+def output_range():
+  return (0.0, 1.0)
+
+def func_name():
+  return "final_abund_model"
+#+end_src
+
+Others handle by hand (max, min)
+
+#+begin_notes
+- During translation
+  - Convert R variable names to Python variable names
+  - Convert SnakeCase to camel_case
+  - Remove "dots"
+  - Others; but it's a mechanical translation
+    - Peek at the .py file if in doubt
+#+end_notes
+
+** Trees
+
+#+begin_src python
+  rs = RasterSet({"cs": Raster("/mnt/predicts/rcp/restore/brazil",
+                               "LANDUSE_FC-CompSimAb-2020.tif"),
+                  "ab": Raster("/mnt/predicts/rcp/restore/brazil",
+                               "LANDUSE_FC-Abundance-2020.tif"),
+                  "bii": "ab * cs"
+                  "x": "(ab + 1) * (cs + 1)"
+                  })
+  data, meta = rs.eval("bii", quiet=True)
+#+end_src
+
+#+begin_notes
+- This bit of Python describes how to compute BII
+  1. Read a raster of Compositional Similarity
+  2. Read a raster of abundance
+  3. Calculate bii as ab * cs
+- Variables can be
+  - A raster (primary input)
+  - An expression (ab * cs)
+  - A model
+- data is the resulting map
+- meta is the information about the map (width, height, CRS, NA)
+- The rest of the code is iterating through scenarios, years, etc.
+#+end_notes
+
+** Inputs
+
+#+begin_src language-r
+  sqrt.rs.abund ~ globiom_LU_proj * poly(logHPD30sec, 2) +
+    globiom_LU_proj * poly(logRDlte2_10, 2) +
+    (1 | SS) + (1 | SSB)
+#+end_src
+
+#+begin_src python
+   def inputs():
+     return ['globiom_lu_proj_cropland', 'globiom_lu_proj_forest',
+             'globiom_lu_proj_oth_agri', 'globiom_lu_proj_pasture',
+             'globiom_lu_proj_plt_for',
+             'globiom_lu_proj_secondary_intermediate',
+             'globiom_lu_proj_secondary_young', 'globiom_lu_proj_urban',
+             'log_hpd30sec', 'log_r_dlte2_10']
+#+end_src
+
+#+begin_notes
+- Note there is now one input per value of categorical variable
+  - blobiom_lu_proj 
+#+end_notes
+
+* Data
+** Source data
+- Human population density
+  - Worldpop
+  - Hyde
+  - UN population dataset
+  - Global rural-urban population density
+  - Spatial population scenarios
+- Roads
+  - groads
+  - GRIP4
+
+** Source data (2)
+- Land use
+  - LUH2 (multiple releases)
+  - LUH2 @ 1km
+- NPP
+- Spatial database of planted trees
+- Country borders
+    
+** Generated data
+- UN country codes
+- UN subregion codes
+- Scaled (or reprojected) source data
+- Rasterized SDPT
+- Road density raster
+- Land-use intensity (special case)
+  
+* Play time!
+** 
+:PROPERTIES:
+:reveal_background: ./images/rstudio.png
+:reveal_background_trans: slide
+:END:
+
+#+begin_notes
+- use Rstudio
+- use the terminal (CLI) not reticulate
+- Existing data is in "/mnt/predicts/rcp/restore/brazil"
+#+end_notes
+
+** Exercise 1
+Write a script to compute BII
+
+Read existing data
+
+Write to work2 folder
+
+#+begin_src python
+  #!/usr/bin/env python3
+
+  import rasterio
+  from rasterset import RasterSet, Raster
+
+  rs = # Add code here
+
+  data, meta = rs.eval("name", quiet=True)
+
+  # Change scenario, name, year
+  with rasterio.open("{scenario}-{name}-{year}.tif",
+                     "w", **meta,) as dst:
+      dst.write(data.filled(), indexes=1)
+#+end_src
+
+** Exercise 2
+Write a script to project abundance
+
+#+begin_src python
+  #!/usr/bin/env python3
+
+  import rasterio
+  from projutils import hpd
+  from rasterset import RasterSet, Raster
+  import r2py.modelr as modelr
+
+  # Use the final_abund_model.rds model
+  modelr.load("/mnt/predicts/models/restore/brazil/2020-10-27/base/")
+  rs = # Add code here
+
+  # Don't forget to back-transform
+
+  data, meta = rs.eval("name", quiet=True)
+
+  # Change scenario, name, year
+  with rasterio.open("{scenario}-{name}-{year}.tif",
+                     "w", **meta,) as dst:
+      dst.write(data.squeeze().filled(), indexes=1)
+#+end_src

@@ -1,0 +1,252 @@
+#+TITLE: Projecting PREDICTS Models
+#+AUTHOR: Ricardo E. Gonzalez
+#+EMAIL: ricardog@ricardog.com
+
+:PROPERTIES:
+#+REVEAL_PLUGINS: (markdown notes zoom highlight)
+#+REVEAL_REVEAL_JS_VERSION: 4
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js
+#+REVEAL_THEME: moon
+#+REVEAL_EXTRA_CSS: ./css/extra.css
+:END:
+
+#+OPTIONS: toc:1 reveal_keyboard:t timestamp:nil num:nil
+
+* Review
+
+Use ~RasterSet~ to simplify projections
+
+Start at the output and work backwards
+
+#+begin_src python
+  rs = RasterSet({"cs": Raster("/mnt/predicts/rcp/restore/brazil",
+                               "LANDUSE_FC-CompSimAb-2020.tif"),
+                  "ab": Raster("/mnt/predicts/rcp/restore/brazil",
+                               "LANDUSE_FC-Abundance-2020.tif"),
+                  "bii": "ab * cs"
+                  "x": "(ab + 1) * (cs + 1)"
+                  })
+  data, meta = rs.eval("bii", quiet=True)
+#+end_src
+
+#+begin_notes
+RasterSet doesn't compute what is not needed.  Define things generically
+and don't worry whether it will slow down the projection.
+#+end_notes
+
+
+* Details
+
+|----------+------------------------------------------------------|
+| Code     | https://github.com/ricardog/raster-project           |
+| Restore+ | /mnt/predicts/rcp/restore/brazil/{scenario}          |
+| Models   | /mnt/predicts/models/restore/brazil/2020-10-27/base |
+| Slides   | user-scripts/ricardog/wcmc-training                  |
+|----------+------------------------------------------------------|
+
+
+* Using R models
+
+Import R models using ~modelr~.
+
+#+begin_src python
+  #!/usr/bin/env python3
+  import r2py.modelr as modelr
+  from projutils import hpd
+  from rasterset import RasterSet, Raster
+
+  ssp = "ssp2"
+  year = 2015
+  mod = modelr.load("final_abund_model.rds")
+  rs = RasterSet({"sqrt_rs_abund": mod,
+                  "globiom_lu_proj_cropland": Raster(),
+                  "globiom_lu_proj_forest": Raster(),
+                  "globiom_lu_proj_oth_agri": Raster(),
+                  "globiom_lu_proj_pasture": Raster(),
+                  "globiom_lu_proj_plt_for": Raster(),
+                  "globiom_lu_proj_secondary_intermediate": Raster(),
+                  "globiom_lu_proj_secondary_young": Raster(),
+                  "globiom_lu_proj_urban": Raster(),
+                  "log_r_dlte2_10": Raster(),
+                  "hpd_ref": Raster("/mnt/predicts/rcp/gluds00ag.tif"),
+                  "land": Raster("/mnt/predicts/rcp/gpw-land.tif"),
+                  "pop": hpd.sps.raster(ssp, year, "rcp")["hpd"],
+                  "hpd": "pop / land",
+                  "log_hpd30sec": "log(hpd + 1)"
+                  })
+#+end_src
+
+#+begin_notes
+- We "load" the R model (to get coefficients)
+- Note we have to provide a "layer" or "definition" for each variable
+- Because model uses HPD, we need to define HPD layer
+  - With a little help
+#+end_notes
+
+
+* Input layers
+
+#+begin_notes
+- Framework provides multiple things
+  - Basic library for fater computation with raster maps
+  - Helper functions for commonly used variables/datasets
+- Here's a brief introduction to these helper routines
+#+end_notes
+
+
+** Land use data
+
+Framework works with any land-use dataset
+
+Biased toward *luh2* (both 0.25° and 1km resolutions)
+
+Collapse LU classes in ~RasterSet~
+
+#+begin_src python
+"cropland": "c4ann + c3ann + c3per + c4per + c3nfx"
+#+end_src
+
+#+begin_notes
+- In example above, have to define LU classes one-by-one
+- w/ LUH2 have functions to load all layers in NetCDF
+- Combine / collapse LU classes in rasterSet definition
+#+end_notes
+
+
+** Secondary age-classes
+
+Generate secondary vegetation age classes for *LUH2*
+
+Fixed ages (< 30, < 50, > 50)
+
+Can combine with LUI modeling
+
+
+** Land-use intensity modeling
+
+Based on Tim's models
+
+Five models: cropland, pasture, primary, secondary, urban
+
+#+begin_src python
+  from projutils import lui
+
+  secd_models = (("cropland", "cropland"),
+                 ("pasture", "pasture"),
+                 ("primary", "primary"),
+                 ("urban", "urban"),
+                 ("young_secondary", "secondary"),
+                 ("intermediate_secondary", "secondary"),
+                 ("mature_secondary", "secondary"),
+                 )
+
+  # Add land-use intensity variables.
+  for landuse, mod_name in secd_models:
+      for intensity in lui.intensities():
+          name = landuse + "_" + intensity
+          rasters[name] = lui.LUI(landuse, intensity, mod_name)
+#+end_src
+
+#+begin_notes
+- Land-use intensity modeling is based on Tim's models
+- Five models (corresponding to the RCP land-use classes) in original
+  PREDICTS dataset
+- Map your land-use classes to one of these five
+#+end_notes
+
+
+** Human population density
+
+Helper functions for these datasets
+
+- Worldpop
+- SPS
+  - Raw
+  - Scaled
+- Hyde
+- UN Population data
+  - Per country scaling of GRUMPS
+
+#+begin_notes
+- Helper or utility functions for human population density
+- Depend on data layout
+- 
+
+#+end_notes
+
+
+*** HPD Example
+
+#+begin_src python
+  if year < 2015:
+      if wpp:
+          rasters["hpd_ref"] = Raster(outfn("luh2", "gluds00ag.tif"))
+          rasters["hpd"] = hpd.WPP("historical", year, utils.wpp_xls())
+      else:
+          if scale_grumps:
+              rasters.update(hpd.hyde.scale_grumps(year))
+          else:
+              rasters.update(hpd.hyde.raster(year))
+  else:
+      sps_nc = utils.luh2_scenario_ssp(scenario)
+      if scale_grumps:
+          rasters.update(hpd.sps.scale_grumps(sps_nc, year))
+      else:
+          rasters.update(hpd.sps.raster(sps_nc, year))
+#+end_src
+
+
+
+* Hi-rez rasters
+
+|-------------+----------+--------------------------------------|
+| Resolution  | Parallel | Code                                 |
+|-------------+----------+--------------------------------------|
+| Low (0.25°) | No       | ~rs.eval("bii")~                       |
+| High (1km)  | Computer | ~rs.write("bii", "ssp2-bii-2015.tif")~ |
+| Ultra (10m) | Cluster  | ~rs.build("bii")~                      |
+|-------------+----------+--------------------------------------|
+
+#+begin_notes
+- Use a different function depending on resolution
+- Small, use one core (parallel outside)
+- Large, use all cores on one machine
+- Ultra, run distributed on a cluster
+
+- Framework tries to use "optimal" blocking
+#+end_notes
+
+
+* Exercises
+** Exercise 2
+Write a script to project abundance for Restore+
+
+#+begin_src python
+  #!/usr/bin/env python3
+
+  import rasterio
+  from projutils import hpd
+  from rasterset import RasterSet, Raster
+  import r2py.modelr as modelr
+
+  # Use the final_abund_model.rds model
+  modelr.load("/mnt/predicts/models/restore/brazil/2020-10-27/base/final_abund_model.rds")
+  rs = # Add code here
+
+  # Don't forget to back-transform
+
+  data, meta = rs.eval("name", quiet=True)
+
+  # Change scenario, name, year
+  with rasterio.open("{scenario}-{name}-{year}.tif",
+                     "w", **meta,) as dst:
+      dst.write(data.squeeze().filled(), indexes=1)
+#+end_src
+
+* (No) Limits
+Information lost because we export model to Python
+
+Must handle manually (several alternatives)
+
+- Scaling and centering
+- Limits (HPD > max or < min in data)

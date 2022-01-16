@@ -1,0 +1,68 @@
+#+TITLE: Server Setup
+#+AUTHOR: Ricardo E. Gonzalez
+#+EMAIL: ricardog@ricardog.com
+
+* Server setup
+
+** IAM Role
+Ensure the instance has the EC2UseECR role so it can acess container
+registry (ECR).  After the instance is running go to instance details
+page then Actions -> Security -> ModifyIAM role
+
+** Setup docker
+
+#+begin_src shell
+  sudo ln -s /mnt/efs/fs1/home /mnt/home
+  sudo ln -s /mnt/efs/fs1/predicts/ /mnt/predicts
+  sudo ln -s /mnt/efs/fs1/data /mnt/data
+
+  sudo amazon-linux-extras install docker -y
+  sudo usermod -a -G docker ec2-user
+  sudo systemctl stop docker
+
+  cd /mnt/home/ec2-user
+  sudo cp _etc_sysconfig_docker /etc/sysconfig/docker
+  sudo cp _etc_docker_daemon.json /etc/docker/daemon.json
+
+  sudo systemctl start docker
+  sudo systemctl status docker
+
+  # Logout & log back in
+  docker ps
+#+end_src
+
+
+** Pull images
+This step shouldn't be necessary as the docker state is kept in EFS, but
+best to check.
+
+#+begin_src shell
+  aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 075119561265.dkr.ecr.eu-west-2.amazonaws.com
+  docker pull 075119561265.dkr.ecr.eu-west-2.amazonaws.com/predicts:4.0.0
+
+  # Now try it
+  docker run -it --rm -u rstudio predicts:4.0.0 /bin/bash
+#+end_src
+
+
+
+|----------+--------------+---------------------|
+| User     | Password     | Username            |
+|----------+--------------+---------------------|
+| Cristina | phoa2cu5Thei | cristina_telhado    |
+| Katia    | aeS8ehukeab2 | katia_sanchez_ortiz |
+| Claudia  | ahc5Ja0ikeil | claudia_faustino    |
+| Sam      | ja8afaih4Yah | samantha_hill       |
+|----------+--------------+---------------------|
+
+|----------+----------------------------------------|
+| User     | URL                                    |
+|----------+----------------------------------------|
+| Cristina | https://predicts.itinerisinc.com:8788/ |
+| Katia    | https://predicts.itinerisinc.com:8789/ |
+| Claudia  | https://predicts.itinerisinc.com:8790/ |
+| Sam      | https://predicts.itinerisinc.com:8791/ |
+|----------+----------------------------------------|
+
+User: rstudio
+Password: e68a75a5-7b1d-4bdb-8c52-58becaed49e2

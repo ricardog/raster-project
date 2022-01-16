@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Projecting PREDICTS Models</title>
+<meta name="author" content="(Ricardo E. Gonzalez)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.css"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/theme/moon.css" id="theme"/>
+
+<link rel="stylesheet" href="./css/extra.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/lib/css/zenburn.css"/></head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">Projecting PREDICTS Models</h1><h2 class="author">Ricardo E. Gonzalez</h2>
+</section>
+<section id="sec-table-of-contents"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#/slide-orgdae2157">Fable</a></li>
+<li><a href="#/slide-org0a2428a">Maps</a></li>
+<li><a href="#/slide-org5cc6ff5">Maths</a></li>
+<li><a href="#/slide-orgc7ccfb0">Python</a></li>
+<li><a href="#/slide-org257abcc">Data</a></li>
+<li><a href="#/slide-org153eb2e">Play time!</a></li>
+</ul>
+</div>
+</div>
+</section>
+
+
+<section>
+<section id="slide-orgdae2157">
+<h2 id="orgdae2157">Fable</h2>
+<div class="outline-text-2" id="text-orgdae2157">
+</div>
+</section>
+<section id="slide-org34eda95" data-background="./images/cake.jpg" data-background-transition="slide">
+<h3 id="org34eda95"></h3>
+<aside class="notes">
+<p>
+Mr Fox want to make beautiful cakes like they do in bake-off
+</p>
+<ul>
+<li>He's out of sugar</li>
+<li>He goes to his local Tesco (and they are out as well)</li>
+<li>Goes home, jumps on his bike and goes to bigger Tesco. No sugar!</li>
+<li>OK, time to go to distributor (again no sugar)</li>
+<li>Rides down to Southhampton and sails to Cuba (at least it's warm)
+<ul>
+<li>Buy a cup of sugar</li>
+<li>Makes his way back</li>
+
+</ul></li>
+<li>Now he needs vainilla
+<ul>
+<li>Repeats the same process, sailing to Madagascar</li>
+
+</ul></li>
+<li>Maybe he'll finish his cake by next century!</li>
+<li>Computers care about the output (cakes)
+<ul>
+<li>Need to be stored (equivalent of sailing back to Madagascar)</li>
+
+</ul></li>
+<li>Unlike roads
+<ul>
+<li>further away from the center</li>
+<li>the smaller the roads</li>
+
+</ul></li>
+
+</ul>
+
+</aside>
+
+</section>
+</section>
+<section>
+<section id="slide-org0a2428a">
+<h2 id="org0a2428a">Maps</h2>
+<div class="outline-text-2" id="text-org0a2428a">
+</div>
+</section>
+<section id="slide-org9543e8d">
+<h3 id="org9543e8d">Raster map</h3>
+
+<div id="org4d31fb3" class="figure">
+<p><img src="./images/brazil-map.png" alt="brazil-map.png" />
+</p>
+</div>
+
+<aside class="notes">
+<p>
+
+</p>
+
+<p>
+Each grid cell has
+</p>
+<ul>
+<li>coordinate (0,0)</li>
+<li>value</li>
+
+</ul>
+
+<p>
+Raster has properties
+</p>
+<ul>
+<li>width, height</li>
+<li>NA value</li>
+<li>Coordinate Reference System (CRS)
+<ul>
+<li>Convert (0, 0) to actual coordinates</li>
+<li>WGS84</li>
+
+</ul></li>
+
+</ul>
+
+<p>
+Framework prefers unprojected maps
+</p>
+<ul>
+<li>Think 3-D planet not 2-D paper</li>
+<li>Will talk more about this Friday</li>
+<li>White areas are NA (or don't care)
+<ul>
+<li>Not essential but nice to have (esp for rendering)</li>
+
+</ul></li>
+<li>Different tools use different reference for cell coordinates
+<ul>
+<li>UL, center</li>
+<li>Careful when moving from one to the other</li>
+
+</ul></li>
+
+</ul>
+
+</aside>
+
+</section>
+<section id="slide-org32e76fa">
+<h3 id="org32e76fa">Shape map</h3>
+<ul data-fragment-index="(1 2 3 4)" class="fragment">
+<li>Geometric shapes
+<ul>
+<li>Point, Line, Polygon</li>
+
+</ul></li>
+<li>Examples
+<ul>
+<li>Country borders, roads, conservation areas</li>
+
+</ul></li>
+<li>Uses
+<ul>
+<li>Masks, Distance</li>
+
+</ul></li>
+<li>rasterize — convert to raster</li>
+
+</ul>
+
+</section>
+<section id="slide-org9b457b9">
+<h3 id="org9b457b9">Example</h3>
+
+<div id="orgee49b0e" class="figure">
+<p><img src="./images/brazil-bii.png" alt="brazil-bii.png" />
+</p>
+</div>
+
+
+</section>
+</section>
+<section>
+<section id="slide-org5cc6ff5">
+<h2 id="org5cc6ff5">Maths</h2>
+<div class="outline-text-2" id="text-org5cc6ff5">
+</div>
+</section>
+<section id="slide-org3fa4225">
+<h3 id="org3fa4225">PREDICTS models</h3>
+<p>
+Structure of PREDICTS models
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="language-r" >sqrt.rs.abund ~ globiom_LU_proj * poly(logHPD30sec, 2) +
+  globiom_LU_proj * poly(logRDlte2_10, 2) +
+  (1 | SS) + (1 | SSB)
+</code></pre>
+</div>
+
+<ul>
+<li>Categorical: <code>globio_LU_proj</code></li>
+<li>Continuous: <code>logHPD30sec</code>, <code>logRDlte2_10</code></li>
+
+</ul>
+
+
+<div class="org-src-container">
+
+<pre  class="fragment" data-fragment-index="1"  ><code class="python" >bii = inv_xform(abundance) * inv_xform(comp_sim)
+</code></pre>
+</div>
+
+<aside class="notes">
+<ul>
+<li>Pretty typical structure of a PREDICTS model (used for restore+)</li>
+<li>Doesn't include use-intensity (LUI)</li>
+<li>Sometimes includes terms not used in projections
+<ul>
+<li>Ag suitability</li>
+<li>Ignore those</li>
+
+</ul></li>
+<li>Ignore random effects</li>
+<li>BII product of abundance and compositional similarity
+<ul>
+<li>Often need to back-transform
+<ul>
+<li>logit, log, sqrt</li>
+
+</ul></li>
+
+</ul></li>
+
+</ul>
+
+</aside>
+
+</section>
+</section>
+<section>
+<section id="slide-orgc7ccfb0">
+<h2 id="orgc7ccfb0">Python</h2>
+<aside class="notes">
+<ul>
+<li>Framework written in Python
+<ul>
+<li>Historical (could probably re-write in R/C)</li>
+
+</ul></li>
+<li>I'm familiar with Python (so I find it easy)
+<ul>
+<li>If ever projecting really high resolution, Python is better</li>
+
+</ul></li>
+<li>I use the command line (CLI) a lot (so most examples use CLI)</li>
+<li>Part of what you are learning is my convention
+<ul>
+<li>How to organize &amp; name raster maps</li>
+
+</ul></li>
+
+</ul>
+
+</aside>
+
+</section>
+<section id="slide-org93a1ccd">
+<h3 id="org93a1ccd">Python dict(ionary)</h3>
+<p>
+Table mapping from <code>key</code> to <code>value</code>
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >students = {"Cristina": "Brazil",
+	    "Katia": "Mexico",
+	    "Claudia": "Portugal",
+	    "Sam": "England"
+	    }
+
+print(students["Katia"])
+</code></pre>
+</div>
+
+<aside class="notes">
+<ul>
+<li>A dict (or dictionary or hash table) is a kind of variable in Python</li>
+<li>It stores a "mapping" from a key to a value</li>
+<li>I think there isn't a hash or dict type in R</li>
+<li>The same meaning applies in the code you will use</li>
+
+</ul>
+
+</aside>
+
+</section>
+<section id="slide-org4fe7d61">
+<h3 id="org4fe7d61">R to Python</h3>
+<p>
+Convert R model to Python code
+</p>
+
+<p>
+Run explicitly
+</p>
+<div class="org-src-container">
+
+<pre   ><code class="shell" >r2py final_abund_model.rds
+</code></pre>
+</div>
+
+<p>
+Writes <code>final_abund_model.py</code> (if curious)
+</p>
+
+<p>
+Mostly under-the-hood
+</p>
+
+</section>
+<section id="slide-orgcea1569">
+<h3 id="orgcea1569">R model properties</h3>
+<p>
+Some properties carry forward
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >def output():
+  return "sqrt_rs_abund"
+
+def output_range():
+  return (0.0, 1.0)
+
+def func_name():
+  return "final_abund_model"
+</code></pre>
+</div>
+
+<p>
+Others handle by hand (max, min)
+</p>
+
+<aside class="notes">
+<ul>
+<li>During translation
+<ul>
+<li>Convert R variable names to Python variable names</li>
+<li>Convert SnakeCase to camel<sub>case</sub></li>
+<li>Remove "dots"</li>
+<li>Others; but it's a mechanical translation
+<ul>
+<li>Peek at the .py file if in doubt</li>
+
+</ul></li>
+
+</ul></li>
+
+</ul>
+
+</aside>
+
+</section>
+<section id="slide-org733c942">
+<h3 id="org733c942">Trees</h3>
+<div class="org-src-container">
+
+<pre   ><code class="python" >rs = RasterSet({"cs": Raster("/mnt/predicts/rcp/restore/brazil",
+			     "LANDUSE_FC-CompSimAb-2020.tif"),
+		"ab": Raster("/mnt/predicts/rcp/restore/brazil",
+			     "LANDUSE_FC-Abundance-2020.tif"),
+		"bii": "ab * cs"
+		"x": "(ab + 1) * (cs + 1)"
+		})
+data, meta = rs.eval("bii", quiet=True)
+</code></pre>
+</div>
+
+<aside class="notes">
+<ul>
+<li>This bit of Python describes how to compute BII
+<ol>
+<li>Read a raster of Compositional Similarity</li>
+<li>Read a raster of abundance</li>
+<li>Calculate bii as ab * cs</li>
+
+</ol></li>
+<li>Variables can be
+<ul>
+<li>A raster (primary input)</li>
+<li>An expression (ab * cs)</li>
+<li>A model</li>
+
+</ul></li>
+<li>data is the resulting map</li>
+<li>meta is the information about the map (width, height, CRS, NA)</li>
+<li>The rest of the code is iterating through scenarios, years, etc.</li>
+
+</ul>
+
+</aside>
+
+</section>
+<section id="slide-orgc830bef">
+<h3 id="orgc830bef">Inputs</h3>
+<div class="org-src-container">
+
+<pre   ><code class="language-r" >sqrt.rs.abund ~ globiom_LU_proj * poly(logHPD30sec, 2) +
+  globiom_LU_proj * poly(logRDlte2_10, 2) +
+  (1 | SS) + (1 | SSB)
+</code></pre>
+</div>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >def inputs():
+  return ['globiom_lu_proj_cropland', 'globiom_lu_proj_forest',
+	  'globiom_lu_proj_oth_agri', 'globiom_lu_proj_pasture',
+	  'globiom_lu_proj_plt_for',
+	  'globiom_lu_proj_secondary_intermediate',
+	  'globiom_lu_proj_secondary_young', 'globiom_lu_proj_urban',
+	  'log_hpd30sec', 'log_r_dlte2_10']
+</code></pre>
+</div>
+
+<aside class="notes">
+<ul>
+<li>Note there is now one input per value of categorical variable
+<ul>
+<li>blobiom<sub>lu</sub><sub>proj</sub></li>
+
+</ul></li>
+
+</ul>
+
+</aside>
+
+</section>
+</section>
+<section>
+<section id="slide-org257abcc">
+<h2 id="org257abcc">Data</h2>
+<div class="outline-text-2" id="text-org257abcc">
+</div>
+</section>
+<section id="slide-org776a35f">
+<h3 id="org776a35f">Source data</h3>
+<ul>
+<li>Human population density
+<ul>
+<li>Worldpop</li>
+<li>Hyde</li>
+<li>UN population dataset</li>
+<li>Global rural-urban population density</li>
+<li>Spatial population scenarios</li>
+
+</ul></li>
+<li>Roads
+<ul>
+<li>groads</li>
+<li>GRIP4</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+<section id="slide-orge9d2315">
+<h3 id="orge9d2315">Source data (2)</h3>
+<ul>
+<li>Land use
+<ul>
+<li>LUH2 (multiple releases)</li>
+<li>LUH2 @ 1km</li>
+
+</ul></li>
+<li>NPP</li>
+<li>Spatial database of planted trees</li>
+<li>Country borders</li>
+
+</ul>
+
+</section>
+<section id="slide-org55d3a00">
+<h3 id="org55d3a00">Generated data</h3>
+<ul>
+<li>UN country codes</li>
+<li>UN subregion codes</li>
+<li>Scaled (or reprojected) source data</li>
+<li>Rasterized SDPT</li>
+<li>Road density raster</li>
+<li>Land-use intensity (special case)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org153eb2e">
+<h2 id="org153eb2e">Play time!</h2>
+<div class="outline-text-2" id="text-org153eb2e">
+</div>
+</section>
+<section id="slide-orgfb0923b" data-background="./images/rstudio.png" data-background-transition="slide">
+<h3 id="orgfb0923b"></h3>
+<aside class="notes">
+<ul>
+<li>use Rstudio</li>
+<li>use the terminal (CLI) not reticulate</li>
+<li>Existing data is in "/mnt/predicts/rcp/restore/brazil"</li>
+
+</ul>
+
+</aside>
+
+</section>
+<section id="slide-orgfa53d36">
+<h3 id="orgfa53d36">Exercise 1</h3>
+<p>
+Write a script to compute BII
+</p>
+
+<p>
+Read existing data
+</p>
+
+<p>
+Write to work2 folder
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >#!/usr/bin/env python3
+
+import rasterio
+from rasterset import RasterSet, Raster
+
+rs = # Add code here
+
+data, meta = rs.eval("name", quiet=True)
+
+# Change scenario, name, year
+with rasterio.open("{scenario}-{name}-{year}.tif",
+		   "w", **meta,) as dst:
+    dst.write(data.filled(), indexes=1)
+</code></pre>
+</div>
+
+</section>
+<section id="slide-orgcabd8bb">
+<h3 id="orgcabd8bb">Exercise 2</h3>
+<p>
+Write a script to project abundance
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >#!/usr/bin/env python3
+
+import rasterio
+from projutils import hpd
+from rasterset import RasterSet, Raster
+import r2py.modelr as modelr
+
+# Use the final_abund_model.rds model
+modelr.load("/mnt/predicts/models/restore/brazil/2020-10-27/base/")
+rs = # Add code here
+
+# Don't forget to back-transform
+
+data, meta = rs.eval("name", quiet=True)
+
+# Change scenario, name, year
+with rasterio.open("{scenario}-{name}-{year}.tif",
+		   "w", **meta,) as dst:
+    dst.write(data.squeeze().filled(), indexes=1)
+</code></pre>
+</div>
+</section>
+</section>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/markdown/markdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/zoom/zoom.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/highlight/highlight.js"></script>
+
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+plugins: [RevealMarkdown, RevealNotes, RevealZoom, RevealHighlight]
+});
+
+</script>
+</body>
+</html>

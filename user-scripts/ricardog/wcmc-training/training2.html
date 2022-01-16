@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Projecting PREDICTS Models</title>
+<meta name="author" content="(Ricardo E. Gonzalez)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.css"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/theme/moon.css" id="theme"/>
+
+<link rel="stylesheet" href="./css/extra.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/lib/css/zenburn.css"/></head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">Projecting PREDICTS Models</h1><h2 class="author">Ricardo E. Gonzalez</h2>
+</section>
+<section id="sec-table-of-contents"><div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#/slide-org851e393">Review</a></li>
+<li><a href="#/slide-org4ac1577">Details</a></li>
+<li><a href="#/slide-org170a1df">Using R models</a></li>
+<li><a href="#/slide-org707b4b5">Input layers</a></li>
+<li><a href="#/slide-orgfe67cde">Hi-rez rasters</a></li>
+<li><a href="#/slide-orgdf9cbf1">Exercises</a></li>
+<li><a href="#/slide-org79751f5">(No) Limits</a></li>
+</ul>
+</div>
+</div>
+</section>
+
+
+<section>
+<section id="slide-org851e393">
+<h2 id="org851e393">Review</h2>
+<p>
+Use <code>RasterSet</code> to simplify projections
+</p>
+
+<p>
+Start at the output and work backwards
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >rs = RasterSet({"cs": Raster("/mnt/predicts/rcp/restore/brazil",
+			     "LANDUSE_FC-CompSimAb-2020.tif"),
+		"ab": Raster("/mnt/predicts/rcp/restore/brazil",
+			     "LANDUSE_FC-Abundance-2020.tif"),
+		"bii": "ab * cs"
+		"x": "(ab + 1) * (cs + 1)"
+		})
+data, meta = rs.eval("bii", quiet=True)
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+RasterSet doesn't compute what is not needed.  Define things generically
+and don't worry whether it will slow down the projection.
+</p>
+
+</aside>
+
+
+</section>
+</section>
+<section>
+<section id="slide-org4ac1577">
+<h2 id="org4ac1577">Details</h2>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">Code</td>
+<td class="org-left"><a href="https://github.com/ricardog/raster-project">https://github.com/ricardog/raster-project</a></td>
+</tr>
+
+<tr>
+<td class="org-left">Restore+</td>
+<td class="org-left">/mnt/predicts/rcp/restore/brazil/{scenario}</td>
+</tr>
+
+<tr>
+<td class="org-left">Models</td>
+<td class="org-left">/mnt/predicts/models/restore/brazil/2020-10-27/base</td>
+</tr>
+
+<tr>
+<td class="org-left">Slides</td>
+<td class="org-left">user-scripts/ricardog/wcmc-training</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+</section>
+<section>
+<section id="slide-org170a1df">
+<h2 id="org170a1df">Using R models</h2>
+<p>
+Import R models using <code>modelr</code>.
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >#!/usr/bin/env python3
+import r2py.modelr as modelr
+from projutils import hpd
+from rasterset import RasterSet, Raster
+
+ssp = "ssp2"
+year = 2015
+mod = modelr.load("final_abund_model.rds")
+rs = RasterSet({"sqrt_rs_abund": mod,
+		"globiom_lu_proj_cropland": Raster(),
+		"globiom_lu_proj_forest": Raster(),
+		"globiom_lu_proj_oth_agri": Raster(),
+		"globiom_lu_proj_pasture": Raster(),
+		"globiom_lu_proj_plt_for": Raster(),
+		"globiom_lu_proj_secondary_intermediate": Raster(),
+		"globiom_lu_proj_secondary_young": Raster(),
+		"globiom_lu_proj_urban": Raster(),
+		"log_r_dlte2_10": Raster(),
+		"hpd_ref": Raster("/mnt/predicts/rcp/gluds00ag.tif"),
+		"land": Raster("/mnt/predicts/rcp/gpw-land.tif"),
+		"pop": hpd.sps.raster(ssp, year, "rcp")["hpd"],
+		"hpd": "pop / land",
+		"log_hpd30sec": "log(hpd + 1)"
+		})
+</code></pre>
+</div>
+
+<aside class="notes">
+<ul>
+<li>We "load" the R model (to get coefficients)</li>
+<li>Note we have to provide a "layer" or "definition" for each variable</li>
+<li>Because model uses HPD, we need to define HPD layer
+<ul>
+<li>With a little help</li>
+
+</ul></li>
+
+</ul>
+
+</aside>
+
+
+</section>
+</section>
+<section>
+<section id="slide-org707b4b5">
+<h2 id="org707b4b5">Input layers</h2>
+<aside class="notes">
+<ul>
+<li>Framework provides multiple things
+<ul>
+<li>Basic library for fater computation with raster maps</li>
+<li>Helper functions for commonly used variables/datasets</li>
+
+</ul></li>
+<li>Here's a brief introduction to these helper routines</li>
+
+</ul>
+
+</aside>
+
+
+</section>
+<section id="slide-org86963b1">
+<h3 id="org86963b1">Land use data</h3>
+<p>
+Framework works with any land-use dataset
+</p>
+
+<p>
+Biased toward <b>luh2</b> (both 0.25° and 1km resolutions)
+</p>
+
+<p>
+Collapse LU classes in <code>RasterSet</code>
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >"cropland": "c4ann + c3ann + c3per + c4per + c3nfx"
+</code></pre>
+</div>
+
+<aside class="notes">
+<ul>
+<li>In example above, have to define LU classes one-by-one</li>
+<li>w/ LUH2 have functions to load all layers in NetCDF</li>
+<li>Combine / collapse LU classes in rasterSet definition</li>
+
+</ul>
+
+</aside>
+
+
+</section>
+<section id="slide-org2b6a737">
+<h3 id="org2b6a737">Secondary age-classes</h3>
+<p>
+Generate secondary vegetation age classes for <b>LUH2</b>
+</p>
+
+<p>
+Fixed ages (&lt; 30, &lt; 50, &gt; 50)
+</p>
+
+<p>
+Can combine with LUI modeling
+</p>
+
+
+</section>
+<section id="slide-org481c326">
+<h3 id="org481c326">Land-use intensity modeling</h3>
+<p>
+Based on Tim's models
+</p>
+
+<p>
+Five models: cropland, pasture, primary, secondary, urban
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >from projutils import lui
+
+secd_models = (("cropland", "cropland"),
+	       ("pasture", "pasture"),
+	       ("primary", "primary"),
+	       ("urban", "urban"),
+	       ("young_secondary", "secondary"),
+	       ("intermediate_secondary", "secondary"),
+	       ("mature_secondary", "secondary"),
+	       )
+
+# Add land-use intensity variables.
+for landuse, mod_name in secd_models:
+    for intensity in lui.intensities():
+	name = landuse + "_" + intensity
+	rasters[name] = lui.LUI(landuse, intensity, mod_name)
+</code></pre>
+</div>
+
+<aside class="notes">
+<ul>
+<li>Land-use intensity modeling is based on Tim's models</li>
+<li>Five models (corresponding to the RCP land-use classes) in original
+PREDICTS dataset</li>
+<li>Map your land-use classes to one of these five</li>
+
+</ul>
+
+</aside>
+
+
+</section>
+<section id="slide-org7eccbba">
+<h3 id="org7eccbba">Human population density</h3>
+<p>
+Helper functions for these datasets
+</p>
+
+<ul>
+<li>Worldpop</li>
+<li>SPS
+<ul>
+<li>Raw</li>
+<li>Scaled</li>
+
+</ul></li>
+<li>Hyde</li>
+<li>UN Population data
+<ul>
+<li>Per country scaling of GRUMPS</li>
+
+</ul></li>
+
+</ul>
+
+<aside class="notes">
+<ul>
+<li>Helper or utility functions for human population density</li>
+<li>Depend on data layout</li>
+<li></li>
+
+</ul>
+
+</aside>
+
+
+</section>
+<section id="slide-orga27b55f">
+<h4 id="orga27b55f">HPD Example</h4>
+<div class="org-src-container">
+
+<pre   ><code class="python" >if year &lt; 2015:
+    if wpp:
+	rasters["hpd_ref"] = Raster(outfn("luh2", "gluds00ag.tif"))
+	rasters["hpd"] = hpd.WPP("historical", year, utils.wpp_xls())
+    else:
+	if scale_grumps:
+	    rasters.update(hpd.hyde.scale_grumps(year))
+	else:
+	    rasters.update(hpd.hyde.raster(year))
+else:
+    sps_nc = utils.luh2_scenario_ssp(scenario)
+    if scale_grumps:
+	rasters.update(hpd.sps.scale_grumps(sps_nc, year))
+    else:
+	rasters.update(hpd.sps.raster(sps_nc, year))
+</code></pre>
+</div>
+
+
+
+</section>
+</section>
+<section>
+<section id="slide-orgfe67cde">
+<h2 id="orgfe67cde">Hi-rez rasters</h2>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Resolution</th>
+<th scope="col" class="org-left">Parallel</th>
+<th scope="col" class="org-left">Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">Low (0.25°)</td>
+<td class="org-left">No</td>
+<td class="org-left"><code>rs.eval("bii")</code></td>
+</tr>
+
+<tr>
+<td class="org-left">High (1km)</td>
+<td class="org-left">Computer</td>
+<td class="org-left"><code>rs.write("bii", "ssp2-bii-2015.tif")</code></td>
+</tr>
+
+<tr>
+<td class="org-left">Ultra (10m)</td>
+<td class="org-left">Cluster</td>
+<td class="org-left"><code>rs.build("bii")</code></td>
+</tr>
+</tbody>
+</table>
+
+<aside class="notes">
+<ul>
+<li>Use a different function depending on resolution</li>
+<li>Small, use one core (parallel outside)</li>
+<li>Large, use all cores on one machine</li>
+<li>Ultra, run distributed on a cluster</li>
+
+<li>Framework tries to use "optimal" blocking</li>
+
+</ul>
+
+</aside>
+
+
+</section>
+</section>
+<section>
+<section id="slide-orgdf9cbf1">
+<h2 id="orgdf9cbf1">Exercises</h2>
+<div class="outline-text-2" id="text-orgdf9cbf1">
+</div>
+</section>
+<section id="slide-org50d8b23">
+<h3 id="org50d8b23">Exercise 2</h3>
+<p>
+Write a script to project abundance for Restore+
+</p>
+
+<div class="org-src-container">
+
+<pre   ><code class="python" >#!/usr/bin/env python3
+
+import rasterio
+from projutils import hpd
+from rasterset import RasterSet, Raster
+import r2py.modelr as modelr
+
+# Use the final_abund_model.rds model
+modelr.load("/mnt/predicts/models/restore/brazil/2020-10-27/base/final_abund_model.rds")
+rs = # Add code here
+
+# Don't forget to back-transform
+
+data, meta = rs.eval("name", quiet=True)
+
+# Change scenario, name, year
+with rasterio.open("{scenario}-{name}-{year}.tif",
+		   "w", **meta,) as dst:
+    dst.write(data.squeeze().filled(), indexes=1)
+</code></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org79751f5">
+<h2 id="org79751f5">(No) Limits</h2>
+<p>
+Information lost because we export model to Python
+</p>
+
+<p>
+Must handle manually (several alternatives)
+</p>
+
+<ul>
+<li>Scaling and centering</li>
+<li>Limits (HPD &gt; max or &lt; min in data)</li>
+
+</ul>
+</section>
+</section>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/markdown/markdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/zoom/zoom.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/highlight/highlight.js"></script>
+
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+plugins: [RevealMarkdown, RevealNotes, RevealZoom, RevealHighlight]
+});
+
+</script>
+</body>
+</html>
